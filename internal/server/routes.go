@@ -1,0 +1,82 @@
+package server
+
+import (
+	"net/http"
+
+	v1 "interface-api/internal/api/v1"
+	"interface-api/internal/logger"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+func (s *Server) RegisterRoutes() http.Handler {
+	e := echo.New()
+
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogRemoteIP: true,
+		LogMethod:   true,
+		LogURI:      true,
+		LogStatus:   true,
+		LogLatency:  true,
+		LogError:    true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			if v.Status >= 500 {
+				logger.Log.Errorf(`%s - - [%s] "%s %s %s" %d %d "%s" "%s" %v`,
+					v.RemoteIP,
+					v.StartTime.Format("2006-01-02 15:04:05"),
+					v.Method,
+					v.URI,
+					c.Request().Proto,
+					v.Status,
+					v.ResponseSize,
+					c.Request().Referer(),
+					c.Request().UserAgent(),
+					v.Latency,
+				)
+			} else if v.Status >= 400 {
+				logger.Log.Warnf(`%s - - [%s] "%s %s %s" %d %d "%s" "%s" %v`,
+					v.RemoteIP,
+					v.StartTime.Format("2006-01-02 15:04:05"),
+					v.Method,
+					v.URI,
+					c.Request().Proto,
+					v.Status,
+					v.ResponseSize,
+					c.Request().Referer(),
+					c.Request().UserAgent(),
+					v.Latency,
+				)
+			} else {
+				logger.Log.Infof(`%s - - [%s] "%s %s %s" %d %d "%s" "%s" %v`,
+					v.RemoteIP,
+					v.StartTime.Format("2006-01-02 15:04:05"),
+					v.Method,
+					v.URI,
+					c.Request().Proto,
+					v.Status,
+					v.ResponseSize,
+					c.Request().Referer(),
+					c.Request().UserAgent(),
+					v.Latency,
+				)
+			}
+			return nil
+		},
+	}))
+
+	e.Use(middleware.Recover())
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"https://*", "http://*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	apiV1 := e.Group("/v1")
+	v1.RegisterRoutes(apiV1, s.db)
+
+	return e
+}

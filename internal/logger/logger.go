@@ -4,8 +4,11 @@ package logger
 import (
 	"os"
 	"strings"
+	"time"
 
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/sirupsen/logrus"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 var Log *logrus.Logger
@@ -45,4 +48,28 @@ func WithFields(fields logrus.Fields) *logrus.Entry {
 
 func WithField(key string, value any) *logrus.Entry {
 	return Log.WithField(key, value)
+}
+
+func NewGormLogger() gormlogger.Interface {
+	var gormLogLevel gormlogger.LogLevel
+
+	switch Log.Level {
+	case logrus.DebugLevel:
+		gormLogLevel = gormlogger.Info
+	case logrus.WarnLevel:
+		gormLogLevel = gormlogger.Warn
+	case logrus.ErrorLevel, logrus.FatalLevel:
+		gormLogLevel = gormlogger.Error
+	default:
+		gormLogLevel = gormlogger.Silent
+	}
+
+	return gormlogger.New(
+		Log,
+		gormlogger.Config{
+			SlowThreshold: 200 * time.Millisecond,
+			LogLevel:      gormLogLevel,
+			Colorful:      false,
+		},
+	)
 }

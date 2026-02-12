@@ -11,6 +11,13 @@ import (
 	"interface-api/internal/server"
 )
 
+// @title Interface API
+// @version 1.0
+// @description API for ShortMesh Interface service
+
+// @host localhost:8080
+// @schemes http https
+
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

@@ -40,9 +40,13 @@ func New() Service {
 	var db *gorm.DB
 	var err error
 
+	gormConfig := &gorm.Config{
+		Logger: logger.NewGormLogger(),
+	}
+
 	if sqlitePath != "" {
 		logger.Log.Infof("Using SQLite database: %s", sqlitePath)
-		db, err = gorm.Open(sqlite.Open(sqlitePath), &gorm.Config{})
+		db, err = gorm.Open(sqlite.Open(sqlitePath), gormConfig)
 		if err != nil {
 			logger.Log.Fatalf("Failed to connect to SQLite database: %v", err)
 		}
@@ -55,7 +59,7 @@ func New() Service {
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=%s",
 			username, password, host, port, dbname, loc)
 
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
 		if err != nil {
 			logger.Log.Fatalf("Failed to connect to MySQL database: %v", err)
 		}
@@ -73,6 +77,14 @@ func New() Service {
 	dbInstance = &service{
 		db: db,
 	}
+
+	autoMigrate := os.Getenv("AUTO_MIGRATE")
+	if autoMigrate == "true" {
+		if err := dbInstance.AutoMigrate(); err != nil {
+			logger.Log.Fatalf("Failed to migrate database: %v", err)
+		}
+	}
+
 	return dbInstance
 }
 

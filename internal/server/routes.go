@@ -6,12 +6,40 @@ import (
 	v1 "interface-api/internal/api/v1"
 	"interface-api/internal/logger"
 
+	_ "interface-api/docs"
+
+	echoSwagger "github.com/swaggo/echo-swagger"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
 	e := echo.New()
+
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		code := http.StatusInternalServerError
+		message := "Oops! something went wrong. Please try again later."
+
+		if he, ok := err.(*echo.HTTPError); ok {
+			code = he.Code
+			if code < 500 {
+				if msg, ok := he.Message.(string); ok {
+					message = msg
+				} else {
+					message = http.StatusText(code)
+				}
+			}
+		}
+
+		if !c.Response().Committed {
+			if c.Request().Method == http.MethodHead {
+				c.NoContent(code)
+			} else {
+				c.JSON(code, map[string]string{"error": message})
+			}
+		}
+	}
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogRemoteIP: true,
@@ -75,7 +103,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 		MaxAge:           300,
 	}))
 
-	apiV1 := e.Group("/v1")
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	apiV1 := e.Group("/api/v1")
 	v1.RegisterRoutes(apiV1, s.db)
 
 	return e

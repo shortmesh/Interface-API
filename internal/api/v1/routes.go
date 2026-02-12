@@ -1,4 +1,3 @@
-// Package v1 provides version 1 API route registration.
 package v1
 
 import (
@@ -11,5 +10,5 @@ import (
 func RegisterRoutes(g *echo.Group, db database.Service) {
 	userHandler := handlers.NewUserHandler(db)
 
-	g.GET("/users/:id", userHandler.GetUser)
+	g.POST("/users", userHandler.CreateUser)
 }

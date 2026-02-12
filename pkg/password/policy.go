@@ -1,0 +1,180 @@
+package password
+
+import (
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	_ "github.com/joho/godotenv/autoload"
+)
+
+var (
+	ErrPasswordTooShort       = errors.New("password must be at least 8 characters")
+	ErrPasswordTooLong        = errors.New("password exceeds maximum length of 64 characters")
+	ErrPasswordPwned          = errors.New("password has been exposed in a data breach")
+	ErrPasswordContainsSpaces = errors.New("password cannot contain leading or trailing spaces")
+)
+
+const (
+	MinPasswordLength    = 8
+	MaxPasswordLength    = 64
+	DefaultPolicyEnabled = true
+	PwnedPasswordsAPI    = "https://api.pwnedpasswords.com/range/"
+)
+
+type PolicyConfig struct {
+	Enabled        bool
+	MinLength      int
+	MaxLength      int
+	CheckPwned     bool
+	CheckSpaces    bool
+	PwnedTimeout   time.Duration
+	SkipPwnedOnErr bool
+}
+
+func GetPolicyConfig() *PolicyConfig {
+	config := &PolicyConfig{
+		Enabled:        DefaultPolicyEnabled,
+		MinLength:      MinPasswordLength,
+		MaxLength:      MaxPasswordLength,
+		CheckPwned:     true,
+		CheckSpaces:    true,
+		PwnedTimeout:   5 * time.Second,
+		SkipPwnedOnErr: true,
+	}
+
+	if val := os.Getenv("PASSWORD_POLICY_ENABLED"); val != "" {
+		if enabled, err := strconv.ParseBool(val); err == nil {
+			config.Enabled = enabled
+		}
+	}
+
+	if val := os.Getenv("PASSWORD_MIN_LENGTH"); val != "" {
+		if minLen, err := strconv.Atoi(val); err == nil && minLen >= 8 {
+			config.MinLength = minLen
+		}
+	}
+
+	if val := os.Getenv("PASSWORD_MAX_LENGTH"); val != "" {
+		if maxLen, err := strconv.Atoi(val); err == nil && maxLen <= 128 {
+			config.MaxLength = maxLen
+		}
+	}
+
+	if val := os.Getenv("PASSWORD_CHECK_PWNED"); val != "" {
+		if check, err := strconv.ParseBool(val); err == nil {
+			config.CheckPwned = check
+		}
+	}
+
+	if val := os.Getenv("PASSWORD_CHECK_SPACES"); val != "" {
+		if check, err := strconv.ParseBool(val); err == nil {
+			config.CheckSpaces = check
+		}
+	}
+
+	if val := os.Getenv("PASSWORD_PWNED_TIMEOUT"); val != "" {
+		if timeout, err := strconv.Atoi(val); err == nil && timeout > 0 {
+			config.PwnedTimeout = time.Duration(timeout) * time.Second
+		}
+	}
+
+	if val := os.Getenv("PASSWORD_SKIP_PWNED_ON_ERROR"); val != "" {
+		if skip, err := strconv.ParseBool(val); err == nil {
+			config.SkipPwnedOnErr = skip
+		}
+	}
+
+	return config
+}
+
+// ValidatePassword validates password according to NIST SP 800-63B guidelines:
+// 1. Minimum length of 8 characters
+// 2. Maximum length of at least 64 characters
+// 3. Check against compromised passwords (using k-Anonymity model)
+// 4. No composition rules (no required character types)
+// 5. No periodic password changes required
+// 6. Allow all printable ASCII and Unicode characters
+func ValidatePassword(password string) error {
+	config := GetPolicyConfig()
+
+	if !config.Enabled {
+		return nil
+	}
+
+	length := utf8.RuneCountInString(password)
+	if length < config.MinLength {
+		return ErrPasswordTooShort
+	}
+
+	if length > config.MaxLength {
+		return ErrPasswordTooLong
+	}
+
+	if config.CheckSpaces {
+		if strings.TrimSpace(password) != password {
+			return ErrPasswordContainsSpaces
+		}
+	}
+
+	if config.CheckPwned {
+		isPwned, err := IsPwned(password, config.PwnedTimeout)
+		if err != nil && !config.SkipPwnedOnErr {
+			return fmt.Errorf("failed to check password breach status: %w", err)
+		}
+		if isPwned {
+			return ErrPasswordPwned
+		}
+	}
+
+	return nil
+}
+
+// IsPwned checks if a password has been exposed in a data breach
+// using the Pwned Passwords API with k-Anonymity model (only sends first 5 chars of hash)
+func IsPwned(password string, timeout time.Duration) (bool, error) {
+	h := sha1.New()
+	h.Write([]byte(password))
+	hashBytes := h.Sum(nil)
+	hashStr := strings.ToUpper(hex.EncodeToString(hashBytes))
+
+	prefix := hashStr[:5]
+	suffix := hashStr[5:]
+
+	client := &http.Client{
+		Timeout: timeout,
+	}
+
+	resp, err := client.Get(PwnedPasswordsAPI + prefix)
+	if err != nil {
+		return false, fmt.Errorf("failed to query pwned passwords API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("pwned passwords API returned status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("failed to read API response: %w", err)
+	}
+
+	lines := strings.SplitSeq(string(body), "\n")
+	for line := range lines {
+		parts := strings.Split(line, ":")
+		if len(parts) == 2 && strings.TrimSpace(parts[0]) == suffix {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}

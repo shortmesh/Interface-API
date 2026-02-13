@@ -99,6 +99,23 @@ PASSWORD_PWNED_TIMEOUT=5          # API timeout in seconds
 PASSWORD_SKIP_PWNED_ON_ERROR=true # Continue if pwned check fails
 ```
 
+### External Services
+
+#### Matrix Authentication Service (MAS)
+
+```env
+MAS_URL=                          # MAS service URL
+MAS_ADMIN_URL=                    # MAS admin API URL
+ADMIN_CLIENT_ID=                  # Admin client ID for MAS
+ADMIN_CLIENT_SECRET=              # Admin client secret for MAS
+```
+
+#### Matrix Client
+
+```env
+MATRIX_CLIENT_URL=                # Matrix client URL
+```
+
 #### Argon2id Password Hashing
 
 ```env

@@ -26,26 +26,26 @@ go run cmd/migrate/main.go -action=down -steps=3
 package versions
 
 import (
-"interface-api/internal/database/models"
-"gorm.io/gorm"
+  "interface-api/internal/database/models"
+  "gorm.io/gorm"
 )
 
-type Migration_20240212_000002 struct{}
+type Migration20240212_000002 struct{}
 
-func (m Migration_20240212_000002) Version() string {
-return "20240212_000002"
+func (m Migration20260212_000002) Version() string {
+  return "20240212_000002"
 }
 
-func (m Migration_20240212_000002) Name() string {
-return "add_profile_table"
+func (m Migration20260212_000002) Name() string {
+  return "add_profile_table"
 }
 
-func (m Migration_20240212_000002) Up(db *gorm.DB) error {
-return db.AutoMigrate(&models.Profile{})
+func (m Migration20260212_000002) Up(db *gorm.DB) error {
+  return db.AutoMigrate(&models.Profile{})
 }
 
-func (m Migration_20240212_000002) Down(db *gorm.DB) error {
-return db.Migrator().DropTable(&models.Profile{})
+func (m Migration20260212_000002) Down(db *gorm.DB) error {
+  return db.Migrator().DropTable(&models.Profile{})
 }
 ```
 
@@ -53,16 +53,9 @@ return db.Migrator().DropTable(&models.Profile{})
 
 ```go
 func GetAllMigrations() []migrator.Script {
-return []migrator.Script{
-versions.Migration_20240212_000001{},
-versions.Migration_20240212_000002{},
-}
+  return []migrator.Script{
+  versions.Migration20260212_000001{},
+  versions.Migration20260212_000002{},
+  }
 }
 ```
-
-## How It Works
-
-- Migrations tracked in `migrations` table
-- Each file is independent
-- Runs only pending migrations
-- Rollbacks in reverse order

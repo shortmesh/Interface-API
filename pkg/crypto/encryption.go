@@ -162,5 +162,5 @@ func GenerateSecureToken(length int) (string, error) {
 		return "", err
 	}
 
-	return base64.URLEncoding.EncodeToString(bytes), nil
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }

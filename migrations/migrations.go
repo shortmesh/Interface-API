@@ -7,7 +7,8 @@ import (
 
 func GetAllMigrations() []migrator.Script {
 	return []migrator.Script{
-		versions.Migration_20240212_000001{},
-		versions.Migration_20240212_000002{},
+		versions.Migration20260212_000001{},
+		versions.Migration20260212_000002{},
+		versions.Migration20260212_000003{},
 	}
 }

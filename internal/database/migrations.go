@@ -15,7 +15,7 @@ func (s *service) CreateTables() error {
 	logger.Log.Info("Creating database tables...")
 
 	err := s.db.AutoMigrate(
-		&models.User{}, &models.Session{},
+		&models.User{}, &models.Session{}, &models.MatrixProfile{},
 	)
 	if err != nil {
 		logger.Log.Errorf("Failed to create tables: %v", err)

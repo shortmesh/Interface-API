@@ -103,7 +103,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		MaxAge:           300,
 	}))
 
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.GET("/docs/*", echoSwagger.WrapHandler)
 
 	apiV1 := e.Group("/api/v1")
 	v1.RegisterRoutes(apiV1, s.db)

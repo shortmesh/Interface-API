@@ -16,7 +16,12 @@ import (
 // @description API for ShortMesh Interface service
 
 // @host localhost:8080
-// @schemes http https
+// @schemes http
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter your token in the format: Bearer {token}
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

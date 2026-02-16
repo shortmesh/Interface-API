@@ -5,34 +5,22 @@ import (
 
 	"interface-api/pkg/crypto"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type MatrixProfile struct {
-	ID             uint      `gorm:"primaryKey" json:"id"`
-	UserID         uuid.UUID `gorm:"type:char(36);not null;uniqueIndex" json:"user_id"`
-	MatrixUsername []byte    `gorm:"type:blob;not null" json:"-"`
-	MatrixDeviceID []byte    `gorm:"type:blob;not null" json:"-"`
-	CreatedAt      time.Time `gorm:"not null" json:"created_at"`
-	UpdatedAt      time.Time `gorm:"not null" json:"updated_at"`
+	ID                       uint      `gorm:"primaryKey"`
+	UserID                   uint      `gorm:"not null;uniqueIndex"`
+	MatrixUsernameCiphertext []byte    `gorm:"type:blob;not null"`
+	MatrixDeviceIDCiphertext []byte    `gorm:"type:blob;not null"`
+	CreatedAt                time.Time `gorm:"not null"`
+	UpdatedAt                time.Time `gorm:"not null"`
 
-	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 func (MatrixProfile) TableName() string {
 	return "matrix_profiles"
-}
-
-func (m *MatrixProfile) BeforeCreate(tx *gorm.DB) error {
-	m.CreatedAt = time.Now().UTC()
-	m.UpdatedAt = time.Now().UTC()
-	return nil
-}
-
-func (m *MatrixProfile) BeforeUpdate(tx *gorm.DB) error {
-	m.UpdatedAt = time.Now().UTC()
-	return nil
 }
 
 func (m *MatrixProfile) SetMatrixUsername(username string) error {
@@ -40,12 +28,12 @@ func (m *MatrixProfile) SetMatrixUsername(username string) error {
 	if err != nil {
 		return err
 	}
-	m.MatrixUsername = encrypted
+	m.MatrixUsernameCiphertext = encrypted
 	return nil
 }
 
 func (m *MatrixProfile) GetMatrixUsername() (string, error) {
-	return crypto.Decrypt(m.MatrixUsername)
+	return crypto.Decrypt(m.MatrixUsernameCiphertext)
 }
 
 func (m *MatrixProfile) SetMatrixDeviceID(deviceID string) error {
@@ -53,15 +41,15 @@ func (m *MatrixProfile) SetMatrixDeviceID(deviceID string) error {
 	if err != nil {
 		return err
 	}
-	m.MatrixDeviceID = encrypted
+	m.MatrixDeviceIDCiphertext = encrypted
 	return nil
 }
 
 func (m *MatrixProfile) GetMatrixDeviceID() (string, error) {
-	return crypto.Decrypt(m.MatrixDeviceID)
+	return crypto.Decrypt(m.MatrixDeviceIDCiphertext)
 }
 
-func FindMatrixProfileByUserID(db *gorm.DB, userID uuid.UUID) (*MatrixProfile, error) {
+func FindMatrixProfileByUserID(db *gorm.DB, userID uint) (*MatrixProfile, error) {
 	var profile MatrixProfile
 	err := db.Where("user_id = ?", userID).First(&profile).Error
 	return &profile, err

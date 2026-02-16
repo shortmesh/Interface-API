@@ -5,48 +5,24 @@ import (
 	"time"
 
 	"interface-api/pkg/crypto"
-	"interface-api/pkg/password"
 
-	"github.com/google/uuid"
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/gorm"
 )
 
 type User struct {
-	ID           uuid.UUID  `gorm:"type:char(36);primaryKey" json:"id"`
-	Email        []byte     `gorm:"type:blob;not null" json:"-"`
-	EmailHash    []byte     `gorm:"type:binary(32);uniqueIndex;not null" json:"-"`
-	PasswordHash string     `gorm:"column:password_hash;not null;size:255" json:"-"`
-	IsVerified   bool       `gorm:"default:false" json:"is_verified"`
-	CreatedAt    time.Time  `gorm:"not null" json:"created_at"`
-	UpdatedAt    time.Time  `gorm:"not null" json:"updated_at"`
-	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
+	ID              uint      `gorm:"primaryKey"`
+	EmailCiphertext []byte    `gorm:"type:blob;not null"`
+	EmailHash       []byte    `gorm:"type:binary(32);uniqueIndex;not null"`
+	PasswordHash    string    `gorm:"not null;size:255"`
+	IsVerified      bool      `gorm:"default:false"`
+	CreatedAt       time.Time `gorm:"not null"`
+	UpdatedAt       time.Time `gorm:"not null"`
+	LastLoginAt     *time.Time
 }
 
 func (User) TableName() string {
 	return "users"
-}
-
-func (u *User) BeforeCreate(tx *gorm.DB) error {
-	if u.ID == uuid.Nil {
-		u.ID = uuid.New()
-	}
-
-	if u.PasswordHash != "" {
-		if err := password.ValidatePassword(u.PasswordHash); err != nil {
-			return err
-		}
-
-		hashedPassword, err := crypto.HashPassword(u.PasswordHash)
-		if err != nil {
-			return err
-		}
-		u.PasswordHash = hashedPassword
-	}
-
-	u.CreatedAt = time.Now().UTC()
-	u.UpdatedAt = time.Now().UTC()
-	return nil
 }
 
 func (u *User) ComparePassword(password string) error {
@@ -61,10 +37,6 @@ func (u *User) ComparePassword(password string) error {
 }
 
 func (u *User) SetPassword(plainPassword string) error {
-	if err := password.ValidatePassword(plainPassword); err != nil {
-		return err
-	}
-
 	hashedPassword, err := crypto.HashPassword(plainPassword)
 	if err != nil {
 		return err
@@ -73,14 +45,13 @@ func (u *User) SetPassword(plainPassword string) error {
 	return nil
 }
 
-func (u *User) BeforeUpdate(tx *gorm.DB) error {
-	u.UpdatedAt = time.Now().UTC()
-	return nil
-}
-
-func (u *User) RecordLogin() {
+func (u *User) RecordLogin(db *gorm.DB) error {
 	now := time.Now().UTC()
 	u.LastLoginAt = &now
+	return db.Model(&User{}).Where("id = ?", u.ID).Updates(map[string]any{
+		"last_login_at": now,
+		"updated_at":    now,
+	}).Error
 }
 
 func (u *User) SetEmail(email string) error {
@@ -88,7 +59,7 @@ func (u *User) SetEmail(email string) error {
 	if err != nil {
 		return err
 	}
-	u.Email = encrypted
+	u.EmailCiphertext = encrypted
 
 	hash, err := crypto.Hash(email)
 	if err != nil {
@@ -100,7 +71,7 @@ func (u *User) SetEmail(email string) error {
 }
 
 func (u *User) GetEmail() (string, error) {
-	return crypto.Decrypt(u.Email)
+	return crypto.Decrypt(u.EmailCiphertext)
 }
 
 func FindUserByEmail(db *gorm.DB, email string) (*User, error) {

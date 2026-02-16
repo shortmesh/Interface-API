@@ -75,7 +75,6 @@ openssl rand -base64 32
 ```env
 ENCRYPTION_KEY=<base64-key-here>  # For AES-256-GCM encryption
 HASH_KEY=<base64-key-here>        # For HMAC-SHA256 hashing
-JWT_SECRET=<base64-key-here>      # For JWT token signing
 ```
 
 **Important:** All three keys must be base64-encoded 32-byte keys. Generate three separate keys.
@@ -85,6 +84,7 @@ JWT_SECRET=<base64-key-here>      # For JWT token signing
 ```env
 MAX_SESSIONS_PER_USER=1           # Maximum concurrent sessions per user
 SESSION_DURATION_HOURS=720        # Session duration (default: 30 days)
+SESSION_TOKEN_PREFIX=sk_          # Prefix for session tokens
 ```
 
 #### Password Policy
@@ -132,7 +132,7 @@ ARGON2_KEY_LENGTH=32              # Hash output length in bytes
 make run              # Start server
 make build            # Build binaries (api + migrate)
 make test             # Run tests
-make swagger          # Generate Swagger documentation
+make docs          # Generate Swagger documentation
 
 # Migrations
 make migrate-up       # Run pending migrations
@@ -148,7 +148,7 @@ Swagger UI is available at `http://localhost:8080/swagger/index.html` when the s
 To regenerate Swagger documentation after making changes to API endpoints:
 
 ```bash
-make swagger
+make docs
 ```
 
 ## References

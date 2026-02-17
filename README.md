@@ -126,6 +126,12 @@ ARGON2_SALT_LENGTH=16             # Salt length in bytes
 ARGON2_KEY_LENGTH=32              # Hash output length in bytes
 ```
 
+#### RabbitMQ
+
+```env
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/  # RabbitMQ connection URL
+```
+
 ## Commands
 
 ```bash

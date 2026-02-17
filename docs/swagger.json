@@ -5,12 +5,50 @@
     "swagger": "2.0",
     "info": {
         "description": "API for ShortMesh Interface service",
-        "title": "Interface API",
+        "title": "Shortmesh - Interface API",
         "contact": {},
         "version": "1.0"
     },
     "host": "localhost:8080",
     "paths": {
+        "/api/v1/stream": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "WebSocket stream endpoint (Not executable in Swagger UI)",
+                "deprecated": true,
+                "responses": {
+                    "101": {
+                        "description": "WebSocket connection established",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/login": {
             "post": {
                 "description": "Authenticate a user and return a session token",
@@ -154,6 +192,15 @@
         }
     },
     "definitions": {
+        "devices.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "message"
+                }
+            }
+        },
         "users.CreateUserRequest": {
             "type": "object",
             "required": [

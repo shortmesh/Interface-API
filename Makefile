@@ -4,6 +4,7 @@ build:
 	@echo "Building..."
 	@go build -o bin/api cmd/api/main.go
 	@go build -o bin/migrate cmd/migrate/main.go
+	@go build -o bin/consumer cmd/consumer/main.go
 
 run:
 	@go run cmd/api/main.go

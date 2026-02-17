@@ -63,7 +63,7 @@ func (a *AuthMiddleware) Authenticate(methods ...AuthMethod) echo.MiddlewareFunc
 				return echo.NewHTTPError(http.StatusInternalServerError, "authentication failed")
 			}
 
-			c.Set("user", session.User)
+			c.Set("user", &session.User)
 			c.Set("session", session)
 
 			return next(c)

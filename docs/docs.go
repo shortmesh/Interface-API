@@ -15,6 +15,44 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/stream": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "WebSocket stream endpoint (Not executable in Swagger UI)",
+                "deprecated": true,
+                "responses": {
+                    "101": {
+                        "description": "WebSocket connection established",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/login": {
             "post": {
                 "description": "Authenticate a user and return a session token",
@@ -158,6 +196,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "devices.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "message"
+                }
+            }
+        },
         "users.CreateUserRequest": {
             "type": "object",
             "required": [
@@ -233,7 +280,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "",
 	Schemes:          []string{"http"},
-	Title:            "Interface API",
+	Title:            "Shortmesh - Interface API",
 	Description:      "API for ShortMesh Interface service",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

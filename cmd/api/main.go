@@ -11,7 +11,7 @@ import (
 	"interface-api/internal/server"
 )
 
-// @title Interface API
+// @title Shortmesh - Interface API
 // @version 1.0
 // @description API for ShortMesh Interface service
 

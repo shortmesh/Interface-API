@@ -1,4 +1,10 @@
 definitions:
+  devices.ErrorResponse:
+    properties:
+      error:
+        example: message
+        type: string
+    type: object
   users.CreateUserRequest:
     properties:
       email:
@@ -44,9 +50,35 @@ host: localhost:8080
 info:
   contact: {}
   description: API for ShortMesh Interface service
-  title: Interface API
+  title: Shortmesh - Interface API
   version: "1.0"
 paths:
+  /api/v1/stream:
+    get:
+      deprecated: true
+      description: Establishes a WebSocket connection to stream real-time add devices
+        qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client
+        instead.
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: WebSocket connection established
+          schema:
+            type: string
+        "401":
+          description: Missing or invalid authentication token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: WebSocket stream endpoint (Not executable in Swagger UI)
+      tags:
+      - devices
   /api/v1/users/login:
     post:
       consumes:

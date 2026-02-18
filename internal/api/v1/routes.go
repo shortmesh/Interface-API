@@ -14,8 +14,12 @@ func RegisterRoutes(g *echo.Group, db database.Service) {
 	auth := middleware.NewAuth(db)
 	deviceWsHandler := devices.NewDeviceWebsocketHandler(db)
 
-	g.POST("/users/register", userHandler.Create)
-	g.POST("/users/login", userHandler.Login)
-	g.POST("/users/logout", userHandler.Logout, auth.Authenticate())
-	g.GET("/stream", deviceWsHandler.Stream, auth.Authenticate())
+	// Auth routes
+	g.POST("/auth/register", userHandler.Create)
+	g.POST("/auth/login", userHandler.Login)
+	g.POST("/auth/logout", userHandler.Logout, auth.Authenticate())
+
+	// Device routes
+	g.POST("/devices", deviceWsHandler.Create, auth.Authenticate())
+	g.GET("/devices/qr-code", deviceWsHandler.QRCode, auth.Authenticate())
 }

@@ -11,45 +11,7 @@
     },
     "host": "localhost:8080",
     "paths": {
-        "/api/v1/stream": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "devices"
-                ],
-                "summary": "WebSocket stream endpoint (Not executable in Swagger UI)",
-                "deprecated": true,
-                "responses": {
-                    "101": {
-                        "description": "WebSocket connection established",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "schema": {
-                            "$ref": "#/definitions/devices.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/devices.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login": {
+        "/api/v1/auth/login": {
             "post": {
                 "description": "Authenticate a user and return a session token",
                 "consumes": [
@@ -59,7 +21,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "User login",
                 "parameters": [
@@ -101,7 +63,7 @@
                 }
             }
         },
-        "/api/v1/users/logout": {
+        "/api/v1/auth/logout": {
             "post": {
                 "security": [
                     {
@@ -113,7 +75,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "User logout",
                 "responses": {
@@ -138,7 +100,7 @@
                 }
             }
         },
-        "/api/v1/users/register": {
+        "/api/v1/auth/register": {
             "post": {
                 "description": "Create a new user account.",
                 "consumes": [
@@ -148,7 +110,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Create a new user",
                 "parameters": [
@@ -189,9 +151,118 @@
                     }
                 }
             }
+        },
+        "/api/v1/devices": {
+            "post": {
+                "description": "Create a new device for a user account.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Create a new device",
+                "parameters": [
+                    {
+                        "description": "Device creation request",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/devices.CreateDeviceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Requested to add device successfully",
+                        "schema": {
+                            "$ref": "#/definitions/devices.DeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/devices/qr-code": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "WebSocket qr-code endpoint (Not executable in Swagger UI)",
+                "deprecated": true,
+                "responses": {
+                    "101": {
+                        "description": "WebSocket connection established",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "devices.CreateDeviceRequest": {
+            "type": "object",
+            "required": [
+                "platform"
+            ],
+            "properties": {
+                "platform": {
+                    "type": "string",
+                    "example": "wa"
+                }
+            }
+        },
+        "devices.DeviceResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Scan the QR code to link your device"
+                },
+                "qr_code_url": {
+                    "type": "string",
+                    "example": "/api/v1/devices/qr-code"
+                }
+            }
+        },
         "devices.ErrorResponse": {
             "type": "object",
             "properties": {

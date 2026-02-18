@@ -35,8 +35,8 @@ func NewConsumer(url string) (*Consumer, error) {
 }
 
 func (c *Consumer) ConsumeQueue(ctx context.Context, queueName string, handler MessageHandler) error {
-	_, err := c.channel.QueueInspect(queueName)
-	if err != nil {
+	ok, err := c.DoesQueueExist(queueName)
+	if !ok {
 		return fmt.Errorf("queue '%s' does not exist: %w", queueName, err)
 	}
 
@@ -80,4 +80,12 @@ func (c *Consumer) Close() error {
 		return c.conn.Close()
 	}
 	return nil
+}
+
+func (c *Consumer) DoesQueueExist(queueName string) (bool, error) {
+	_, err := c.channel.QueueInspect(queueName)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

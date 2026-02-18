@@ -14,8 +14,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Stream godoc
-// @Summary WebSocket stream endpoint (Not executable in Swagger UI)
+// QRCode godoc
+// @Summary WebSocket qr-code endpoint (Not executable in Swagger UI)
 // @Description Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
 // @Tags devices
 // @Security BearerAuth
@@ -23,9 +23,9 @@ import (
 // @Success 101 {string} string "WebSocket connection established"
 // @Failure 401 {object} ErrorResponse "Missing or invalid authentication token"
 // @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/stream [get]
+// @Router /api/v1/devices/qr-code [get]
 // @deprecated
-func (h *DeviceHandler) Stream(c echo.Context) error {
+func (h *DeviceHandler) QRCode(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {
 		logger.Log.Error("Failed to get user from context")
@@ -50,7 +50,7 @@ func (h *DeviceHandler) Stream(c echo.Context) error {
 
 	queueName := matrixUsername
 
-	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+	ws, err := h.upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
 		logger.Log.Errorf("Failed to upgrade connection:\n%v\n\n%s", err, debug.Stack())
 		return err

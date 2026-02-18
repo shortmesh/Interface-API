@@ -15,7 +15,7 @@ import (
 // Login godoc
 // @Summary User login
 // @Description Authenticate a user and return a session token
-// @Tags users
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param credentials body LoginRequest true "Login credentials"
@@ -23,7 +23,7 @@ import (
 // @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
 // @Failure 401 {object} ErrorResponse "Invalid credentials"
 // @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/users/login [post]
+// @Router /api/v1/auth/login [post]
 func (h *UserHandler) Login(c echo.Context) error {
 	var req LoginRequest
 	if err := c.Bind(&req); err != nil {

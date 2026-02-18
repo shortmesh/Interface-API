@@ -70,14 +70,16 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 	}
 	defer consumer.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	messageChan := make(chan []byte, 100)
+
+	ctx, cancel := context.WithCancel(c.Request().Context())
+	defer cancel()
 
 	messageHandler := func(body []byte) error {
 		select {
 		case messageChan <- body:
+			return nil
+		case <-ctx.Done():
 			return nil
 		default:
 			logger.Log.Warn("Message channel full, dropping message")
@@ -85,7 +87,7 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 		}
 	}
 
-	err = consumer.ConsumeQueue(ctx, queueName, messageHandler)
+	err = consumer.ConsumeQueue(ctx, queueName, messageHandler, cancel)
 	if err != nil {
 		logger.Log.Errorf("Failed to start consuming qr-code queue:\n%v\n\n%s", err, debug.Stack())
 		ws.WriteMessage(
@@ -101,6 +103,7 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 
 	go func() {
 		defer close(done)
+		defer close(messageChan)
 		for {
 			_, _, err := ws.ReadMessage()
 			if err != nil {
@@ -116,7 +119,11 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 		case <-done:
 			logger.Log.Info("WebSocket connection closed for user")
 			return nil
-		case msg := <-messageChan:
+		case msg, ok := <-messageChan:
+			if !ok {
+				logger.Log.Info("Message channel closed")
+				return nil
+			}
 			err := ws.WriteMessage(websocket.TextMessage, msg)
 			if err != nil {
 				logger.Log.Errorf("Failed to write message to WebSocket: %v", err)

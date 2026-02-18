@@ -34,15 +34,24 @@ func NewConsumer(url string) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) ConsumeQueue(ctx context.Context, queueName string, handler MessageHandler) error {
+func (c *Consumer) ConsumeQueue(ctx context.Context, queueName string, handler MessageHandler, cancelFunc context.CancelFunc) error {
 	ok, err := c.DoesQueueExist(queueName)
 	if !ok {
 		return fmt.Errorf("queue '%s' does not exist: %w", queueName, err)
 	}
 
+	err = c.channel.Qos(
+		10,
+		0,
+		false,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to set QoS: %w", err)
+	}
+
 	msgs, err := c.channel.Consume(
 		queueName,
-		"",
+		queueName,
 		true,
 		false,
 		false,
@@ -53,13 +62,28 @@ func (c *Consumer) ConsumeQueue(ctx context.Context, queueName string, handler M
 		return fmt.Errorf("failed to register consumer: %w", err)
 	}
 
+	closeChan := make(chan *amqp.Error)
+	c.channel.NotifyClose(closeChan)
+
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
+			case err := <-closeChan:
+				if err != nil {
+					fmt.Printf("Channel closed: %v\n", err)
+				}
+				if cancelFunc != nil {
+					cancelFunc()
+				}
+				return
 			case msg, ok := <-msgs:
 				if !ok {
+					fmt.Println("Consumer channel closed, queue may have been deleted")
+					if cancelFunc != nil {
+						cancelFunc()
+					}
 					return
 				}
 				if err := handler(msg.Body); err != nil {
@@ -73,13 +97,20 @@ func (c *Consumer) ConsumeQueue(ctx context.Context, queueName string, handler M
 }
 
 func (c *Consumer) Close() error {
+	var err error
 	if c.channel != nil {
-		c.channel.Close()
+		if closeErr := c.channel.Close(); closeErr != nil {
+			err = closeErr
+		}
 	}
 	if c.conn != nil {
-		return c.conn.Close()
+		if closeErr := c.conn.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			}
+		}
 	}
-	return nil
+	return err
 }
 
 func (c *Consumer) DoesQueueExist(queueName string) (bool, error) {

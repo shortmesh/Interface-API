@@ -44,7 +44,7 @@ func main() {
 		return nil
 	}
 
-	err = consumer.ConsumeQueue(ctx, *queueName, messageHandler)
+	err = consumer.ConsumeQueue(ctx, *queueName, messageHandler, cancel)
 	if err != nil {
 		log.Fatalf("Failed to start consuming: %v", err)
 	}

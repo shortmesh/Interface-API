@@ -138,6 +138,15 @@ func ValidatePassword(password string) error {
 	return nil
 }
 
+var pwnedHTTPClient = &http.Client{
+	Timeout: 5 * time.Second,
+	Transport: &http.Transport{
+		MaxIdleConns:        10,
+		MaxIdleConnsPerHost: 2,
+		IdleConnTimeout:     30 * time.Second,
+	},
+}
+
 // IsPwned checks if a password has been exposed in a data breach
 // using the Pwned Passwords API with k-Anonymity model (only sends first 5 chars of hash)
 func IsPwned(password string, timeout time.Duration) (bool, error) {
@@ -149,11 +158,9 @@ func IsPwned(password string, timeout time.Duration) (bool, error) {
 	prefix := hashStr[:5]
 	suffix := hashStr[5:]
 
-	client := &http.Client{
-		Timeout: timeout,
-	}
+	pwnedHTTPClient.Timeout = timeout
 
-	resp, err := client.Get(PwnedPasswordsAPI + prefix)
+	resp, err := pwnedHTTPClient.Get(PwnedPasswordsAPI + prefix)
 	if err != nil {
 		return false, fmt.Errorf("failed to query pwned passwords API: %w", err)
 	}

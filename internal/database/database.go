@@ -70,9 +70,10 @@ func New() Service {
 		logger.Log.Fatalf("Failed to get database instance: %v", err)
 	}
 
-	sqlDB.SetConnMaxLifetime(0)
-	sqlDB.SetMaxIdleConns(50)
-	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetMaxOpenConns(20)
+	sqlDB.SetConnMaxIdleTime(90 * time.Second)
 
 	dbInstance = &service{
 		db: db,

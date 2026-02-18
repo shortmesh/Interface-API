@@ -53,6 +53,14 @@ type CreateDeviceRequest struct {
 	Platform string `json:"platform" example:"wa" validate:"required"`
 }
 
+// DeleteDeviceRequest represents the request body for deleting a device
+type DeleteDeviceRequest struct {
+	// Get the device ID from ListDevices (GET /api/v1/devices) response
+	DeviceID string `json:"device_id" example:"237123456789" validate:"required"`
+	// Get the platform from ListDevices (GET /api/v1/devices) response
+	Platform string `json:"platform" example:"wa" validate:"required"`
+}
+
 // DeviceResponse represents the response after device operations
 type DeviceResponse struct {
 	Message   string `json:"message,omitempty" example:"Scan the QR code to link your device"`

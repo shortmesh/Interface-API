@@ -8,36 +8,42 @@ import (
 	"interface-api/internal/database/models"
 	"interface-api/internal/logger"
 	"interface-api/pkg/matrixclient"
-	"interface-api/pkg/rabbitmq"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-// Create godoc
-// @Summary Create a new device
-// @Description Create a new device for a user account.
+// Delete godoc
+// @Summary Delete a device
+// @Description Delete a device for a user account.
 // @Tags devices
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param user body CreateDeviceRequest true "Device creation request"
-// @Success 201 {object} DeviceResponse "Requested to add device successfully"
+// @Param user body DeleteDeviceRequest true "Device deletion request"
+// @Success 200 {object} DeviceResponse "Device deleted successfully"
 // @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
 // @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/devices [post]
-func (h *DeviceHandler) Create(c echo.Context) error {
+// @Router /api/v1/devices [delete]
+func (h *DeviceHandler) Delete(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {
 		logger.Log.Error("Failed to get user from context")
 		return echo.ErrUnauthorized
 	}
 
-	var req CreateDeviceRequest
+	var req DeleteDeviceRequest
 	if err := c.Bind(&req); err != nil {
 		logger.Log.Errorf("Failed to bind request body: %v", err)
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body. Must be a JSON object.",
+		})
+	}
+
+	if strings.TrimSpace(req.DeviceID) == "" {
+		logger.Log.Error("Missing required field: device_id")
+		return c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "Missing required field: device_id",
 		})
 	}
 
@@ -64,41 +70,25 @@ func (h *DeviceHandler) Create(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	consumer, err := rabbitmq.NewConsumer(*h.rabbitURL)
-	if err != nil {
-		logger.Log.Errorf("Failed to create RabbitMQ consumer:\n%v\n\n%s", err, debug.Stack())
-		return echo.ErrInternalServerError
-	}
-	defer consumer.Close()
-
-	queueExists, _ := consumer.DoesQueueExist(matrixUsername)
-
-	if queueExists {
-		logger.Log.Info("QR-Code already streaming for this user. No need to create a new device.")
-		return c.JSON(http.StatusCreated, DeviceResponse{
-			Message:   "Scan the QR code to link your device",
-			QrCodeURL: "/api/v1/devices/qr-code",
-		})
-	}
-
 	matrixClient, err := matrixclient.New()
 	if err != nil {
 		logger.Log.Errorf("Failed to initialize Matrix client: %v", err)
 		return echo.ErrInternalServerError
 	}
 
-	addDeviceReq := &matrixclient.AddDeviceRequest{
+	deleteDeviceReq := &matrixclient.DeleteDeviceRequest{
 		Username:     matrixUsername,
+		DeviceID:     req.DeviceID,
 		PlatformName: req.Platform,
 	}
-	_, err = matrixClient.AddDevice(addDeviceReq)
+	_, err = matrixClient.DeleteDevice(deleteDeviceReq)
 	if err != nil {
-		logger.Log.Errorf("Failed to request add matrix device:\n%v\n\n%s", err, debug.Stack())
+		logger.Log.Errorf("Failed to delete matrix device:\n%v\n\n%s", err, debug.Stack())
 		return echo.ErrInternalServerError
 	}
-	logger.Log.Info("Requested to add matrix device.")
-	return c.JSON(http.StatusCreated, DeviceResponse{
-		Message:   "Scan the QR code to link your device",
-		QrCodeURL: "/api/v1/devices/qr-code",
+
+	logger.Log.Info("Device deleted successfully")
+	return c.JSON(http.StatusOK, DeviceResponse{
+		Message: "Device deleted successfully",
 	})
 }

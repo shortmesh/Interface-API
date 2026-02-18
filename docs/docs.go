@@ -158,6 +158,11 @@ const docTemplate = `{
         },
         "/api/v1/devices": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new device for a user account.",
                 "consumes": [
                     "application/json"
@@ -183,6 +188,55 @@ const docTemplate = `{
                 "responses": {
                     "201": {
                         "description": "Requested to add device successfully",
+                        "schema": {
+                            "$ref": "#/definitions/devices.DeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a device for a user account.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Delete a device",
+                "parameters": [
+                    {
+                        "description": "Device deletion request",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/devices.DeleteDeviceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device deleted successfully",
                         "schema": {
                             "$ref": "#/definitions/devices.DeviceResponse"
                         }
@@ -249,6 +303,25 @@ const docTemplate = `{
             ],
             "properties": {
                 "platform": {
+                    "type": "string",
+                    "example": "wa"
+                }
+            }
+        },
+        "devices.DeleteDeviceRequest": {
+            "type": "object",
+            "required": [
+                "device_id",
+                "platform"
+            ],
+            "properties": {
+                "device_id": {
+                    "description": "Get the device ID from ListDevices (GET /api/v1/devices) response",
+                    "type": "string",
+                    "example": "237123456789"
+                },
+                "platform": {
+                    "description": "Get the platform from ListDevices (GET /api/v1/devices) response",
                     "type": "string",
                     "example": "wa"
                 }

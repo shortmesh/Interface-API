@@ -7,6 +7,20 @@ definitions:
     required:
     - platform
     type: object
+  devices.DeleteDeviceRequest:
+    properties:
+      device_id:
+        description: Get the device ID from ListDevices (GET /api/v1/devices) response
+        example: "237123456789"
+        type: string
+      platform:
+        description: Get the platform from ListDevices (GET /api/v1/devices) response
+        example: wa
+        type: string
+    required:
+    - device_id
+    - platform
+    type: object
   devices.DeviceResponse:
     properties:
       message:
@@ -162,6 +176,37 @@ paths:
       tags:
       - auth
   /api/v1/devices:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a device for a user account.
+      parameters:
+      - description: Device deletion request
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/devices.DeleteDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device deleted successfully
+          schema:
+            $ref: '#/definitions/devices.DeviceResponse'
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a device
+      tags:
+      - devices
     post:
       consumes:
       - application/json
@@ -188,6 +233,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Create a new device
       tags:
       - devices

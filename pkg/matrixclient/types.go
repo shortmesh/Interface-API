@@ -20,3 +20,13 @@ type AddDeviceResponse struct {
 	DeviceID string `json:"device_id"`
 	Platform string `json:"platform"`
 }
+
+type DeleteDeviceRequest struct {
+	Username     string `json:"username"`
+	DeviceID     string `json:"device_id"`
+	PlatformName string `json:"platform_name"`
+}
+
+type DeleteDeviceResponse struct {
+	Status string `json:"status"`
+}

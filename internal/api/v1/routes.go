@@ -22,4 +22,5 @@ func RegisterRoutes(g *echo.Group, db database.Service) {
 	// Device routes
 	g.POST("/devices", deviceWsHandler.Create, auth.Authenticate())
 	g.GET("/devices/qr-code", deviceWsHandler.QRCode, auth.Authenticate())
+	g.DELETE("/devices", deviceWsHandler.Delete, auth.Authenticate())
 }

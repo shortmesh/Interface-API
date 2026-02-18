@@ -21,6 +21,15 @@ definitions:
     - device_id
     - platform
     type: object
+  devices.Device:
+    properties:
+      device_id:
+        example: "237123456789"
+        type: string
+      platform:
+        example: wa
+        type: string
+    type: object
   devices.DeviceResponse:
     properties:
       message:
@@ -179,7 +188,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete a device for a user account.
+      description: Delete a device for the authenticated user
       parameters:
       - description: Device deletion request
         in: body
@@ -207,10 +216,36 @@ paths:
       summary: Delete a device
       tags:
       - devices
+    get:
+      consumes:
+      - application/json
+      description: List all devices for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of devices
+          schema:
+            items:
+              $ref: '#/definitions/devices.Device'
+            type: array
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all devices
+      tags:
+      - devices
     post:
       consumes:
       - application/json
-      description: Create a new device for a user account.
+      description: Create a new device for the authenticated user
       parameters:
       - description: Device creation request
         in: body

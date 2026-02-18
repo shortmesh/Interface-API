@@ -157,13 +157,54 @@ const docTemplate = `{
             }
         },
         "/api/v1/devices": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List all devices for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List all devices",
+                "responses": {
+                    "200": {
+                        "description": "List of devices",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/devices.Device"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new device for a user account.",
+                "description": "Create a new device for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -212,7 +253,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a device for a user account.",
+                "description": "Delete a device for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -322,6 +363,19 @@ const docTemplate = `{
                 },
                 "platform": {
                     "description": "Get the platform from ListDevices (GET /api/v1/devices) response",
+                    "type": "string",
+                    "example": "wa"
+                }
+            }
+        },
+        "devices.Device": {
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string",
+                    "example": "237123456789"
+                },
+                "platform": {
                     "type": "string",
                     "example": "wa"
                 }

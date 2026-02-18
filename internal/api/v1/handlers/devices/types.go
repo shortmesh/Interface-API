@@ -67,6 +67,15 @@ type DeviceResponse struct {
 	QrCodeURL string `json:"qr_code_url,omitempty" example:"/api/v1/devices/qr-code"`
 }
 
+// ListDevicesResponse represents the response for listing devices
+type ListDevicesResponse []Device
+
+// Device represents a single device in the list of devices
+type Device struct {
+	Platform string `json:"platform" example:"wa"`
+	DeviceID string `json:"device_id" example:"237123456789"`
+}
+
 // ErrorResponse represents an error response
 type ErrorResponse struct {
 	Error string `json:"error" example:"message"`

@@ -15,7 +15,7 @@ import (
 
 // Delete godoc
 // @Summary Delete a device
-// @Description Delete a device for a user account.
+// @Description Delete a device for the authenticated user
 // @Tags devices
 // @Accept json
 // @Produce json

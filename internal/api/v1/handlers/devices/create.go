@@ -16,7 +16,7 @@ import (
 
 // Create godoc
 // @Summary Create a new device
-// @Description Create a new device for a user account.
+// @Description Create a new device for the authenticated user
 // @Tags devices
 // @Accept json
 // @Produce json

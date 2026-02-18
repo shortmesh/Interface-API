@@ -30,3 +30,14 @@ type DeleteDeviceRequest struct {
 type DeleteDeviceResponse struct {
 	Status string `json:"status"`
 }
+
+type ListDevicesRequest struct {
+	Username string `json:"username"`
+}
+
+type Device struct {
+	DeviceID   string `json:"device_id"`
+	BridgeName string `json:"bridge_name"`
+}
+
+type ListDevicesResponse []Device

@@ -19,6 +19,19 @@ make run
 
 Server runs on `http://localhost:8080`
 
+**Running with Worker:**
+
+```bash
+# Terminal 1 - API Server
+make run
+
+# Terminal 2 - Message Worker
+make worker
+
+# Or run both in background (Unix-like systems)
+make run & make worker &
+```
+
 ## Configuration
 
 All configuration via environment variables in `.env` file:
@@ -208,5 +221,6 @@ make docs
 
 ## References
 
+- [Architecture Documentation](docs/architecture/) - System architecture and sequence diagrams
 - [Migration Guide](migrations/README.md) - Creating and managing database migrations
 - [Throttler documentation](pkg/throttler/README.md) - Guide on message rate limiting implementation

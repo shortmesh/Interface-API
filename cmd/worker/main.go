@@ -165,7 +165,7 @@ func runWorker(parentCtx context.Context, workerID int, rabbitURL string, exchan
 		_, err := matrixClient.SendMessage(msg.DeviceID, req)
 		if err != nil {
 			logger.Log.Errorf("Worker %d: Message delivery failed: %v", workerID, err)
-			delivery.Nack(false, true)
+			delivery.Nack(false, false)
 			return err
 		}
 

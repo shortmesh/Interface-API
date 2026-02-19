@@ -330,6 +330,64 @@
                     }
                 }
             }
+        },
+        "/api/v1/devices/{device_id}/message": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Queue a message to be sent via the specified device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Send a message via device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Message to send",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/devices.SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message queued successfully",
+                        "schema": {
+                            "$ref": "#/definitions/devices.SendMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -396,6 +454,38 @@
                 "error": {
                     "type": "string",
                     "example": "message"
+                }
+            }
+        },
+        "devices.SendMessageRequest": {
+            "type": "object",
+            "required": [
+                "contact",
+                "platform",
+                "text"
+            ],
+            "properties": {
+                "contact": {
+                    "type": "string",
+                    "example": "1234567890"
+                },
+                "platform": {
+                    "description": "Get the platform from ListDevices (GET /api/v1/devices) response",
+                    "type": "string",
+                    "example": "wa"
+                },
+                "text": {
+                    "type": "string",
+                    "example": "Hello, World!"
+                }
+            }
+        },
+        "devices.SendMessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Message queued successfully"
                 }
             }
         },

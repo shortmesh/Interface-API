@@ -4,21 +4,21 @@ import (
 	"os"
 
 	"interface-api/internal/database/models"
-	"interface-api/internal/logger"
 	"interface-api/migrations"
+	"interface-api/pkg/logger"
 	"interface-api/pkg/migrator"
 
 	_ "github.com/joho/godotenv/autoload"
 )
 
 func (s *service) CreateTables() error {
-	logger.Log.Info("Creating database tables...")
+	logger.Log.Info("Creating database tables")
 
 	err := s.db.AutoMigrate(
 		&models.User{}, &models.Session{}, &models.MatrixProfile{},
 	)
 	if err != nil {
-		logger.Log.Errorf("Failed to create tables: %v", err)
+		logger.Log.Errorf("Table creation failed: %v", err)
 		return err
 	}
 
@@ -27,13 +27,13 @@ func (s *service) CreateTables() error {
 }
 
 func (s *service) RunMigrations() error {
-	logger.Log.Info("Running database migrations...")
+	logger.Log.Info("Running database migrations")
 
 	scripts := migrations.GetAllMigrations()
 	manager := migrator.NewManager(s.db, scripts)
 
 	if err := manager.Up(); err != nil {
-		logger.Log.Errorf("Failed to run migrations: %v", err)
+		logger.Log.Errorf("Migration execution failed: %v", err)
 		return err
 	}
 

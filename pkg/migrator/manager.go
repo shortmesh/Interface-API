@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 
 	"gorm.io/gorm"
 )
@@ -45,14 +45,14 @@ func (m *Manager) removeMigration(version string) error {
 
 func (m *Manager) Up() error {
 	if err := m.EnsureMigrationTable(); err != nil {
-		return fmt.Errorf("failed to create migrations table: %w", err)
+		return fmt.Errorf("migration table creation failed: %w", err)
 	}
 
 	applied := 0
 	for _, script := range m.scripts {
 		isApplied, err := m.isApplied(script.Version())
 		if err != nil {
-			return fmt.Errorf("failed to check migration status: %w", err)
+			return fmt.Errorf("migration status check failed: %w", err)
 		}
 
 		if isApplied {
@@ -63,11 +63,11 @@ func (m *Manager) Up() error {
 		logger.Log.Infof("Applying migration %s: %s", script.Version(), script.Name())
 
 		if err := script.Up(m.db); err != nil {
-			return fmt.Errorf("failed to apply migration %s: %w", script.Version(), err)
+			return fmt.Errorf("migration %s failed: %w", script.Version(), err)
 		}
 
 		if err := m.recordMigration(script.Version(), script.Name()); err != nil {
-			return fmt.Errorf("failed to record migration %s: %w", script.Version(), err)
+			return fmt.Errorf("migration %s record failed: %w", script.Version(), err)
 		}
 
 		logger.Log.Infof("Successfully applied migration %s", script.Version())
@@ -85,7 +85,7 @@ func (m *Manager) Up() error {
 
 func (m *Manager) Down(steps int) error {
 	if err := m.EnsureMigrationTable(); err != nil {
-		return fmt.Errorf("failed to create migrations table: %w", err)
+		return fmt.Errorf("migration table creation failed: %w", err)
 	}
 
 	if steps <= 0 {
@@ -95,7 +95,7 @@ func (m *Manager) Down(steps int) error {
 	var appliedMigrations []Migration
 	err := m.db.Order("applied_at DESC").Limit(steps).Find(&appliedMigrations).Error
 	if err != nil {
-		return fmt.Errorf("failed to get applied migrations: %w", err)
+		return fmt.Errorf("applied migrations lookup failed: %w", err)
 	}
 
 	if len(appliedMigrations) == 0 {
@@ -116,7 +116,7 @@ func (m *Manager) Down(steps int) error {
 		if script == nil {
 			logger.Log.Warnf("Migration script %s not found, removing from database", applied.Version)
 			if err := m.removeMigration(applied.Version); err != nil {
-				return fmt.Errorf("failed to remove migration record: %w", err)
+				return fmt.Errorf("migration record removal failed: %w", err)
 			}
 			continue
 		}
@@ -124,11 +124,11 @@ func (m *Manager) Down(steps int) error {
 		logger.Log.Infof("Rolling back migration %s: %s", script.Version(), script.Name())
 
 		if err := script.Down(m.db); err != nil {
-			return fmt.Errorf("failed to rollback migration %s: %w", script.Version(), err)
+			return fmt.Errorf("migration %s rollback failed: %w", script.Version(), err)
 		}
 
 		if err := m.removeMigration(script.Version()); err != nil {
-			return fmt.Errorf("failed to remove migration record: %w", err)
+			return fmt.Errorf("migration record removal failed: %w", err)
 		}
 
 		logger.Log.Infof("Successfully rolled back migration %s", script.Version())
@@ -140,15 +140,15 @@ func (m *Manager) Down(steps int) error {
 }
 
 func (m *Manager) Fresh() error {
-	logger.Log.Info("Running fresh migration (dropping all tables)...")
+	logger.Log.Info("Running fresh migration (dropping all tables)")
 
 	if err := m.EnsureMigrationTable(); err != nil {
-		return fmt.Errorf("failed to create migrations table: %w", err)
+		return fmt.Errorf("migration table creation failed: %w", err)
 	}
 
 	var appliedMigrations []Migration
 	if err := m.db.Find(&appliedMigrations).Error; err != nil {
-		return fmt.Errorf("failed to get applied migrations: %w", err)
+		return fmt.Errorf("applied migrations lookup failed: %w", err)
 	}
 
 	for i := len(appliedMigrations) - 1; i >= 0; i-- {
@@ -164,27 +164,27 @@ func (m *Manager) Fresh() error {
 		if script != nil {
 			logger.Log.Infof("Dropping tables for migration %s", script.Version())
 			if err := script.Down(m.db); err != nil {
-				logger.Log.Warnf("Failed to rollback migration %s: %v", script.Version(), err)
+				logger.Log.Warnf("Migration %s rollback failed: %v", script.Version(), err)
 			}
 		}
 	}
 
 	if err := m.db.Migrator().DropTable(&Migration{}); err != nil {
-		logger.Log.Warnf("Failed to drop migrations table: %v", err)
+		logger.Log.Warnf("Migrations table drop failed: %v", err)
 	}
 
-	logger.Log.Info("All tables dropped, running migrations...")
+	logger.Log.Info("All tables dropped, running migrations")
 	return m.Up()
 }
 
 func (m *Manager) Status() error {
 	if err := m.EnsureMigrationTable(); err != nil {
-		return fmt.Errorf("failed to create migrations table: %w", err)
+		return fmt.Errorf("migration table creation failed: %w", err)
 	}
 
 	var appliedMigrations []Migration
 	if err := m.db.Order("applied_at ASC").Find(&appliedMigrations).Error; err != nil {
-		return fmt.Errorf("failed to get applied migrations: %w", err)
+		return fmt.Errorf("applied migrations lookup failed: %w", err)
 	}
 
 	appliedMap := make(map[string]Migration)

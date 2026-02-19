@@ -4,10 +4,17 @@ build:
 	@echo "Building..."
 	@go build -o bin/api cmd/api/main.go
 	@go build -o bin/migrate cmd/migrate/main.go
-	@go build -o bin/consumer cmd/consumer/main.go
+	@go build -o bin/qr-worker cmd/qr-worker/main.go
+	@go build -o bin/worker cmd/worker/main.go
 
 run:
 	@go run cmd/api/main.go
+
+worker:
+	@go run cmd/worker/main.go -n 1
+
+worker-n:
+	@go run cmd/worker/main.go -n $(N)
 
 test:
 	@echo "Testing..."
@@ -41,4 +48,4 @@ clean:
 	@echo "Cleaning..."
 	@rm -rf bin
 
-.PHONY: all build run test clean itest migrate-up migrate-down migrate-fresh migrate-status docs
+.PHONY: all build run run-worker worker worker-n test clean itest migrate-up migrate-down migrate-fresh migrate-status docs

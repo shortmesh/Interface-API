@@ -6,16 +6,14 @@ import (
 	"os"
 
 	"interface-api/internal/database"
-	"interface-api/internal/logger"
 	"interface-api/migrations"
+	"interface-api/pkg/logger"
 	"interface-api/pkg/migrator"
 
 	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	logger.Init()
-
 	var (
 		action string
 		steps  int

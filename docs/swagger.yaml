@@ -45,6 +45,29 @@ definitions:
         example: message
         type: string
     type: object
+  devices.SendMessageRequest:
+    properties:
+      contact:
+        example: "1234567890"
+        type: string
+      platform:
+        description: Get the platform from ListDevices (GET /api/v1/devices) response
+        example: wa
+        type: string
+      text:
+        example: Hello, World!
+        type: string
+    required:
+    - contact
+    - platform
+    - text
+    type: object
+  devices.SendMessageResponse:
+    properties:
+      message:
+        example: Message queued successfully
+        type: string
+    type: object
   users.CreateUserRequest:
     properties:
       email:
@@ -271,6 +294,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a new device
+      tags:
+      - devices
+  /api/v1/devices/{device_id}/message:
+    post:
+      consumes:
+      - application/json
+      description: Queue a message to be sent via the specified device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      - description: Message to send
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/devices.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message queued successfully
+          schema:
+            $ref: '#/definitions/devices.SendMessageResponse'
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send a message via device
       tags:
       - devices
   /api/v1/devices/qr-code:

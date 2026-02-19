@@ -13,7 +13,7 @@ import (
 
 var Log *logrus.Logger
 
-func Init() {
+func init() {
 	Log = logrus.New()
 
 	Log.SetFormatter(&logrus.TextFormatter{

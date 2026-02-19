@@ -6,11 +6,12 @@ import (
 	"runtime/debug"
 
 	"interface-api/internal/database/models"
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 	"interface-api/pkg/rabbitmq"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
+	"github.com/streadway/amqp"
 	"gorm.io/gorm"
 )
 
@@ -28,23 +29,23 @@ import (
 func (h *DeviceHandler) QRCode(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {
-		logger.Log.Error("Failed to get user from context")
+		logger.Log.Error("User not found in context")
 		return echo.ErrUnauthorized
 	}
 
 	matrixProfile, err := models.FindMatrixProfileByUserID(h.db.DB(), user.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			logger.Log.Error("Matrix profile not found for user")
+			logger.Log.Warn("Matrix profile not found for user")
 			return echo.ErrUnauthorized
 		}
-		logger.Log.Errorf("Failed to fetch matrix profile: %v", err)
+		logger.Log.Errorf("Matrix profile lookup error: %v", err)
 		return echo.ErrInternalServerError
 	}
 
 	matrixUsername, err := matrixProfile.GetMatrixUsername()
 	if err != nil {
-		logger.Log.Errorf("Failed to decrypt matrix username: %v", err)
+		logger.Log.Errorf("Matrix username decryption failed: %v", err)
 		return echo.ErrInternalServerError
 	}
 
@@ -52,16 +53,16 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 
 	ws, err := h.upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
-		logger.Log.Errorf("Failed to upgrade connection:\n%v\n\n%s", err, debug.Stack())
+		logger.Log.Errorf("WebSocket upgrade failed: %v\n%s", err, debug.Stack())
 		return err
 	}
 	defer ws.Close()
 
-	logger.Log.Info("WebSocket connection established.")
+	logger.Log.Debug("WebSocket connection established")
 
 	consumer, err := rabbitmq.NewConsumer(*h.rabbitURL)
 	if err != nil {
-		logger.Log.Errorf("Failed to create RabbitMQ consumer:\n%v\n\n%s", err, debug.Stack())
+		logger.Log.Errorf("RabbitMQ consumer creation failed: %v\n%s", err, debug.Stack())
 		ws.WriteMessage(
 			websocket.TextMessage,
 			fmt.Append(nil, "Error: Oops, something went wrong. Please try again later."),
@@ -75,21 +76,21 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 	ctx, cancel := context.WithCancel(c.Request().Context())
 	defer cancel()
 
-	messageHandler := func(body []byte) error {
+	messageHandler := func(delivery amqp.Delivery) error {
 		select {
-		case messageChan <- body:
+		case messageChan <- delivery.Body:
 			return nil
 		case <-ctx.Done():
 			return nil
 		default:
-			logger.Log.Warn("Message channel full, dropping message")
+			logger.Log.Warn("QR code message channel full, dropping message")
 			return nil
 		}
 	}
 
-	err = consumer.ConsumeQueue(ctx, queueName, messageHandler, cancel)
+	err = consumer.Consume(ctx, queueName, messageHandler, cancel, rabbitmq.DefaultConsumeOptions())
 	if err != nil {
-		logger.Log.Errorf("Failed to start consuming qr-code queue:\n%v\n\n%s", err, debug.Stack())
+		logger.Log.Errorf("QR code queue consumption failed: %v\n%s", err, debug.Stack())
 		ws.WriteMessage(
 			websocket.TextMessage,
 			fmt.Append(nil, "Error: You have no pending devices to add. Add a device and try again."),
@@ -97,7 +98,7 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 		return err
 	}
 
-	logger.Log.Info("Started consuming from qr-code queue")
+	logger.Log.Debug("Started consuming QR code queue")
 
 	done := make(chan struct{})
 
@@ -107,7 +108,7 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 		for {
 			_, _, err := ws.ReadMessage()
 			if err != nil {
-				logger.Log.Infof("WebSocket read error (client disconnected): %v", err)
+				logger.Log.Debug("WebSocket client disconnected")
 				cancel()
 				return
 			}
@@ -117,21 +118,21 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 	for {
 		select {
 		case <-done:
-			logger.Log.Info("WebSocket connection closed for user")
+			logger.Log.Debug("WebSocket connection closed")
 			return nil
 		case msg, ok := <-messageChan:
 			if !ok {
-				logger.Log.Info("Message channel closed")
+				logger.Log.Debug("QR code message channel closed")
 				return nil
 			}
 			err := ws.WriteMessage(websocket.TextMessage, msg)
 			if err != nil {
-				logger.Log.Errorf("Failed to write message to WebSocket: %v", err)
+				logger.Log.Errorf("WebSocket message write failed: %v", err)
 				return err
 			}
-			logger.Log.Debugf("Sent message to user %s: %s", matrixUsername, string(msg))
+			logger.Log.Debug("QR code sent to client")
 		case <-ctx.Done():
-			logger.Log.Info("Context cancelled for user")
+			logger.Log.Debug("WebSocket context cancelled")
 			return nil
 		}
 	}

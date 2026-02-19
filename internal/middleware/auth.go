@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"interface-api/internal/database/models"
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"

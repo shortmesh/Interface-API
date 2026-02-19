@@ -3,120 +3,81 @@ package rabbitmq
 import (
 	"context"
 	"fmt"
-
-	"github.com/streadway/amqp"
 )
 
 type Consumer struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	url     string
+	*Client
 }
-
-type MessageHandler func([]byte) error
 
 func NewConsumer(url string) (*Consumer, error) {
-	conn, err := amqp.Dial(url)
+	client, err := dial(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
+		return nil, err
 	}
 
-	ch, err := conn.Channel()
-	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to open channel: %w", err)
-	}
-
-	return &Consumer{
-		conn:    conn,
-		channel: ch,
-		url:     url,
-	}, nil
+	return &Consumer{Client: client}, nil
 }
 
-func (c *Consumer) ConsumeQueue(ctx context.Context, queueName string, handler MessageHandler, cancelFunc context.CancelFunc) error {
-	ok, err := c.DoesQueueExist(queueName)
-	if !ok {
-		return fmt.Errorf("queue '%s' does not exist: %w", queueName, err)
+func (c *Consumer) Consume(
+	ctx context.Context,
+	queueName string,
+	handler DeliveryHandler,
+	cancelFunc context.CancelFunc,
+	opts ConsumeOptions,
+) error {
+	if opts.CreateExchange && opts.BindExchange != "" {
+		exchangeType := opts.ExchangeType
+		if exchangeType == "" {
+			exchangeType = "direct"
+		}
+		if err := c.declareExchange(DefaultExchangeConfig(opts.BindExchange, exchangeType)); err != nil {
+			return fmt.Errorf("failed to declare exchange '%s': %w", opts.BindExchange, err)
+		}
 	}
 
-	err = c.channel.Qos(
-		10,
-		0,
-		false,
-	)
-	if err != nil {
+	if opts.CreateQueue {
+		if err := c.declareQueue(DefaultQueueConfig(queueName)); err != nil {
+			return fmt.Errorf("failed to declare queue '%s': %w", queueName, err)
+		}
+	}
+
+	if opts.BindExchange != "" {
+		if err := c.bindQueue(queueName, opts.BindExchange, opts.BindingKey); err != nil {
+			return fmt.Errorf("failed to bind queue '%s' to exchange '%s': %w", queueName, opts.BindExchange, err)
+		}
+	}
+
+	if err := c.setQos(opts.PrefetchCount, opts.PrefetchSize, false); err != nil {
 		return fmt.Errorf("failed to set QoS: %w", err)
 	}
 
-	msgs, err := c.channel.Consume(
-		queueName,
-		queueName,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to register consumer: %w", err)
+	config := consumeConfig{
+		queueName: queueName,
+		consumer:  queueName,
+		autoAck:   opts.AutoAck,
+		exclusive: opts.Exclusive,
+		noLocal:   opts.NoLocal,
+		noWait:    opts.NoWait,
+		args:      opts.Args,
 	}
 
-	closeChan := make(chan *amqp.Error)
-	c.channel.NotifyClose(closeChan)
+	msgs, err := c.consume(config)
+	if err != nil {
+		return fmt.Errorf("failed to start consuming from queue '%s': %w", queueName, err)
+	}
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case err := <-closeChan:
-				if err != nil {
-					fmt.Printf("Channel closed: %v\n", err)
-				}
-				if cancelFunc != nil {
-					cancelFunc()
-				}
-				return
-			case msg, ok := <-msgs:
-				if !ok {
-					fmt.Println("Consumer channel closed, queue may have been deleted")
-					if cancelFunc != nil {
-						cancelFunc()
-					}
-					return
-				}
-				if err := handler(msg.Body); err != nil {
-					continue
-				}
-			}
-		}
-	}()
-
+	startMessageLoop(ctx, msgs, handler, c.channel, cancelFunc)
 	return nil
 }
 
-func (c *Consumer) Close() error {
-	var err error
-	if c.channel != nil {
-		if closeErr := c.channel.Close(); closeErr != nil {
-			err = closeErr
-		}
-	}
-	if c.conn != nil {
-		if closeErr := c.conn.Close(); closeErr != nil {
-			if err == nil {
-				err = closeErr
-			}
-		}
-	}
-	return err
+func (c *Consumer) DeclareQueue(config QueueConfig) error {
+	return c.declareQueue(config)
 }
 
 func (c *Consumer) DoesQueueExist(queueName string) (bool, error) {
-	_, err := c.channel.QueueInspect(queueName)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return c.queueExists(queueName)
+}
+
+func (c *Consumer) Close() error {
+	return c.close()
 }

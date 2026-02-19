@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	v1 "interface-api/internal/api/v1"
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 
 	_ "interface-api/docs"
 

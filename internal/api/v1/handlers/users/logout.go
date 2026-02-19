@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"interface-api/internal/database/models"
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 )
@@ -22,12 +22,12 @@ import (
 func (h *UserHandler) Logout(c echo.Context) error {
 	session, ok := c.Get("session").(*models.Session)
 	if !ok {
-		logger.Log.Error("Failed to get session from context")
+		logger.Log.Error("Session not found in context during logout")
 		return echo.ErrUnauthorized
 	}
 
 	if err := h.db.DB().Delete(session).Error; err != nil {
-		logger.Log.Errorf("Failed to delete session: %v", err)
+		logger.Log.Errorf("Session deletion failed: %v", err)
 		return echo.ErrInternalServerError
 	}
 

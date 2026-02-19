@@ -96,13 +96,7 @@ func GetPolicyConfig() *PolicyConfig {
 	return config
 }
 
-// ValidatePassword validates password according to NIST SP 800-63B guidelines:
-// 1. Minimum length of 8 characters
-// 2. Maximum length of at least 64 characters
-// 3. Check against compromised passwords (using k-Anonymity model)
-// 4. No composition rules (no required character types)
-// 5. No periodic password changes required
-// 6. Allow all printable ASCII and Unicode characters
+// ValidatePassword validates password according to NIST SP 800-63B guidelines
 func ValidatePassword(password string) error {
 	config := GetPolicyConfig()
 
@@ -128,7 +122,7 @@ func ValidatePassword(password string) error {
 	if config.CheckPwned {
 		isPwned, err := IsPwned(password, config.PwnedTimeout)
 		if err != nil && !config.SkipPwnedOnErr {
-			return fmt.Errorf("failed to check password breach status: %w", err)
+			return fmt.Errorf("password breach check failed: %w", err)
 		}
 		if isPwned {
 			return ErrPasswordPwned
@@ -147,8 +141,7 @@ var pwnedHTTPClient = &http.Client{
 	},
 }
 
-// IsPwned checks if a password has been exposed in a data breach
-// using the Pwned Passwords API with k-Anonymity model (only sends first 5 chars of hash)
+// IsPwned checks if a password has been exposed in a data breach using the Pwned Passwords API with k-Anonymity
 func IsPwned(password string, timeout time.Duration) (bool, error) {
 	h := sha1.New()
 	h.Write([]byte(password))
@@ -162,7 +155,7 @@ func IsPwned(password string, timeout time.Duration) (bool, error) {
 
 	resp, err := pwnedHTTPClient.Get(PwnedPasswordsAPI + prefix)
 	if err != nil {
-		return false, fmt.Errorf("failed to query pwned passwords API: %w", err)
+		return false, fmt.Errorf("pwned passwords API request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -172,7 +165,7 @@ func IsPwned(password string, timeout time.Duration) (bool, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return false, fmt.Errorf("failed to read API response: %w", err)
+		return false, fmt.Errorf("pwned passwords API response read failed: %w", err)
 	}
 
 	lines := strings.SplitSeq(string(body), "\n")

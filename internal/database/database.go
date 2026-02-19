@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/driver/mysql"
@@ -48,7 +48,7 @@ func New() Service {
 		logger.Log.Infof("Using SQLite database: %s", sqlitePath)
 		db, err = gorm.Open(sqlite.Open(sqlitePath), gormConfig)
 		if err != nil {
-			logger.Log.Fatalf("Failed to connect to SQLite database: %v", err)
+			logger.Log.Fatalf("SQLite connection failed: %v", err)
 		}
 	} else {
 		logger.Log.Infof("Using MySQL database: %s@%s:%s/%s", username, host, port, dbname)
@@ -61,13 +61,13 @@ func New() Service {
 
 		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
 		if err != nil {
-			logger.Log.Fatalf("Failed to connect to MySQL database: %v", err)
+			logger.Log.Fatalf("MySQL connection failed: %v", err)
 		}
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		logger.Log.Fatalf("Failed to get database instance: %v", err)
+		logger.Log.Fatalf("Database instance retrieval failed: %v", err)
 	}
 
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
@@ -82,7 +82,7 @@ func New() Service {
 	autoMigrate := os.Getenv("AUTO_MIGRATE")
 	if autoMigrate == "true" {
 		if err := dbInstance.AutoMigrate(); err != nil {
-			logger.Log.Fatalf("Failed to migrate database: %v", err)
+			logger.Log.Fatalf("Database migration failed: %v", err)
 		}
 	}
 
@@ -93,13 +93,13 @@ func createDatabaseIfNotExists(username, password, host, port, dbname string) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/", username, password, host, port)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		logger.Log.Fatalf("Failed to connect to MySQL server: %v", err)
+		logger.Log.Fatalf("MySQL server connection failed: %v", err)
 	}
 	defer db.Close()
 
 	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", dbname))
 	if err != nil {
-		logger.Log.Fatalf("Failed to create database: %v", err)
+		logger.Log.Fatalf("Database creation failed: %v", err)
 	}
 	logger.Log.Infof("Database %s ensured to exist", dbname)
 }

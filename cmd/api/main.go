@@ -7,8 +7,8 @@ import (
 	"syscall"
 	"time"
 
-	"interface-api/internal/logger"
 	"interface-api/internal/server"
+	"interface-api/pkg/logger"
 )
 
 // @title Shortmesh - Interface API
@@ -29,13 +29,13 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 	<-ctx.Done()
 
-	logger.Log.Info("shutting down gracefully, press Ctrl+C again to force")
+	logger.Log.Info("Shutting down gracefully, press Ctrl+C again to force")
 	stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := apiServer.Shutdown(ctx); err != nil {
-		logger.Log.Errorf("Server forced to shutdown with error: %v", err)
+		logger.Log.Errorf("Server shutdown error: %v", err)
 	}
 
 	logger.Log.Info("Server exiting")
@@ -44,8 +44,6 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 }
 
 func main() {
-	logger.Init()
-
 	srv := server.NewServer()
 
 	logger.Log.Infof("Starting server on %s", srv.Addr)
@@ -56,9 +54,9 @@ func main() {
 
 	err := srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		logger.Log.Fatalf("Server failed to start: %v", err)
+		logger.Log.Fatalf("Server startup failed: %v", err)
 	}
 
 	<-done
-	logger.Log.Info("Graceful shutdown complete.")
+	logger.Log.Info("Graceful shutdown complete")
 }

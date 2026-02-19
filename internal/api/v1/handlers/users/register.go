@@ -12,7 +12,7 @@ import (
 
 	"interface-api/internal/api/v1/handlers"
 	"interface-api/internal/database/models"
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 	"interface-api/pkg/masclient"
 	"interface-api/pkg/matrixclient"
 	"interface-api/pkg/password"
@@ -38,35 +38,35 @@ import (
 func (h *UserHandler) Create(c echo.Context) error {
 	var req CreateUserRequest
 	if err := c.Bind(&req); err != nil {
-		logger.Log.Errorf("Failed to bind request body: %v", err)
+		logger.Log.Infof("Registration failed: invalid request body - %v", err)
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body. Must be a JSON object.",
 		})
 	}
 
 	if strings.TrimSpace(req.Email) == "" {
-		logger.Log.Error("Missing required field: email")
+		logger.Log.Info("Registration failed: missing email")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: email",
 		})
 	}
 
 	if _, err := mail.ParseAddress(req.Email); err != nil {
-		logger.Log.Errorf("Invalid email format: %v", err)
+		logger.Log.Info("Registration failed: invalid email format")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid email format",
 		})
 	}
 
 	if strings.TrimSpace(req.Password) == "" {
-		logger.Log.Error("Missing required field: password")
+		logger.Log.Info("Registration failed: missing password")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: password",
 		})
 	}
 
 	if err := password.ValidatePassword(req.Password); err != nil {
-		logger.Log.Errorf("Invalid password: %v", err)
+		logger.Log.Infof("Registration failed: password validation - %v", err)
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: fmt.Sprintf("Invalid password: %v", err),
 		})
@@ -74,12 +74,12 @@ func (h *UserHandler) Create(c echo.Context) error {
 
 	_, err := models.FindUserByEmail(h.db.DB(), req.Email)
 	if err == nil {
-		logger.Log.Error("User with email already exists")
+		logger.Log.Info("Registration failed: email already exists")
 		return c.JSON(http.StatusConflict, ErrorResponse{
 			Error: "User with this email already exists",
 		})
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Log.Errorf("Failed to check email uniqueness: %v", err)
+		logger.Log.Errorf("Email uniqueness check error: %v", err)
 		return echo.ErrInternalServerError
 	}
 

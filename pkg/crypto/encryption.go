@@ -12,7 +12,7 @@ import (
 	"io"
 	"os"
 
-	"interface-api/internal/logger"
+	"interface-api/pkg/logger"
 
 	_ "github.com/joho/godotenv/autoload"
 )

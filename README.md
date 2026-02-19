@@ -129,16 +129,21 @@ ARGON2_KEY_LENGTH=32              # Hash output length in bytes
 #### RabbitMQ
 
 ```env
-RABBITMQ_URL=amqp://guest:guest@localhost:5672/  # RabbitMQ connection URL
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/       # RabbitMQ connection URL
+MESSAGE_EXCHANGE_NAME=shortmesh.messages              # Message exchange name (default: shortmesh.messages)
+MESSAGE_QUEUE_NAME=shortmesh-messages-queue           # Main message queue (default: shortmesh-messages-queue)
+MESSAGE_DELAY_QUEUE_NAME=shortmesh-messages-delay-queue # Delay queue for throttled messages (default: shortmesh-messages-delay-queue)
 ```
 
 ## Commands
 
 ```bash
-make run              # Start server
-make build            # Build binaries (api + migrate)
+make run              # Start API server
+make worker           # Start message worker (single instance)
+make worker-n N=5     # Start message worker with N concurrent workers
+make build            # Build binaries (api + migrate + worker)
 make test             # Run tests
-make docs          # Generate Swagger documentation
+make docs             # Generate Swagger documentation
 
 # Migrations
 make migrate-up       # Run pending migrations
@@ -146,6 +151,50 @@ make migrate-down     # Rollback last migration
 make migrate-status   # Show migration status
 make migrate-fresh    # Drop all and recreate
 ```
+
+## Worker Service
+
+The worker service processes outbound messages from RabbitMQ using a shared queue pattern with delayed retries for rate-limited messages.
+
+### Architecture
+
+- **Main Queue**: All workers consume from a single shared queue for round-robin message distribution
+- **Delay Queue**: Throttled messages are temporarily held with TTL, then automatically routed back to the main queue via Dead Letter Exchange (DLX)
+
+### Starting the Worker
+
+```bash
+# Single worker
+make worker
+
+# Multiple concurrent workers
+make worker-n N=10
+```
+
+### Message Format
+
+Messages published to the exchange must follow this JSON structure:
+
+```json
+{
+  "device_id": "device123",
+  "contact": "+1234567890",
+  "platform_name": "platform1",
+  "text": "Message content",
+  "username": "user1"
+}
+```
+
+### Configuration
+
+Queue names can be customized via environment variables (see RabbitMQ Configuration section above):
+
+- `MESSAGE_QUEUE_NAME` - Main worker queue
+- `MESSAGE_DELAY_QUEUE_NAME` - Delay queue for throttled messages
+
+### Throttling Configuration
+
+See [pkg/throttler/README.md](pkg/throttler/README.md) for throttler configuration and examples.
 
 ## API Documentation
 
@@ -160,3 +209,4 @@ make docs
 ## References
 
 - [Migration Guide](migrations/README.md) - Creating and managing database migrations
+- [Throttler documentation](pkg/throttler/README.md) - Guide on message rate limiting implementation

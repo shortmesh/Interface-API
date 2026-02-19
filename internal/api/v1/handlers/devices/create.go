@@ -21,7 +21,7 @@ import (
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param user body CreateDeviceRequest true "Device creation request"
+// @Param request body CreateDeviceRequest true "Device creation request"
 // @Success 201 {object} DeviceResponse "Requested to add device successfully"
 // @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
 // @Failure 500 {object} ErrorResponse "Internal server error"

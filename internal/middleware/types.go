@@ -6,6 +6,7 @@ type AuthMethod string
 
 const (
 	AuthMethodSession AuthMethod = "session"
+	AuthMethodAPIKey  AuthMethod = "apikey"
 )
 
 type AuthMiddleware struct {

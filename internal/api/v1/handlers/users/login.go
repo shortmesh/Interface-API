@@ -18,7 +18,7 @@ import (
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param credentials body LoginRequest true "Login credentials"
+// @Param request body LoginRequest true "Login credentials"
 // @Success 200 {object} UserResponse "Login successful"
 // @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
 // @Failure 401 {object} ErrorResponse "Invalid credentials"

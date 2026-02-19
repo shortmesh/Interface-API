@@ -31,7 +31,7 @@ type queuedMessage struct {
 // @Produce json
 // @Security BearerAuth
 // @Param device_id path string true "Device ID"
-// @Param message body SendMessageRequest true "Message to send"
+// @Param request body SendMessageRequest true "Message to send"
 // @Success 200 {object} SendMessageResponse "Message queued successfully"
 // @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
 // @Failure 500 {object} ErrorResponse "Internal server error"

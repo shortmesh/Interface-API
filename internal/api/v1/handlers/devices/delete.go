@@ -20,7 +20,7 @@ import (
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param user body DeleteDeviceRequest true "Device deletion request"
+// @Param request body DeleteDeviceRequest true "Device deletion request"
 // @Success 200 {object} DeviceResponse "Device deleted successfully"
 // @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
 // @Failure 500 {object} ErrorResponse "Internal server error"

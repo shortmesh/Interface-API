@@ -100,6 +100,12 @@ SESSION_DURATION_HOURS=720        # Session duration (default: 30 days)
 SESSION_TOKEN_PREFIX=sk_          # Prefix for session tokens
 ```
 
+#### API Keys
+
+```env
+API_KEY_PREFIX=ak_                # Prefix for API keys (default: ak_)
+```
+
 #### Password Policy
 
 ```env

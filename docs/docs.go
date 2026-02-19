@@ -15,6 +15,159 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/api-keys": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all API keys for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "apikeys"
+                ],
+                "summary": "List API keys",
+                "responses": {
+                    "200": {
+                        "description": "List of API keys",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ListAPIKeysResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new API key for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "apikeys"
+                ],
+                "summary": "Create a new API key",
+                "parameters": [
+                    {
+                        "description": "API key creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.CreateAPIKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "API key created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.APIKeyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an API key for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "apikeys"
+                ],
+                "summary": "Delete an API key",
+                "parameters": [
+                    {
+                        "description": "API key ID to delete",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.DeleteAPIKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API key deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "API key not found",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/apikeys.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Authenticate a user and return a session token",
@@ -31,7 +184,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Login credentials",
-                        "name": "credentials",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -120,7 +273,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "User creation request",
-                        "name": "user",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -218,7 +371,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Device creation request",
-                        "name": "user",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -267,7 +420,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Device deletion request",
-                        "name": "user",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -363,7 +516,7 @@ const docTemplate = `{
                     },
                     {
                         "description": "Message to send",
-                        "name": "message",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -395,6 +548,106 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "apikeys.APIKeyInfo": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-02-19T20:00:00Z"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-12-31T23:59:59Z"
+                },
+                "key_id": {
+                    "type": "string",
+                    "example": "a1b2c3d4e5f6g7h8"
+                },
+                "last_used_at": {
+                    "type": "string",
+                    "example": "2026-02-19T20:30:00Z"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Production API Key"
+                }
+            }
+        },
+        "apikeys.APIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apikeys.APIKeyInfo"
+                },
+                "key": {
+                    "type": "string",
+                    "example": "ak_123456789abcdef123456789abcdef123456789"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "API key created successfully"
+                }
+            }
+        },
+        "apikeys.CreateAPIKeyRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-12-31T23:59:59Z"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "example": "Production API Key"
+                }
+            }
+        },
+        "apikeys.DeleteAPIKeyRequest": {
+            "type": "object",
+            "required": [
+                "key_id"
+            ],
+            "properties": {
+                "key_id": {
+                    "type": "string",
+                    "example": "a1b2c3d4e5f6g7h8"
+                }
+            }
+        },
+        "apikeys.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "message"
+                }
+            }
+        },
+        "apikeys.ListAPIKeysResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apikeys.APIKeyInfo"
+                    }
+                }
+            }
+        },
+        "apikeys.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "API key deleted successfully"
+                }
+            }
+        },
         "devices.CreateDeviceRequest": {
             "type": "object",
             "required": [

@@ -1,4 +1,73 @@
 definitions:
+  apikeys.APIKeyInfo:
+    properties:
+      created_at:
+        example: "2026-02-19T20:00:00Z"
+        type: string
+      expires_at:
+        example: "2026-12-31T23:59:59Z"
+        type: string
+      key_id:
+        example: a1b2c3d4e5f6g7h8
+        type: string
+      last_used_at:
+        example: "2026-02-19T20:30:00Z"
+        type: string
+      name:
+        example: Production API Key
+        type: string
+    type: object
+  apikeys.APIKeyResponse:
+    properties:
+      data:
+        $ref: '#/definitions/apikeys.APIKeyInfo'
+      key:
+        example: ak_123456789abcdef123456789abcdef123456789
+        type: string
+      message:
+        example: API key created successfully
+        type: string
+    type: object
+  apikeys.CreateAPIKeyRequest:
+    properties:
+      expires_at:
+        example: "2026-12-31T23:59:59Z"
+        type: string
+      name:
+        example: Production API Key
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  apikeys.DeleteAPIKeyRequest:
+    properties:
+      key_id:
+        example: a1b2c3d4e5f6g7h8
+        type: string
+    required:
+    - key_id
+    type: object
+  apikeys.ErrorResponse:
+    properties:
+      error:
+        example: message
+        type: string
+    type: object
+  apikeys.ListAPIKeysResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apikeys.APIKeyInfo'
+        type: array
+    type: object
+  apikeys.MessageResponse:
+    properties:
+      message:
+        example: API key deleted successfully
+        type: string
+    type: object
   devices.CreateDeviceRequest:
     properties:
       platform:
@@ -116,6 +185,103 @@ info:
   title: Shortmesh - Interface API
   version: "1.0"
 paths:
+  /api/v1/api-keys:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an API key for the authenticated user
+      parameters:
+      - description: API key ID to delete
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/apikeys.DeleteAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API key deleted successfully
+          schema:
+            $ref: '#/definitions/apikeys.MessageResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+        "404":
+          description: API key not found
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an API key
+      tags:
+      - apikeys
+    get:
+      description: Get all API keys for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of API keys
+          schema:
+            $ref: '#/definitions/apikeys.ListAPIKeysResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List API keys
+      tags:
+      - apikeys
+    post:
+      consumes:
+      - application/json
+      description: Create a new API key for the authenticated user
+      parameters:
+      - description: API key creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/apikeys.CreateAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: API key created successfully
+          schema:
+            $ref: '#/definitions/apikeys.APIKeyResponse'
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/apikeys.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new API key
+      tags:
+      - apikeys
   /api/v1/auth/login:
     post:
       consumes:
@@ -124,7 +290,7 @@ paths:
       parameters:
       - description: Login credentials
         in: body
-        name: credentials
+        name: request
         required: true
         schema:
           $ref: '#/definitions/users.LoginRequest'
@@ -181,7 +347,7 @@ paths:
       parameters:
       - description: User creation request
         in: body
-        name: user
+        name: request
         required: true
         schema:
           $ref: '#/definitions/users.CreateUserRequest'
@@ -215,7 +381,7 @@ paths:
       parameters:
       - description: Device deletion request
         in: body
-        name: user
+        name: request
         required: true
         schema:
           $ref: '#/definitions/devices.DeleteDeviceRequest'
@@ -272,7 +438,7 @@ paths:
       parameters:
       - description: Device creation request
         in: body
-        name: user
+        name: request
         required: true
         schema:
           $ref: '#/definitions/devices.CreateDeviceRequest'
@@ -309,7 +475,7 @@ paths:
         type: string
       - description: Message to send
         in: body
-        name: message
+        name: request
         required: true
         schema:
           $ref: '#/definitions/devices.SendMessageRequest'

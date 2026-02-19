@@ -29,7 +29,7 @@ import (
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param user body CreateUserRequest true "User creation request"
+// @Param request body CreateUserRequest true "User creation request"
 // @Success 201 {object} UserResponse "User created successfully"
 // @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
 // @Failure 409 {object} ErrorResponse "User with email already exists"

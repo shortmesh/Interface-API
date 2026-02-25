@@ -89,7 +89,6 @@ make docs             # Generate Swagger docs
 make migrate-up       # Run pending
 make migrate-down     # Rollback last
 make migrate-status   # Show status
-make migrate-fresh    # Drop & recreate
 ```
 
 See [Migration Guide](docs/MIGRATIONS.md) for details.

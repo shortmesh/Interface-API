@@ -139,44 +139,6 @@ func (m *Manager) Down(steps int) error {
 	return nil
 }
 
-func (m *Manager) Fresh() error {
-	logger.Log.Info("Running fresh migration (dropping all tables)")
-
-	if err := m.EnsureMigrationTable(); err != nil {
-		return fmt.Errorf("migration table creation failed: %w", err)
-	}
-
-	var appliedMigrations []Migration
-	if err := m.db.Find(&appliedMigrations).Error; err != nil {
-		return fmt.Errorf("applied migrations lookup failed: %w", err)
-	}
-
-	for i := len(appliedMigrations) - 1; i >= 0; i-- {
-		applied := appliedMigrations[i]
-		var script Script
-		for _, s := range m.scripts {
-			if s.Version() == applied.Version {
-				script = s
-				break
-			}
-		}
-
-		if script != nil {
-			logger.Log.Infof("Dropping tables for migration %s", script.Version())
-			if err := script.Down(m.db); err != nil {
-				logger.Log.Warnf("Migration %s rollback failed: %v", script.Version(), err)
-			}
-		}
-	}
-
-	if err := m.db.Migrator().DropTable(&Migration{}); err != nil {
-		logger.Log.Warnf("Migrations table drop failed: %v", err)
-	}
-
-	logger.Log.Info("All tables dropped, running migrations")
-	return m.Up()
-}
-
 func (m *Manager) Status() error {
 	if err := m.EnsureMigrationTable(); err != nil {
 		return fmt.Errorf("migration table creation failed: %w", err)

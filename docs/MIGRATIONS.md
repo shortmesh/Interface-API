@@ -8,7 +8,6 @@ Database migration guide.
 make migrate-up          # Run pending migrations
 make migrate-status      # Show status
 make migrate-down        # Rollback last migration
-make migrate-fresh       # Drop all and recreate
 ```
 
 Or use the binary:

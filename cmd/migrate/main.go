@@ -37,12 +37,10 @@ func main() {
 		err = manager.Up()
 	case "down":
 		err = manager.Down(steps)
-	case "fresh":
-		err = manager.Fresh()
 	case "status":
 		err = manager.Status()
 	default:
-		logger.Log.Fatalf("Invalid action: %s. Use: up, down, fresh, or status", action)
+		logger.Log.Fatalf("Invalid action: %s. Use: up, down, or status", action)
 	}
 
 	if err != nil {
@@ -64,7 +62,6 @@ func init() {
 		fmt.Fprintf(os.Stderr, "  migrate -action=up                    # Run all pending migrations\n")
 		fmt.Fprintf(os.Stderr, "  migrate -action=down -steps=1         # Rollback last migration\n")
 		fmt.Fprintf(os.Stderr, "  migrate -action=down -steps=3         # Rollback last 3 migrations\n")
-		fmt.Fprintf(os.Stderr, "  migrate -action=fresh                 # Drop all tables and recreate\n")
 		fmt.Fprintf(os.Stderr, "  migrate -action=status                # Show migration status\n\n")
 		fmt.Fprintf(os.Stderr, "Environment Variables:\n")
 		fmt.Fprintf(os.Stderr, "  AUTO_MIGRATE=true                     # Auto-run migrations on app start\n")

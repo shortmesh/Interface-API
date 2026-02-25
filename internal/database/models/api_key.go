@@ -8,7 +8,6 @@ import (
 	"interface-api/pkg/crypto"
 
 	"github.com/google/uuid"
-	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/gorm"
 )
 

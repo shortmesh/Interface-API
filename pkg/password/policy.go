@@ -12,13 +12,11 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
 var (
-	ErrPasswordTooShort       = errors.New("password must be at least 8 characters")
-	ErrPasswordTooLong        = errors.New("password exceeds maximum length of 64 characters")
+	ErrPasswordTooShort       = errors.New("password must be at least %d characters")
+	ErrPasswordTooLong        = errors.New("password exceeds maximum length of %d characters")
 	ErrPasswordPwned          = errors.New("password has been exposed in a data breach")
 	ErrPasswordContainsSpaces = errors.New("password cannot contain leading or trailing spaces")
 )
@@ -106,11 +104,11 @@ func ValidatePassword(password string) error {
 
 	length := utf8.RuneCountInString(password)
 	if length < config.MinLength {
-		return ErrPasswordTooShort
+		return fmt.Errorf(ErrPasswordTooShort.Error(), config.MinLength)
 	}
 
 	if length > config.MaxLength {
-		return ErrPasswordTooLong
+		return fmt.Errorf(ErrPasswordTooLong.Error(), config.MaxLength)
 	}
 
 	if config.CheckSpaces {

@@ -24,17 +24,18 @@ import (
 )
 
 // Create godoc
-// @Summary Create a new user
-// @Description Create a new user account.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body CreateUserRequest true "User creation request"
-// @Success 201 {object} UserResponse "User created successfully"
-// @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
-// @Failure 409 {object} ErrorResponse "User with email already exists"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/auth/register [post]
+//
+//	@Summary		Create a new user
+//	@Description	Create a new user account.
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		CreateUserRequest	true	"User creation request"
+//	@Success		201		{object}	UserResponse		"User created successfully"
+//	@Failure		400		{object}	ErrorResponse		"Invalid request body or validation error"
+//	@Failure		409		{object}	ErrorResponse		"User with email already exists"
+//	@Failure		500		{object}	ErrorResponse		"Internal server error"
+//	@Router			/api/v1/auth/register [post]
 func (h *UserHandler) Create(c echo.Context) error {
 	var req CreateUserRequest
 	if err := c.Bind(&req); err != nil {

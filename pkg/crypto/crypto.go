@@ -11,10 +11,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"interface-api/pkg/logger"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
 var (
@@ -24,25 +20,6 @@ var (
 	ErrInvalidKeyFormat  = errors.New("key must be base64 encoded")
 	ErrInvalidKeySize    = errors.New("key must be exactly 32 bytes when decoded")
 )
-
-var (
-	encryptionKey []byte
-	hashKey       []byte
-)
-
-func init() {
-	var err error
-
-	encryptionKey, err = getKey("ENCRYPTION_KEY")
-	if err != nil {
-		logger.Log.Errorf("Failed to load ENCRYPTION_KEY: %v", err)
-	}
-
-	hashKey, err = getKey("HASH_KEY")
-	if err != nil {
-		logger.Log.Errorf("Failed to load HASH_KEY: %v", err)
-	}
-}
 
 func getKey(envVar string) ([]byte, error) {
 	keyStr := os.Getenv(envVar)
@@ -63,6 +40,10 @@ func getKey(envVar string) ([]byte, error) {
 }
 
 func Encrypt(plaintext string) ([]byte, error) {
+	encryptionKey, err := getKey("ENCRYPTION_KEY")
+	if err != nil {
+		return nil, err
+	}
 	if encryptionKey == nil {
 		return nil, ErrMissingEncryptKey
 	}
@@ -88,6 +69,10 @@ func Encrypt(plaintext string) ([]byte, error) {
 }
 
 func Decrypt(ciphertext []byte) (string, error) {
+	encryptionKey, err := getKey("ENCRYPTION_KEY")
+	if err != nil {
+		return "", err
+	}
 	if encryptionKey == nil {
 		return "", ErrMissingEncryptKey
 	}
@@ -134,6 +119,10 @@ func DecryptFromBase64(ciphertextB64 string) (string, error) {
 }
 
 func Hash(data string) ([]byte, error) {
+	hashKey, err := getKey("HASH_KEY")
+	if err != nil {
+		return nil, err
+	}
 	if hashKey == nil {
 		return nil, ErrMissingHashKey
 	}

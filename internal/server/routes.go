@@ -3,15 +3,13 @@ package server
 import (
 	"net/http"
 
+	"interface-api/docs"
 	v1 "interface-api/internal/api/v1"
 	"interface-api/pkg/logger"
 
-	_ "interface-api/docs"
-
-	echoSwagger "github.com/swaggo/echo-swagger"
-
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -103,7 +101,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 		MaxAge:           300,
 	}))
 
-	e.GET("/docs/*", echoSwagger.WrapHandler)
+	e.GET("/docs/*", func(c echo.Context) error {
+		docs.SwaggerInfo.Host = c.Request().Host
+		return echoSwagger.WrapHandler(c)
+	})
 
 	apiV1 := e.Group("/api/v1")
 	v1.RegisterRoutes(apiV1, s.db)

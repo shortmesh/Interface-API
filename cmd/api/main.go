@@ -9,21 +9,24 @@ import (
 
 	"interface-api/internal/server"
 	"interface-api/pkg/logger"
+	"interface-api/pkg/worker"
+
+	"github.com/joho/godotenv"
 )
 
-// @title Shortmesh - Interface API
-// @version 1.0
-// @description API for ShortMesh Interface service
+//	@title			Shortmesh - Interface API
+//	@version		1.0
+//	@description	API for ShortMesh Interface service
 
-// @host localhost:8080
-// @schemes http
+//	@host		localhost:8080
+//	@schemes	http
 
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Enter your token in the format: Bearer {token}
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Enter your token in the format: Bearer {token}
 
-func gracefulShutdown(apiServer *http.Server, done chan bool) {
+func gracefulShutdown(apiServer *http.Server, w *worker.Worker, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -31,6 +34,10 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 	logger.Log.Info("Shutting down gracefully, press Ctrl+C again to force")
 	stop()
+
+	if w != nil {
+		w.Stop()
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -44,13 +51,23 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 }
 
 func main() {
+	godotenv.Load(".env.default", ".env")
+
+	var w *worker.Worker
+	if worker.IsEnabled() {
+		w = worker.New()
+		w.Start()
+	} else {
+		logger.Log.Info("Worker disabled via WORKER_ENABLED=false")
+	}
+
 	srv := server.NewServer()
 
 	logger.Log.Infof("Starting server on %s", srv.Addr)
 
 	done := make(chan bool, 1)
 
-	go gracefulShutdown(srv, done)
+	go gracefulShutdown(srv, w, done)
 
 	err := srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

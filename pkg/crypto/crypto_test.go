@@ -9,7 +9,6 @@ import (
 func TestEncryptDecrypt(t *testing.T) {
 	testKey := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 	os.Setenv("ENCRYPTION_KEY", testKey)
-	encryptionKey, _ = getKey("ENCRYPTION_KEY")
 
 	tests := []struct {
 		name      string
@@ -51,7 +50,6 @@ func TestEncryptDecrypt(t *testing.T) {
 func TestEncryptToBase64(t *testing.T) {
 	testKey := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 	os.Setenv("ENCRYPTION_KEY", testKey)
-	encryptionKey, _ = getKey("ENCRYPTION_KEY")
 
 	plaintext := "test@example.com"
 
@@ -77,7 +75,6 @@ func TestEncryptToBase64(t *testing.T) {
 
 func TestEncryptWithoutKey(t *testing.T) {
 	os.Setenv("ENCRYPTION_KEY", "")
-	encryptionKey = nil
 
 	_, err := Encrypt("test")
 	if err != ErrMissingEncryptKey {
@@ -93,7 +90,6 @@ func TestEncryptWithoutKey(t *testing.T) {
 func TestHash(t *testing.T) {
 	testKey := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 	os.Setenv("HASH_KEY", testKey)
-	hashKey, _ = getKey("HASH_KEY")
 
 	tests := []struct {
 		name  string
@@ -141,7 +137,6 @@ func TestHash(t *testing.T) {
 func TestHashToBase64(t *testing.T) {
 	testKey := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 	os.Setenv("HASH_KEY", testKey)
-	hashKey, _ = getKey("HASH_KEY")
 
 	data := "test@example.com"
 

@@ -1,4 +1,3 @@
-// Package logger provides structured logging configuration.
 package logger
 
 import (
@@ -6,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	gormlogger "gorm.io/gorm/logger"
 )
@@ -14,6 +13,7 @@ import (
 var Log *logrus.Logger
 
 func init() {
+	godotenv.Load()
 	Log = logrus.New()
 
 	Log.SetFormatter(&logrus.TextFormatter{

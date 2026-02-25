@@ -6,7 +6,6 @@ import (
 
 	"interface-api/pkg/crypto"
 
-	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/gorm"
 )
 

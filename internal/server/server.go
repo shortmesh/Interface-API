@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"interface-api/internal/database"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
 type Server struct {

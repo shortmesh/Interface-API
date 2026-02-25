@@ -12,18 +12,19 @@ import (
 )
 
 // Create godoc
-// @Summary Create a new API key
-// @Description Create a new API key for the authenticated user
-// @Tags apikeys
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body CreateAPIKeyRequest true "API key creation request"
-// @Success 201 {object} APIKeyResponse "API key created successfully"
-// @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
-// @Failure 401 {object} ErrorResponse "Unauthorized"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/api-keys [post]
+//
+//	@Summary		Create a new API key
+//	@Description	Create a new API key for the authenticated user
+//	@Tags			apikeys
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		CreateAPIKeyRequest	true	"API key creation request"
+//	@Success		201		{object}	APIKeyResponse		"API key created successfully"
+//	@Failure		400		{object}	ErrorResponse		"Invalid request body or validation error"
+//	@Failure		401		{object}	ErrorResponse		"Unauthorized"
+//	@Failure		500		{object}	ErrorResponse		"Internal server error"
+//	@Router			/api/v1/api-keys [post]
 func (h *APIKeyHandler) Create(c echo.Context) error {
 	user := c.Get("user").(*models.User)
 

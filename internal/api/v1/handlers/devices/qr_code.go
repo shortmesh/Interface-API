@@ -16,16 +16,17 @@ import (
 )
 
 // QRCode godoc
-// @Summary WebSocket qr-code endpoint (Not executable in Swagger UI)
-// @Description Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
-// @Tags devices
-// @Security BearerAuth
-// @Produce json
-// @Success 101 {string} string "WebSocket connection established"
-// @Failure 401 {object} ErrorResponse "Missing or invalid authentication token"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/devices/qr-code [get]
-// @deprecated
+//
+//	@Summary		WebSocket qr-code endpoint (Not executable in Swagger UI)
+//	@Description	Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
+//	@Tags			devices
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		101	{string}	string			"WebSocket connection established"
+//	@Failure		401	{object}	ErrorResponse	"Missing or invalid authentication token"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/api/v1/devices/qr-code [get]
+//	@deprecated
 func (h *DeviceHandler) QRCode(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {

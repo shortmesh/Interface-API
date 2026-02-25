@@ -11,15 +11,16 @@ import (
 )
 
 // List godoc
-// @Summary List API keys
-// @Description Get all API keys for the authenticated user
-// @Tags apikeys
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {object} ListAPIKeysResponse "List of API keys"
-// @Failure 401 {object} ErrorResponse "Unauthorized"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/api-keys [get]
+//
+//	@Summary		List API keys
+//	@Description	Get all API keys for the authenticated user
+//	@Tags			apikeys
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	ListAPIKeysResponse	"List of API keys"
+//	@Failure		401	{object}	ErrorResponse		"Unauthorized"
+//	@Failure		500	{object}	ErrorResponse		"Internal server error"
+//	@Router			/api/v1/api-keys [get]
 func (h *APIKeyHandler) List(c echo.Context) error {
 	user := c.Get("user").(*models.User)
 

@@ -1,14 +1,10 @@
 package database
 
 import (
-	"os"
-
 	"interface-api/internal/database/models"
 	"interface-api/migrations"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/migrator"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
 func (s *service) CreateTables() error {
@@ -41,9 +37,8 @@ func (s *service) RunMigrations() error {
 	return nil
 }
 
-func (s *service) AutoMigrate() error {
-	autoCreateTables := os.Getenv("AUTO_CREATE_TABLES")
-	if autoCreateTables == "true" {
+func (s *service) AutoMigrate(createTables bool) error {
+	if createTables {
 		if err := s.CreateTables(); err != nil {
 			return err
 		}

@@ -3,8 +3,6 @@ package password
 import (
 	"os"
 	"testing"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
 func TestValidatePassword(t *testing.T) {

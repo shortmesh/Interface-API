@@ -15,17 +15,18 @@ import (
 )
 
 // Create godoc
-// @Summary Create a new device
-// @Description Create a new device for the authenticated user
-// @Tags devices
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body CreateDeviceRequest true "Device creation request"
-// @Success 201 {object} DeviceResponse "Requested to add device successfully"
-// @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/devices [post]
+//
+//	@Summary		Create a new device
+//	@Description	Create a new device for the authenticated user
+//	@Tags			devices
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		CreateDeviceRequest	true	"Device creation request"
+//	@Success		201		{object}	DeviceResponse		"Requested to add device successfully"
+//	@Failure		400		{object}	ErrorResponse		"Invalid request body or validation error"
+//	@Failure		500		{object}	ErrorResponse		"Internal server error"
+//	@Router			/api/v1/devices [post]
 func (h *DeviceHandler) Create(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {

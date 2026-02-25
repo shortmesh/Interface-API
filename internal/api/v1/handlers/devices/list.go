@@ -10,16 +10,17 @@ import (
 )
 
 // List godoc
-// @Summary List all devices
-// @Description List all devices for the authenticated user
-// @Tags devices
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} Device "List of devices"
-// @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/devices [get]
+//
+//	@Summary		List all devices
+//	@Description	List all devices for the authenticated user
+//	@Tags			devices
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{array}		Device			"List of devices"
+//	@Failure		400	{object}	ErrorResponse	"Invalid request body or validation error"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/api/v1/devices [get]
 func (h *DeviceHandler) List(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {

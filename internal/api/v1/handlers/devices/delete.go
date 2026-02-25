@@ -14,17 +14,18 @@ import (
 )
 
 // Delete godoc
-// @Summary Delete a device
-// @Description Delete a device for the authenticated user
-// @Tags devices
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body DeleteDeviceRequest true "Device deletion request"
-// @Success 200 {object} DeviceResponse "Device deleted successfully"
-// @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/devices [delete]
+//
+//	@Summary		Delete a device
+//	@Description	Delete a device for the authenticated user
+//	@Tags			devices
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		DeleteDeviceRequest	true	"Device deletion request"
+//	@Success		200		{object}	DeviceResponse		"Device deleted successfully"
+//	@Failure		400		{object}	ErrorResponse		"Invalid request body or validation error"
+//	@Failure		500		{object}	ErrorResponse		"Internal server error"
+//	@Router			/api/v1/devices [delete]
 func (h *DeviceHandler) Delete(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {

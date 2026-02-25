@@ -10,10 +10,12 @@ import (
 	"interface-api/pkg/logger"
 	"interface-api/pkg/migrator"
 
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load(".env.default", ".env")
+
 	var (
 		action string
 		steps  int

@@ -11,19 +11,20 @@ import (
 )
 
 // Delete godoc
-// @Summary Delete an API key
-// @Description Delete an API key for the authenticated user
-// @Tags apikeys
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body DeleteAPIKeyRequest true "API key ID to delete"
-// @Success 200 {object} MessageResponse "API key deleted successfully"
-// @Failure 400 {object} ErrorResponse "Invalid request body"
-// @Failure 401 {object} ErrorResponse "Unauthorized"
-// @Failure 404 {object} ErrorResponse "API key not found"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/api-keys [delete]
+//
+//	@Summary		Delete an API key
+//	@Description	Delete an API key for the authenticated user
+//	@Tags			apikeys
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		DeleteAPIKeyRequest	true	"API key ID to delete"
+//	@Success		200		{object}	MessageResponse		"API key deleted successfully"
+//	@Failure		400		{object}	ErrorResponse		"Invalid request body"
+//	@Failure		401		{object}	ErrorResponse		"Unauthorized"
+//	@Failure		404		{object}	ErrorResponse		"API key not found"
+//	@Failure		500		{object}	ErrorResponse		"Internal server error"
+//	@Router			/api/v1/api-keys [delete]
 func (h *APIKeyHandler) Delete(c echo.Context) error {
 	user := c.Get("user").(*models.User)
 

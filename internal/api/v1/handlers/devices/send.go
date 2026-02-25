@@ -24,18 +24,19 @@ type queuedMessage struct {
 }
 
 // SendMessage godoc
-// @Summary Send a message via device
-// @Description Queue a message to be sent via the specified device
-// @Tags devices
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param device_id path string true "Device ID"
-// @Param request body SendMessageRequest true "Message to send"
-// @Success 200 {object} SendMessageResponse "Message queued successfully"
-// @Failure 400 {object} ErrorResponse "Invalid request body or validation error"
-// @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /api/v1/devices/{device_id}/message [post]
+//
+//	@Summary		Send a message via device
+//	@Description	Queue a message to be sent via the specified device
+//	@Tags			devices
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			device_id	path		string				true	"Device ID"
+//	@Param			request		body		SendMessageRequest	true	"Message to send"
+//	@Success		200			{object}	SendMessageResponse	"Message queued successfully"
+//	@Failure		400			{object}	ErrorResponse		"Invalid request body or validation error"
+//	@Failure		500			{object}	ErrorResponse		"Internal server error"
+//	@Router			/api/v1/devices/{device_id}/message [post]
 func (h *DeviceHandler) SendMessage(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {

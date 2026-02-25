@@ -4,15 +4,10 @@ import (
 	"os"
 	"strconv"
 
+	"interface-api/pkg/logger"
+
 	"github.com/alexedwards/argon2id"
-	_ "github.com/joho/godotenv/autoload"
 )
-
-var argon2Params *argon2id.Params
-
-func init() {
-	argon2Params = getArgon2Params()
-}
 
 func getArgon2Params() *argon2id.Params {
 	params := &argon2id.Params{
@@ -53,11 +48,19 @@ func getArgon2Params() *argon2id.Params {
 		}
 	}
 
+	logger.Log.Debugf(
+		"Argon2 params: mem=%dKB iter=%d par=%d salt=%dB key=%dB",
+		params.Memory,
+		params.Iterations,
+		params.Parallelism,
+		params.SaltLength,
+		params.KeyLength,
+	)
 	return params
 }
 
 func HashPassword(password string) (string, error) {
-	return argon2id.CreateHash(password, argon2Params)
+	return argon2id.CreateHash(password, getArgon2Params())
 }
 
 func VerifyPassword(password, hash string) (bool, error) {

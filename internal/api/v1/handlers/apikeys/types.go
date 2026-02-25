@@ -25,9 +25,7 @@ type APIKeyInfo struct {
 }
 
 // ListAPIKeysResponse represents the response for listing API keys
-type ListAPIKeysResponse struct {
-	APIKeys []APIKeyInfo `json:"data"`
-}
+type ListAPIKeysResponse []APIKeyInfo
 
 // DeleteAPIKeyRequest represents the request body for deleting an API key
 type DeleteAPIKeyRequest struct {

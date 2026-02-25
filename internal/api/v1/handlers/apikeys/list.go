@@ -30,9 +30,7 @@ func (h *APIKeyHandler) List(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	response := ListAPIKeysResponse{
-		APIKeys: make([]APIKeyInfo, len(apiKeys)),
-	}
+	response := make(ListAPIKeysResponse, len(apiKeys))
 
 	for i, key := range apiKeys {
 		var expiresAtStr *string
@@ -47,7 +45,7 @@ func (h *APIKeyHandler) List(c echo.Context) error {
 			lastUsedAtStr = &str
 		}
 
-		response.APIKeys[i] = APIKeyInfo{
+		response[i] = APIKeyInfo{
 			KeyID:      key.KeyID,
 			Name:       key.Name,
 			ExpiresAt:  expiresAtStr,

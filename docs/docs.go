@@ -34,7 +34,10 @@ const docTemplate = `{
                     "200": {
                         "description": "List of API keys",
                         "schema": {
-                            "$ref": "#/definitions/apikeys.ListAPIKeysResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/apikeys.APIKeyInfo"
+                            }
                         }
                     },
                     "401": {
@@ -625,17 +628,6 @@ const docTemplate = `{
                 "error": {
                     "type": "string",
                     "example": "message"
-                }
-            }
-        },
-        "apikeys.ListAPIKeysResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/apikeys.APIKeyInfo"
-                    }
                 }
             }
         },

@@ -55,13 +55,6 @@ definitions:
         example: message
         type: string
     type: object
-  apikeys.ListAPIKeysResponse:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/apikeys.APIKeyInfo'
-        type: array
-    type: object
   apikeys.MessageResponse:
     properties:
       message:
@@ -233,7 +226,9 @@ paths:
         "200":
           description: List of API keys
           schema:
-            $ref: '#/definitions/apikeys.ListAPIKeysResponse'
+            items:
+              $ref: '#/definitions/apikeys.APIKeyInfo'
+            type: array
         "401":
           description: Unauthorized
           schema:

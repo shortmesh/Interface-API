@@ -24,6 +24,15 @@ jobs:
         run: |
           make build
 
+      - name: Stop service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl stop interface-api
+
       - name: Upload binary via SSH
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -34,12 +43,12 @@ jobs:
           target: "/srv/Interface-API/"
           overwrite: true
 
-      - name: Restart service
+      - name: Start service
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            sudo systemctl restart interface-api
-            sudo systemctl status interface-api --no-pager
+            sudo systemctl start interface-api
+            sudo systemctl is-active interface-api

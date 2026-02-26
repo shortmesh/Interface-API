@@ -42,6 +42,11 @@ cp .env.example .env
 # Or use: make setup (auto-generates keys)
 ```
 
+### Server Configuration
+
+- `HOST` - Host address the server will bind to (default: `127.0.0.1`)
+- `PORT` - Port the server will listen on (default: `8080`)
+
 ### Required Environment Variables
 
 The following environment variables **must** be set for the application to function properly:

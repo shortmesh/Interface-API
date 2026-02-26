@@ -12,18 +12,25 @@ import (
 
 type Server struct {
 	port int
+	host string
 	db   database.Service
 }
 
 func NewServer() *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
+
 	NewServer := &Server{
 		port: port,
+		host: host,
 		db:   database.New(),
 	}
 
 	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", NewServer.port),
+		Addr:              fmt.Sprintf("%s:%d", NewServer.host, NewServer.port),
 		Handler:           NewServer.RegisterRoutes(),
 		IdleTimeout:       time.Minute,
 		ReadTimeout:       10 * time.Second,

@@ -24,10 +24,10 @@ setup:
 
 build:
 	@echo "Building..."
-	@go build -o bin/api cmd/api/main.go
-	@go build -o bin/migrate cmd/migrate/main.go
-	@go build -o bin/qr-worker cmd/qr-worker/main.go
-	@go build -o bin/worker cmd/worker/main.go
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/api cmd/api/main.go
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/migrate cmd/migrate/main.go
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/qr-worker cmd/qr-worker/main.go
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/worker cmd/worker/main.go
 
 run:
 	@go run cmd/api/main.go

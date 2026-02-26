@@ -7,7 +7,6 @@ import (
 
 	"interface-api/docs"
 	v1 "interface-api/internal/api/v1"
-	"interface-api/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

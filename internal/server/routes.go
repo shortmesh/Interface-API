@@ -1,7 +1,9 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 
 	"interface-api/docs"
 	v1 "interface-api/internal/api/v1"
@@ -47,46 +49,19 @@ func (s *Server) RegisterRoutes() http.Handler {
 		LogLatency:  true,
 		LogError:    true,
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			if v.Status >= 500 {
-				logger.Log.Errorf(`%s - - [%s] "%s %s %s" %d %d "%s" "%s" %v`,
-					v.RemoteIP,
-					v.StartTime.Format("2006-01-02 15:04:05"),
-					v.Method,
-					v.URI,
-					c.Request().Proto,
-					v.Status,
-					v.ResponseSize,
-					c.Request().Referer(),
-					c.Request().UserAgent(),
-					v.Latency,
-				)
-			} else if v.Status >= 400 {
-				logger.Log.Warnf(`%s - - [%s] "%s %s %s" %d %d "%s" "%s" %v`,
-					v.RemoteIP,
-					v.StartTime.Format("2006-01-02 15:04:05"),
-					v.Method,
-					v.URI,
-					c.Request().Proto,
-					v.Status,
-					v.ResponseSize,
-					c.Request().Referer(),
-					c.Request().UserAgent(),
-					v.Latency,
-				)
-			} else {
-				logger.Log.Infof(`%s - - [%s] "%s %s %s" %d %d "%s" "%s" %v`,
-					v.RemoteIP,
-					v.StartTime.Format("2006-01-02 15:04:05"),
-					v.Method,
-					v.URI,
-					c.Request().Proto,
-					v.Status,
-					v.ResponseSize,
-					c.Request().Referer(),
-					c.Request().UserAgent(),
-					v.Latency,
-				)
-			}
+			logLine := fmt.Sprintf(`%s - - [%s] "%s %s %s" %d %d "%s" "%s" %v`,
+				v.RemoteIP,
+				v.StartTime.Format("2006-01-02 15:04:05"),
+				v.Method,
+				v.URI,
+				c.Request().Proto,
+				v.Status,
+				v.ResponseSize,
+				c.Request().Referer(),
+				c.Request().UserAgent(),
+				v.Latency,
+			)
+			fmt.Fprintln(os.Stdout, logLine)
 			return nil
 		},
 	}))

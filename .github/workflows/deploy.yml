@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            sudo systemctl stop interface-api
+            systemctl stop interface-api
 
       - name: Upload binary via SSH
         uses: appleboy/scp-action@v0.1.7
@@ -50,5 +50,5 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            sudo systemctl start interface-api
-            sudo systemctl is-active interface-api
+            systemctl start interface-api
+            systemctl is-active interface-api

@@ -14,7 +14,7 @@ import (
 func main() {
 	godotenv.Load(".env.default", ".env")
 
-	logger.Log.Info("Starting standalone message worker service")
+	logger.Info("Starting standalone message worker service")
 
 	w := worker.New()
 	w.Start()
@@ -23,7 +23,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
-	logger.Log.Info("Shutting down workers")
+	logger.Info("Shutting down workers")
 	w.Stop()
-	logger.Log.Info("All workers stopped")
+	logger.Info("All workers stopped")
 }

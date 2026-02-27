@@ -25,7 +25,7 @@ func main() {
 	flag.IntVar(&steps, "steps", 1, "Number of migrations to rollback (only for 'down' action)")
 	flag.Parse()
 
-	logger.Log.Infof("Migration action: %s", action)
+	logger.Info(fmt.Sprintf("Migration action: %s", action))
 
 	db := database.New()
 	scripts := migrations.GetAllMigrations()
@@ -40,14 +40,16 @@ func main() {
 	case "status":
 		err = manager.Status()
 	default:
-		logger.Log.Fatalf("Invalid action: %s. Use: up, down, or status", action)
+		logger.Error(fmt.Sprintf("Invalid action: %s. Use: up, down, or status", action))
+		os.Exit(1)
 	}
 
 	if err != nil {
-		logger.Log.Fatalf("Migration failed: %v", err)
+		logger.Error(fmt.Sprintf("Migration failed: %v", err))
+		os.Exit(1)
 	}
 
-	logger.Log.Info("Migration completed successfully")
+	logger.Info("Migration completed successfully")
 }
 
 func init() {

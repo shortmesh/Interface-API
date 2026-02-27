@@ -56,11 +56,11 @@ func (m *Manager) Up() error {
 		}
 
 		if isApplied {
-			logger.Log.Infof("Migration %s (%s) already applied, skipping", script.Version(), script.Name())
+			logger.Info(fmt.Sprintf("Migration %s (%s) already applied, skipping", script.Version(), script.Name()))
 			continue
 		}
 
-		logger.Log.Infof("Applying migration %s: %s", script.Version(), script.Name())
+		logger.Info(fmt.Sprintf("Applying migration %s: %s", script.Version(), script.Name()))
 
 		if err := script.Up(m.db); err != nil {
 			return fmt.Errorf("migration %s failed: %w", script.Version(), err)
@@ -70,14 +70,14 @@ func (m *Manager) Up() error {
 			return fmt.Errorf("migration %s record failed: %w", script.Version(), err)
 		}
 
-		logger.Log.Infof("Successfully applied migration %s", script.Version())
+		logger.Info(fmt.Sprintf("Successfully applied migration %s", script.Version()))
 		applied++
 	}
 
 	if applied == 0 {
-		logger.Log.Info("No new migrations to apply")
+		logger.Info("No new migrations to apply")
 	} else {
-		logger.Log.Infof("Applied %d migration(s)", applied)
+		logger.Info(fmt.Sprintf("Applied %d migration(s)", applied))
 	}
 
 	return nil
@@ -99,7 +99,7 @@ func (m *Manager) Down(steps int) error {
 	}
 
 	if len(appliedMigrations) == 0 {
-		logger.Log.Info("No migrations to rollback")
+		logger.Info("No migrations to rollback")
 		return nil
 	}
 
@@ -114,14 +114,14 @@ func (m *Manager) Down(steps int) error {
 		}
 
 		if script == nil {
-			logger.Log.Warnf("Migration script %s not found, removing from database", applied.Version)
+			logger.Warn(fmt.Sprintf("Migration script %s not found, removing from database", applied.Version))
 			if err := m.removeMigration(applied.Version); err != nil {
 				return fmt.Errorf("migration record removal failed: %w", err)
 			}
 			continue
 		}
 
-		logger.Log.Infof("Rolling back migration %s: %s", script.Version(), script.Name())
+		logger.Info(fmt.Sprintf("Rolling back migration %s: %s", script.Version(), script.Name()))
 
 		if err := script.Down(m.db); err != nil {
 			return fmt.Errorf("migration %s rollback failed: %w", script.Version(), err)
@@ -131,11 +131,11 @@ func (m *Manager) Down(steps int) error {
 			return fmt.Errorf("migration record removal failed: %w", err)
 		}
 
-		logger.Log.Infof("Successfully rolled back migration %s", script.Version())
+		logger.Info(fmt.Sprintf("Successfully rolled back migration %s", script.Version()))
 		rolled++
 	}
 
-	logger.Log.Infof("Rolled back %d migration(s)", rolled)
+	logger.Info(fmt.Sprintf("Rolled back %d migration(s)", rolled))
 	return nil
 }
 
@@ -154,14 +154,14 @@ func (m *Manager) Status() error {
 		appliedMap[m.Version] = m
 	}
 
-	logger.Log.Info("Migration Status:")
-	logger.Log.Info("=================")
+	logger.Info("Migration Status:")
+	logger.Info("=================")
 
 	for _, script := range m.scripts {
 		if applied, ok := appliedMap[script.Version()]; ok {
-			logger.Log.Infof("[X] %s - %s (applied at: %s)", script.Version(), script.Name(), applied.AppliedAt.Format("2006-01-02 15:04:05"))
+			logger.Info(fmt.Sprintf("[X] %s - %s (applied at: %s)", script.Version(), script.Name(), applied.AppliedAt.Format("2006-01-02 15:04:05")))
 		} else {
-			logger.Log.Infof("[ ] %s - %s (pending)", script.Version(), script.Name())
+			logger.Info(fmt.Sprintf("[ ] %s - %s (pending)", script.Version(), script.Name()))
 		}
 	}
 

@@ -1,6 +1,7 @@
 package apikeys
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -30,14 +31,14 @@ func (h *APIKeyHandler) Delete(c echo.Context) error {
 
 	var req DeleteAPIKeyRequest
 	if err := c.Bind(&req); err != nil {
-		logger.Log.Infof("API key deletion failed: invalid request body - %v", err)
+		logger.Info(fmt.Sprintf("API key deletion failed: invalid request body - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body. Must be a JSON object.",
 		})
 	}
 
 	if strings.TrimSpace(req.KeyID) == "" {
-		logger.Log.Info("API key deletion failed: missing key_id")
+		logger.Info("API key deletion failed: missing key_id")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: key_id",
 		})
@@ -45,13 +46,13 @@ func (h *APIKeyHandler) Delete(c echo.Context) error {
 
 	err := models.DeleteAPIKey(h.db.DB(), user.ID, req.KeyID)
 	if err != nil {
-		logger.Log.Errorf("Failed to delete API key: %v", err)
+		logger.Error(fmt.Sprintf("Failed to delete API key: %v", err))
 		return c.JSON(http.StatusNotFound, ErrorResponse{
 			Error: "API key not found",
 		})
 	}
 
-	logger.Log.Info("API key deleted successfully")
+	logger.Info("API key deleted successfully")
 	return c.JSON(http.StatusOK, MessageResponse{
 		Message: "API key deleted successfully",
 	})

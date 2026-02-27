@@ -1,6 +1,8 @@
 package devices
 
 import (
+	"fmt"
+
 	"interface-api/internal/database/models"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/matrixclient"
@@ -24,23 +26,23 @@ import (
 func (h *DeviceHandler) List(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
 	if !ok {
-		logger.Log.Error("User not found in context")
+		logger.Error("User not found in context")
 		return echo.ErrUnauthorized
 	}
 
 	matrixProfile, err := models.FindMatrixProfileByUserID(h.db.DB(), user.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			logger.Log.Warn("Matrix profile not found for user")
+			logger.Warn("Matrix profile not found for user")
 			return echo.ErrUnauthorized
 		}
-		logger.Log.Errorf("Matrix profile lookup error: %v", err)
+		logger.Error(fmt.Sprintf("Matrix profile lookup error: %v", err))
 		return echo.ErrInternalServerError
 	}
 
 	matrixUsername, err := matrixProfile.GetMatrixUsername()
 	if err != nil {
-		logger.Log.Errorf("Matrix username decryption failed: %v", err)
+		logger.Error(fmt.Sprintf("Matrix username decryption failed: %v", err))
 		return echo.ErrInternalServerError
 	}
 
@@ -54,7 +56,7 @@ func (h *DeviceHandler) List(c echo.Context) error {
 	}
 	devices, err := matrixClient.ListDevices(listDevicesReq)
 	if err != nil {
-		logger.Log.Errorf("Matrix device list retrieval failed: %v", err)
+		logger.Error(fmt.Sprintf("Matrix device list retrieval failed: %v", err))
 		return echo.ErrInternalServerError
 	}
 

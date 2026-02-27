@@ -22,7 +22,8 @@ func main() {
 
 	consumer, err := rabbitmq.NewConsumer(*rabbitURL)
 	if err != nil {
-		logger.Log.Fatalf("RabbitMQ consumer creation failed: %v", err)
+		logger.Error(fmt.Sprintf("RabbitMQ consumer creation failed: %v", err))
+		os.Exit(1)
 	}
 	defer consumer.Close()
 
@@ -31,11 +32,11 @@ func main() {
 
 	messageHandler := func(d amqp.Delivery) error {
 		data := string(d.Body)
-		logger.Log.Infof("Received QR code data: %s", data)
+		logger.Info(fmt.Sprintf("Received QR code data: %s", data))
 
 		qr, err := qrcode.New(data, qrcode.Medium)
 		if err != nil {
-			logger.Log.Errorf("QR code generation failed: %v", err)
+			logger.Error(fmt.Sprintf("QR code generation failed: %v", err))
 			return err
 		}
 
@@ -49,16 +50,17 @@ func main() {
 		ctx, *queueName, messageHandler, cancel, rabbitmq.DefaultConsumeOptions(),
 	)
 	if err != nil {
-		logger.Log.Fatalf("Queue consumption failed: %v", err)
+		logger.Error(fmt.Sprintf("Queue consumption failed: %v", err))
+		os.Exit(1)
 	}
 
-	logger.Log.Infof("Connected to RabbitMQ. Consuming from queue: %s", *queueName)
-	logger.Log.Info("Waiting for messages... Press Ctrl+C to exit")
+	logger.Info(fmt.Sprintf("Connected to RabbitMQ. Consuming from queue: %s", *queueName))
+	logger.Info("Waiting for messages... Press Ctrl+C to exit")
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
-	logger.Log.Info("Shutting down consumer")
+	logger.Info("Shutting down consumer")
 	cancel()
 }

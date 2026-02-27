@@ -1,6 +1,7 @@
 package apikeys
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -30,14 +31,14 @@ func (h *APIKeyHandler) Create(c echo.Context) error {
 
 	var req CreateAPIKeyRequest
 	if err := c.Bind(&req); err != nil {
-		logger.Log.Infof("API key creation failed: invalid request body - %v", err)
+		logger.Info(fmt.Sprintf("API key creation failed: invalid request body - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body. Must be a JSON object.",
 		})
 	}
 
 	if strings.TrimSpace(req.Name) == "" {
-		logger.Log.Info("API key creation failed: missing name")
+		logger.Info("API key creation failed: missing name")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: name",
 		})
@@ -47,13 +48,13 @@ func (h *APIKeyHandler) Create(c echo.Context) error {
 	if req.ExpiresAt != nil {
 		parsedTime, err := time.Parse(time.RFC3339, *req.ExpiresAt)
 		if err != nil {
-			logger.Log.Infof("API key creation failed: invalid expires_at format - %v", err)
+			logger.Info(fmt.Sprintf("API key creation failed: invalid expires_at format - %v", err))
 			return c.JSON(http.StatusBadRequest, ErrorResponse{
 				Error: "Invalid expires_at format. Must be RFC3339 (e.g., 2026-12-31T23:59:59Z)",
 			})
 		}
 		if parsedTime.Before(time.Now().UTC()) {
-			logger.Log.Info("API key creation failed: expires_at is in the past")
+			logger.Info("API key creation failed: expires_at is in the past")
 			return c.JSON(http.StatusBadRequest, ErrorResponse{
 				Error: "expires_at must be in the future",
 			})
@@ -63,7 +64,7 @@ func (h *APIKeyHandler) Create(c echo.Context) error {
 
 	token, apiKey, err := models.CreateAPIKey(h.db.DB(), user.ID, req.Name, expiresAt)
 	if err != nil {
-		logger.Log.Errorf("Failed to create API key: %v", err)
+		logger.Error(fmt.Sprintf("Failed to create API key: %v", err))
 		return echo.ErrInternalServerError
 	}
 
@@ -73,7 +74,7 @@ func (h *APIKeyHandler) Create(c echo.Context) error {
 		expiresAtStr = &str
 	}
 
-	logger.Log.Info("API key created successfully")
+	logger.Info("API key created successfully")
 	return c.JSON(http.StatusCreated, APIKeyResponse{
 		Message: "API key created successfully",
 		Key:     token,

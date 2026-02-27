@@ -77,6 +77,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/docs/*", func(c echo.Context) error {
 		docs.SwaggerInfo.Host = c.Request().Host
+		scheme := "http"
+		if c.Request().TLS != nil || c.Request().Header.Get("X-Forwarded-Proto") == "https" {
+			scheme = "https"
+		}
+		docs.SwaggerInfo.Schemes = []string{scheme}
 		return echoSwagger.WrapHandler(c)
 	})
 

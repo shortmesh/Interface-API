@@ -39,35 +39,35 @@ import (
 func (h *UserHandler) Create(c echo.Context) error {
 	var req CreateUserRequest
 	if err := c.Bind(&req); err != nil {
-		logger.Log.Infof("Registration failed: invalid request body - %v", err)
+		logger.Info(fmt.Sprintf("Registration failed: invalid request body - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body. Must be a JSON object.",
 		})
 	}
 
 	if strings.TrimSpace(req.Email) == "" {
-		logger.Log.Info("Registration failed: missing email")
+		logger.Info("Registration failed: missing email")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: email",
 		})
 	}
 
 	if _, err := mail.ParseAddress(req.Email); err != nil {
-		logger.Log.Info("Registration failed: invalid email format")
+		logger.Info("Registration failed: invalid email format")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid email format",
 		})
 	}
 
 	if strings.TrimSpace(req.Password) == "" {
-		logger.Log.Info("Registration failed: missing password")
+		logger.Info("Registration failed: missing password")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: password",
 		})
 	}
 
 	if err := password.ValidatePassword(req.Password); err != nil {
-		logger.Log.Infof("Registration failed: password validation - %v", err)
+		logger.Info(fmt.Sprintf("Registration failed: password validation - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: fmt.Sprintf("Invalid password: %v", err),
 		})
@@ -75,12 +75,12 @@ func (h *UserHandler) Create(c echo.Context) error {
 
 	_, err := models.FindUserByEmail(h.db.DB(), req.Email)
 	if err == nil {
-		logger.Log.Info("Registration failed: email already exists")
+		logger.Info("Registration failed: email already exists")
 		return c.JSON(http.StatusConflict, ErrorResponse{
 			Error: "User with this email already exists",
 		})
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Log.Errorf("Email uniqueness check error: %v", err)
+		logger.Error(fmt.Sprintf("Email uniqueness check error: %v", err))
 		return echo.ErrInternalServerError
 	}
 
@@ -88,19 +88,19 @@ func (h *UserHandler) Create(c echo.Context) error {
 	txErr := h.db.DB().Transaction(func(tx *gorm.DB) error {
 		masClient, err := masclient.New()
 		if err != nil {
-			logger.Log.Errorf("Failed to initialize MAS client: %v", err)
+			logger.Error(fmt.Sprintf("Failed to initialize MAS client: %v", err))
 			return err
 		}
 
 		matrixClient, err := matrixclient.New()
 		if err != nil {
-			logger.Log.Errorf("Failed to initialize Matrix client: %v", err)
+			logger.Error(fmt.Sprintf("Failed to initialize Matrix client: %v", err))
 			return err
 		}
 
 		adminToken, err := masClient.GetAdminToken()
 		if err != nil {
-			logger.Log.Errorf("Failed to get MAS admin token:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to get MAS admin token:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
 
@@ -109,20 +109,20 @@ func (h *UserHandler) Create(c echo.Context) error {
 
 		userResp, err := masClient.CreateUser(adminToken, username)
 		if err != nil {
-			logger.Log.Errorf("Failed to create MAS user:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to create MAS user:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
-		logger.Log.Info("Created MAS user")
+		logger.Info("Created MAS user")
 
 		u = uuid.New()
 		deviceID := hex.EncodeToString(u[:])[:16]
 		sessionResp, err := masClient.CreatePersonalSession(adminToken, userResp.Data.ID, deviceID)
 		if err != nil {
-			logger.Log.Errorf("Failed to create MAS personal session:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to create MAS personal session:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
 		matrixAccessToken := sessionResp.Data.Attributes.AccessToken
-		logger.Log.Info("Created MAS personal session")
+		logger.Info("Created MAS personal session")
 
 		storeReq := &matrixclient.StoreCredentialsRequest{
 			Username:    username,
@@ -131,10 +131,10 @@ func (h *UserHandler) Create(c echo.Context) error {
 		}
 		_, err = matrixClient.StoreCredentials(storeReq)
 		if err != nil {
-			logger.Log.Errorf("Failed to store Matrix credentials:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to store Matrix credentials:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
-		logger.Log.Info("Stored Matrix credentials")
+		logger.Info("Stored Matrix credentials")
 
 		user := &models.User{
 			CreatedAt: time.Now().UTC(),
@@ -142,17 +142,17 @@ func (h *UserHandler) Create(c echo.Context) error {
 		}
 
 		if err := user.SetEmail(req.Email); err != nil {
-			logger.Log.Errorf("Failed to set email:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to set email:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
 
 		if err := user.SetPassword(req.Password); err != nil {
-			logger.Log.Errorf("Failed to set password:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to set password:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
 
 		if err := tx.Create(user).Error; err != nil {
-			logger.Log.Errorf("Failed to create user: %v", err)
+			logger.Error(fmt.Sprintf("Failed to create user: %v", err))
 			return err
 		}
 
@@ -163,17 +163,17 @@ func (h *UserHandler) Create(c echo.Context) error {
 		}
 
 		if err := matrixProfile.SetMatrixUsername(username); err != nil {
-			logger.Log.Errorf("Failed to set matrix username:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to set matrix username:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
 
 		if err := matrixProfile.SetMatrixDeviceID(deviceID); err != nil {
-			logger.Log.Errorf("Failed to set matrix device ID:\n%v\n\n%s", err, debug.Stack())
+			logger.Error(fmt.Sprintf("Failed to set matrix device ID:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
 
 		if err := tx.Create(matrixProfile).Error; err != nil {
-			logger.Log.Errorf("Failed to create matrix profile: %v", err)
+			logger.Error(fmt.Sprintf("Failed to create matrix profile: %v", err))
 			return err
 		}
 
@@ -181,7 +181,7 @@ func (h *UserHandler) Create(c echo.Context) error {
 			tx, user.ID, c.RealIP(), c.Request().UserAgent(),
 		)
 		if err != nil {
-			logger.Log.Errorf("Failed to create session: %v", err)
+			logger.Error(fmt.Sprintf("Failed to create session: %v", err))
 			return err
 		}
 
@@ -198,7 +198,7 @@ func (h *UserHandler) Create(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	logger.Log.Info("User created successfully")
+	logger.Info("User created successfully")
 	return c.JSON(http.StatusCreated, UserResponse{
 		Message: "User created successfully",
 		Token:   sessionToken,

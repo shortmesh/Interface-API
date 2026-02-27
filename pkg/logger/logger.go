@@ -1,71 +1,97 @@
 package logger
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
 	gormlogger "gorm.io/gorm/logger"
 )
 
-var Log *logrus.Logger
+var logLevel string
 
 func init() {
 	godotenv.Load()
-	Log = logrus.New()
 
-	Log.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:          true,
-		TimestampFormat:        "2006-01-02 15:04:05",
-		DisableLevelTruncation: true,
-		PadLevelText:           true,
-	})
+	log.SetFlags(log.Ldate | log.Ltime)
+	log.SetOutput(os.Stdout)
 
-	Log.SetOutput(os.Stdout)
-
-	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))
-	switch logLevel {
-	case "debug":
-		Log.SetLevel(logrus.DebugLevel)
-	case "info":
-		Log.SetLevel(logrus.InfoLevel)
-	case "warn", "warning":
-		Log.SetLevel(logrus.WarnLevel)
-	case "error":
-		Log.SetLevel(logrus.ErrorLevel)
-	case "fatal":
-		Log.SetLevel(logrus.FatalLevel)
-	default:
-		Log.SetLevel(logrus.InfoLevel)
+	logLevel = strings.ToLower(os.Getenv("LOG_LEVEL"))
+	if logLevel == "" {
+		logLevel = "info"
 	}
 }
 
-func WithFields(fields logrus.Fields) *logrus.Entry {
-	return Log.WithFields(fields)
+func shouldLog(level string) bool {
+	levels := map[string]int{
+		"debug": 0,
+		"info":  1,
+		"warn":  2,
+		"error": 3,
+	}
+
+	current, ok := levels[logLevel]
+	if !ok {
+		current = 1 // default to info
+	}
+
+	target, ok := levels[level]
+	if !ok {
+		target = 1
+	}
+
+	return target >= current
 }
 
-func WithField(key string, value any) *logrus.Entry {
-	return Log.WithField(key, value)
+func logMessage(level, format string, args ...any) {
+	if !shouldLog(level) {
+		return
+	}
+	msg := fmt.Sprintf(format, args...)
+	log.Printf("[%s] %s", strings.ToUpper(level), msg)
+}
+
+func Debug(msg string) {
+	logMessage("debug", "%s", msg)
+}
+
+func Info(msg string) {
+	logMessage("info", "%s", msg)
+}
+
+func Warn(msg string) {
+	logMessage("warn", "%s", msg)
+}
+
+func Error(msg string) {
+	logMessage("error", "%s", msg)
+}
+
+type gormLogWriter struct{}
+
+func (w gormLogWriter) Printf(format string, args ...any) {
+	logMessage("info", format, args...)
 }
 
 func NewGormLogger() gormlogger.Interface {
 	var gormLogLevel gormlogger.LogLevel
 
-	switch Log.Level {
-	case logrus.DebugLevel:
+	switch logLevel {
+	case "debug":
 		gormLogLevel = gormlogger.Info
-	case logrus.WarnLevel:
+	case "warn", "warning":
 		gormLogLevel = gormlogger.Warn
-	case logrus.ErrorLevel, logrus.FatalLevel:
+	case "error":
 		gormLogLevel = gormlogger.Error
 	default:
 		gormLogLevel = gormlogger.Silent
 	}
 
 	return gormlogger.New(
-		Log,
+		gormLogWriter{},
 		gormlogger.Config{
 			SlowThreshold: 200 * time.Millisecond,
 			LogLevel:      gormLogLevel,

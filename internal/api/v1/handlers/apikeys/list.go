@@ -1,6 +1,7 @@
 package apikeys
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -26,7 +27,7 @@ func (h *APIKeyHandler) List(c echo.Context) error {
 
 	apiKeys, err := models.ListAPIKeys(h.db.DB(), user.ID)
 	if err != nil {
-		logger.Log.Errorf("Failed to list API keys: %v", err)
+		logger.Error(fmt.Sprintf("Failed to list API keys: %v", err))
 		return echo.ErrInternalServerError
 	}
 

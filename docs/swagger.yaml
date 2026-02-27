@@ -171,7 +171,6 @@ definitions:
         example: sk_123456789abcdef123456789abcdef123456789
         type: string
     type: object
-host: localhost:8080
 info:
   contact: {}
   description: API for ShortMesh Interface service
@@ -520,8 +519,6 @@ paths:
       summary: WebSocket qr-code endpoint (Not executable in Swagger UI)
       tags:
       - devices
-schemes:
-- http
 securityDefinitions:
   BearerAuth:
     description: 'Enter your token in the format: Bearer {token}'

@@ -84,7 +84,7 @@ func IsEnabled() bool {
 }
 
 func (w *Worker) Start() {
-	logger.Log.Infof("Starting %d message worker(s)", w.workerCount)
+	logger.Info(fmt.Sprintf("Starting %d message worker(s)", w.workerCount))
 
 	for i := 0; i < w.workerCount; i++ {
 		w.wg.Add(1)
@@ -96,40 +96,40 @@ func (w *Worker) Start() {
 }
 
 func (w *Worker) Stop() {
-	logger.Log.Info("Shutting down workers")
+	logger.Info("Shutting down workers")
 	w.cancel()
 	w.wg.Wait()
-	logger.Log.Info("All workers stopped")
+	logger.Info("All workers stopped")
 }
 
 func (w *Worker) runWorker(workerID int) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Log.Errorf("Worker %d panic: %v\n%s", workerID, r, debug.Stack())
+			logger.Error(fmt.Sprintf("Worker %d panic: %v\n%s", workerID, r, debug.Stack()))
 		}
 	}()
 
-	logger.Log.Infof("Worker %d starting", workerID)
+	logger.Info(fmt.Sprintf("Worker %d starting", workerID))
 
 	ctx, cancel := context.WithCancel(w.ctx)
 	defer cancel()
 
 	matrixClient, err := matrixclient.New()
 	if err != nil {
-		logger.Log.Errorf("Worker %d: Matrix client initialization failed: %v", workerID, err)
+		logger.Error(fmt.Sprintf("Worker %d: Matrix client initialization failed: %v", workerID, err))
 		return
 	}
 
 	consumer, err := rabbitmq.NewConsumer(w.rabbitURL)
 	if err != nil {
-		logger.Log.Errorf("Worker %d: RabbitMQ consumer initialization failed: %v", workerID, err)
+		logger.Error(fmt.Sprintf("Worker %d: RabbitMQ consumer initialization failed: %v", workerID, err))
 		return
 	}
 	defer consumer.Close()
 
 	producer, err := rabbitmq.NewProducer(w.rabbitURL)
 	if err != nil {
-		logger.Log.Errorf("Worker %d: RabbitMQ producer initialization failed: %v", workerID, err)
+		logger.Error(fmt.Sprintf("Worker %d: RabbitMQ producer initialization failed: %v", workerID, err))
 		return
 	}
 	defer producer.Close()
@@ -142,34 +142,34 @@ func (w *Worker) runWorker(workerID int) {
 	delayQueueConfig.Args = delayQueueArgs
 
 	if err := consumer.DeclareQueue(delayQueueConfig); err != nil {
-		logger.Log.Errorf("Worker %d: Delay queue declaration failed: %v", workerID, err)
+		logger.Error(fmt.Sprintf("Worker %d: Delay queue declaration failed: %v", workerID, err))
 		return
 	}
 
 	deliveryHandler := func(delivery amqp.Delivery) error {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Log.Errorf("Worker %d: Message handler panic: %v\n%s", workerID, r, debug.Stack())
+				logger.Error(fmt.Sprintf("Worker %d: Message handler panic: %v\n%s", workerID, r, debug.Stack()))
 				delivery.Nack(false, false)
 			}
 		}()
 
 		var msg QueuedMessage
 		if err := json.Unmarshal(delivery.Body, &msg); err != nil {
-			logger.Log.Errorf("Worker %d: Message unmarshal failed: %v", workerID, err)
+			logger.Error(fmt.Sprintf("Worker %d: Message unmarshal failed: %v", workerID, err))
 			delivery.Nack(false, false)
 			return err
 		}
 
 		if !w.sharedThrottler.Allow(msg.PlatformName, msg.Username) {
 			waitTime := w.sharedThrottler.WaitTime(msg.PlatformName, msg.Username)
-			logger.Log.Infof("Worker %d: Rate limit applied, delaying %v", workerID, waitTime)
+			logger.Info(fmt.Sprintf("Worker %d: Rate limit applied, delaying %v", workerID, waitTime))
 
 			publishOpts := rabbitmq.DefaultPublishOptions()
 			publishOpts.Expiration = fmt.Sprintf("%d", waitTime.Milliseconds())
 
 			if err := producer.Publish("", w.delayQueueName, msg, publishOpts); err != nil {
-				logger.Log.Errorf("Worker %d: Delay queue publish failed: %v\n%s", workerID, err, debug.Stack())
+				logger.Error(fmt.Sprintf("Worker %d: Delay queue publish failed: %v\n%s", workerID, err, debug.Stack()))
 				delivery.Nack(false, true)
 				return err
 			}
@@ -187,12 +187,12 @@ func (w *Worker) runWorker(workerID int) {
 
 		_, err := matrixClient.SendMessage(msg.DeviceID, req)
 		if err != nil {
-			logger.Log.Errorf("Worker %d: Message delivery failed: %v", workerID, err)
+			logger.Error(fmt.Sprintf("Worker %d: Message delivery failed: %v", workerID, err))
 			delivery.Nack(false, false)
 			return err
 		}
 
-		logger.Log.Infof("Worker %d: Message delivered successfully", workerID)
+		logger.Info(fmt.Sprintf("Worker %d: Message delivered successfully", workerID))
 		delivery.Ack(false)
 		return nil
 	}
@@ -206,12 +206,12 @@ func (w *Worker) runWorker(workerID int) {
 
 	err = consumer.Consume(ctx, w.queueName, deliveryHandler, cancel, opts)
 	if err != nil {
-		logger.Log.Errorf("Worker %d: Queue consumption failed: %v", workerID, err)
+		logger.Error(fmt.Sprintf("Worker %d: Queue consumption failed: %v", workerID, err))
 		return
 	}
 
-	logger.Log.Infof("Worker %d: Listening for messages on exchange '%s' with pattern 'message.*.*'", workerID, w.exchangeName)
+	logger.Info(fmt.Sprintf("Worker %d: Listening for messages on exchange '%s' with pattern 'message.*.*'", workerID, w.exchangeName))
 
 	<-ctx.Done()
-	logger.Log.Infof("Worker %d: Shutting down", workerID)
+	logger.Info(fmt.Sprintf("Worker %d: Shutting down", workerID))
 }

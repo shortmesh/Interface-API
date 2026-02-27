@@ -57,19 +57,21 @@ func New(opts ...Options) Service {
 	}
 
 	if sqlitePath != "" {
-		logger.Log.Infof("Using SQLite database: %s", sqlitePath)
+		logger.Info(fmt.Sprintf("Using SQLite database: %s", sqlitePath))
 
 		dir := filepath.Dir(sqlitePath)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			logger.Log.Fatalf("Failed to create SQLite directory: %v", err)
+			logger.Error(fmt.Sprintf("Failed to create SQLite directory: %v", err))
+			os.Exit(1)
 		}
 
 		db, err = gorm.Open(sqlite.Open(sqlitePath), gormConfig)
 		if err != nil {
-			logger.Log.Fatalf("SQLite connection failed: %v", err)
+			logger.Error(fmt.Sprintf("SQLite connection failed: %v", err))
+			os.Exit(1)
 		}
 	} else {
-		logger.Log.Infof("Using MySQL database: %s@%s:%s/%s", username, host, port, dbname)
+		logger.Info(fmt.Sprintf("Using MySQL database: %s@%s:%s/%s", username, host, port, dbname))
 		loc, _ := time.LoadLocation("UTC")
 
 		createDatabaseIfNotExists(username, password, host, port, dbname)
@@ -79,13 +81,15 @@ func New(opts ...Options) Service {
 
 		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
 		if err != nil {
-			logger.Log.Fatalf("MySQL connection failed: %v", err)
+			logger.Error(fmt.Sprintf("MySQL connection failed: %v", err))
+			os.Exit(1)
 		}
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		logger.Log.Fatalf("Database instance retrieval failed: %v", err)
+		logger.Error(fmt.Sprintf("Database instance retrieval failed: %v", err))
+		os.Exit(1)
 	}
 
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
@@ -99,7 +103,8 @@ func New(opts ...Options) Service {
 
 	if options.AutoMigrate {
 		if err := dbInstance.AutoMigrate(options.AutoCreateTable); err != nil {
-			logger.Log.Fatalf("Database migration failed: %v", err)
+			logger.Error(fmt.Sprintf("Database migration failed: %v", err))
+			os.Exit(1)
 		}
 	}
 
@@ -110,15 +115,17 @@ func createDatabaseIfNotExists(username, password, host, port, dbname string) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/", username, password, host, port)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		logger.Log.Fatalf("MySQL server connection failed: %v", err)
+		logger.Error(fmt.Sprintf("MySQL server connection failed: %v", err))
+		os.Exit(1)
 	}
 	defer db.Close()
 
 	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", dbname))
 	if err != nil {
-		logger.Log.Fatalf("Database creation failed: %v", err)
+		logger.Error(fmt.Sprintf("Database creation failed: %v", err))
+		os.Exit(1)
 	}
-	logger.Log.Infof("Database %s ensured to exist", dbname)
+	logger.Info(fmt.Sprintf("Database %s ensured to exist", dbname))
 }
 
 func (s *service) DB() *gorm.DB {

@@ -1,6 +1,7 @@
 package users
 
 import (
+	"fmt"
 	"net/http"
 
 	"interface-api/internal/database/models"
@@ -23,16 +24,16 @@ import (
 func (h *UserHandler) Logout(c echo.Context) error {
 	session, ok := c.Get("session").(*models.Session)
 	if !ok {
-		logger.Log.Error("Session not found in context during logout")
+		logger.Error("Session not found in context during logout")
 		return echo.ErrUnauthorized
 	}
 
 	if err := h.db.DB().Delete(session).Error; err != nil {
-		logger.Log.Errorf("Session deletion failed: %v", err)
+		logger.Error(fmt.Sprintf("Session deletion failed: %v", err))
 		return echo.ErrInternalServerError
 	}
 
-	logger.Log.Info("User logged out successfully")
+	logger.Info("User logged out successfully")
 	return c.JSON(http.StatusOK, UserResponse{
 		Message: "Logout successful",
 	})

@@ -26,7 +26,7 @@ Server: `http://localhost:8080`
 ## Requirements
 
 - Go 1.24.0+
-- SQLite (default) or MySQL
+- SQLite with SQLCipher support
 - RabbitMQ (for worker service)
 
 ## Configuration
@@ -57,10 +57,14 @@ The following environment variables **must** be set for the application to funct
 >
 > If you already used `make setup`, these keys are auto-generated and set in your `.env` file. Do not change them unless you know what you're doing, as changing these keys will invalidate existing data.
 
-- `ENCRYPTION_KEY` - Base64-encoded 32-byte key for encrypting sensitive data
-- `HASH_KEY` - Base64-encoded 32-byte key for hashing data
+- `HASH_KEY` - Base64-encoded 32-byte key for HMAC hashing of tokens (session tokens, API keys)
+- `DB_ENCRYPTION_KEY` - Passphrase for SQLCipher database encryption at rest
 
-Generate with: `openssl rand -base64 32`
+Generate HASH_KEY with: `openssl rand -base64 32`
+
+> [!TIP]
+>
+> For `DB_ENCRYPTION_KEY`, use hex encoding for better entropy: `openssl rand -hex 32` (generates 64 hex chars with full 256 bits of entropy vs base64's ~192 bits effective entropy)
 
 #### Matrix Services
 

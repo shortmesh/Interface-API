@@ -141,15 +141,12 @@ func (h *UserHandler) Create(c echo.Context) error {
 			UpdatedAt: time.Now().UTC(),
 		}
 
-		if err := user.SetEmail(req.Email); err != nil {
-			logger.Error(fmt.Sprintf("Failed to set email:\n%v\n\n%s", err, debug.Stack()))
-			return err
-		}
-
 		if err := user.SetPassword(req.Password); err != nil {
 			logger.Error(fmt.Sprintf("Failed to set password:\n%v\n\n%s", err, debug.Stack()))
 			return err
 		}
+
+		user.Email = req.Email
 
 		if err := tx.Create(user).Error; err != nil {
 			logger.Error(fmt.Sprintf("Failed to create user: %v", err))
@@ -157,19 +154,11 @@ func (h *UserHandler) Create(c echo.Context) error {
 		}
 
 		matrixProfile := &models.MatrixProfile{
-			UserID:    user.ID,
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
-		}
-
-		if err := matrixProfile.SetMatrixUsername(username); err != nil {
-			logger.Error(fmt.Sprintf("Failed to set matrix username:\n%v\n\n%s", err, debug.Stack()))
-			return err
-		}
-
-		if err := matrixProfile.SetMatrixDeviceID(deviceID); err != nil {
-			logger.Error(fmt.Sprintf("Failed to set matrix device ID:\n%v\n\n%s", err, debug.Stack()))
-			return err
+			UserID:         user.ID,
+			MatrixUsername: username,
+			MatrixDeviceID: deviceID,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
 		}
 
 		if err := tx.Create(matrixProfile).Error; err != nil {

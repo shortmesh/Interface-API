@@ -6,19 +6,19 @@ setup:
 		echo "Creating .env from .env.example..."; \
 		cp .env.example .env; \
 	fi
-	@if ! grep -q "^ENCRYPTION_KEY=[A-Za-z0-9+/=]\{40,\}" .env 2>/dev/null; then \
-		echo "Generating ENCRYPTION_KEY..."; \
-		ENCRYPTION_KEY=$$(openssl rand -base64 32); \
-		sed -i.bak "s|^ENCRYPTION_KEY=.*|ENCRYPTION_KEY=$$ENCRYPTION_KEY|" .env && rm -f .env.bak; \
-	else \
-		echo "ENCRYPTION_KEY already set"; \
-	fi
 	@if ! grep -q "^HASH_KEY=[A-Za-z0-9+/=]\{40,\}" .env 2>/dev/null; then \
 		echo "Generating HASH_KEY..."; \
 		HASH_KEY=$$(openssl rand -base64 32); \
 		sed -i.bak "s|^HASH_KEY=.*|HASH_KEY=$$HASH_KEY|" .env && rm -f .env.bak; \
 	else \
 		echo "HASH_KEY already set"; \
+	fi
+	@if ! grep -q "^DB_ENCRYPTION_KEY=[A-Fa-f0-9]\{64,\}" .env 2>/dev/null; then \
+		echo "Generating DB_ENCRYPTION_KEY..."; \
+		DB_ENCRYPTION_KEY=$$(openssl rand -hex 32); \
+		sed -i.bak "s|^DB_ENCRYPTION_KEY=.*|DB_ENCRYPTION_KEY=$$DB_ENCRYPTION_KEY|" .env && rm -f .env.bak; \
+	else \
+		echo "DB_ENCRYPTION_KEY already set"; \
 	fi
 	@echo "Setup complete! Run 'make migrate-up && make run' to start."
 

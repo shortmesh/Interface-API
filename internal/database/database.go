@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,8 +8,7 @@ import (
 
 	"interface-api/pkg/logger"
 
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
+	sqlcipher "github.com/gdanko/gorm-sqlcipher"
 	"gorm.io/gorm"
 )
 
@@ -25,8 +23,7 @@ type service struct {
 var dbInstance *service
 
 type Options struct {
-	AutoMigrate     bool
-	AutoCreateTable bool
+	AutoMigrate bool
 }
 
 func New(opts ...Options) Service {
@@ -39,15 +36,13 @@ func New(opts ...Options) Service {
 		options = opts[0]
 	} else {
 		options.AutoMigrate = os.Getenv("AUTO_MIGRATE") == "true"
-		options.AutoCreateTable = os.Getenv("AUTO_CREATE_TABLES") == "true"
 	}
 
-	dbname := os.Getenv("MYSQL_DATABASE")
-	password := os.Getenv("MYSQL_PASSWORD")
-	username := os.Getenv("MYSQL_USERNAME")
-	port := os.Getenv("MYSQL_PORT")
-	host := os.Getenv("MYSQL_HOST")
 	sqlitePath := os.Getenv("SQLITE_DB_PATH")
+	if sqlitePath == "" {
+		sqlitePath = "./data/shortmesh.db"
+	}
+	dbEncryptionKey := os.Getenv("DB_ENCRYPTION_KEY")
 
 	var db *gorm.DB
 	var err error
@@ -56,34 +51,24 @@ func New(opts ...Options) Service {
 		Logger: logger.NewGormLogger(),
 	}
 
-	if sqlitePath != "" {
-		logger.Info(fmt.Sprintf("Using SQLite database: %s", sqlitePath))
+	logger.Info(fmt.Sprintf("Using SQLite database: %s", sqlitePath))
 
-		dir := filepath.Dir(sqlitePath)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			logger.Error(fmt.Sprintf("Failed to create SQLite directory: %v", err))
-			os.Exit(1)
-		}
+	dir := filepath.Dir(sqlitePath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		logger.Error(fmt.Sprintf("Failed to create SQLite directory: %v", err))
+		os.Exit(1)
+	}
 
-		db, err = gorm.Open(sqlite.Open(sqlitePath), gormConfig)
-		if err != nil {
-			logger.Error(fmt.Sprintf("SQLite connection failed: %v", err))
-			os.Exit(1)
-		}
-	} else {
-		logger.Info(fmt.Sprintf("Using MySQL database: %s@%s:%s/%s", username, host, port, dbname))
-		loc, _ := time.LoadLocation("UTC")
-
-		createDatabaseIfNotExists(username, password, host, port, dbname)
-
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=%s",
-			username, password, host, port, dbname, loc)
-
-		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
-		if err != nil {
-			logger.Error(fmt.Sprintf("MySQL connection failed: %v", err))
-			os.Exit(1)
-		}
+	logger.Info("Initializing encrypted SQLite database with SQLCipher")
+	dsn := fmt.Sprintf(
+		"%s?_pragma_key=x'%s'&_pragma_cipher_compatibility=3&_pragma_cipher_page_size=4096",
+		sqlitePath,
+		dbEncryptionKey,
+	)
+	db, err = gorm.Open(sqlcipher.Open(dsn), gormConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Encrypted SQLite connection failed: %v", err))
+		os.Exit(1)
 	}
 
 	sqlDB, err := db.DB()
@@ -102,30 +87,13 @@ func New(opts ...Options) Service {
 	}
 
 	if options.AutoMigrate {
-		if err := dbInstance.AutoMigrate(options.AutoCreateTable); err != nil {
+		if err := dbInstance.AutoMigrate(); err != nil {
 			logger.Error(fmt.Sprintf("Database migration failed: %v", err))
 			os.Exit(1)
 		}
 	}
 
 	return dbInstance
-}
-
-func createDatabaseIfNotExists(username, password, host, port, dbname string) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/", username, password, host, port)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		logger.Error(fmt.Sprintf("MySQL server connection failed: %v", err))
-		os.Exit(1)
-	}
-	defer db.Close()
-
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", dbname))
-	if err != nil {
-		logger.Error(fmt.Sprintf("Database creation failed: %v", err))
-		os.Exit(1)
-	}
-	logger.Info(fmt.Sprintf("Database %s ensured to exist", dbname))
 }
 
 func (s *service) DB() *gorm.DB {

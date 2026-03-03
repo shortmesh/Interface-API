@@ -66,11 +66,7 @@ func (h *DeviceHandler) Delete(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	matrixUsername, err := matrixProfile.GetMatrixUsername()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Matrix username decryption failed: %v", err))
-		return echo.ErrInternalServerError
-	}
+	matrixUsername := matrixProfile.MatrixUsername
 
 	matrixClient, err := matrixclient.New()
 	if err != nil {

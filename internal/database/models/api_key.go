@@ -12,16 +12,16 @@ import (
 )
 
 type APIKey struct {
-	ID         uint      `gorm:"primaryKey"`
-	KeyID      string    `gorm:"type:varchar(16);not null;uniqueIndex"`
-	UserID     uint      `gorm:"not null;index"`
-	Name       string    `gorm:"not null;size:255"`
-	KeyHash    []byte    `gorm:"type:binary(32);not null;uniqueIndex"`
-	ExpiresAt  time.Time `gorm:"index"`
-	CreatedAt  time.Time `gorm:"not null"`
+	ID         uint
+	KeyID      string
+	UserID     uint
+	Name       string
+	KeyHash    []byte
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
 	LastUsedAt *time.Time
 
-	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	User User `gorm:"foreignKey:UserID"`
 }
 
 func (APIKey) TableName() string {

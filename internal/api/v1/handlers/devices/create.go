@@ -60,11 +60,7 @@ func (h *DeviceHandler) Create(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	matrixUsername, err := matrixProfile.GetMatrixUsername()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Matrix username decryption failed: %v", err))
-		return echo.ErrInternalServerError
-	}
+	matrixUsername := matrixProfile.MatrixUsername
 
 	consumer, err := rabbitmq.NewConsumer(*h.rabbitURL)
 	if err != nil {

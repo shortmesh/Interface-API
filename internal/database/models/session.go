@@ -11,38 +11,20 @@ import (
 )
 
 type Session struct {
-	ID                  uint      `gorm:"primaryKey"`
-	UserID              uint      `gorm:"not null;index:idx_user_expires"`
-	TokenHash           []byte    `gorm:"type:binary(32);not null;uniqueIndex"`
-	IPAddressCiphertext []byte    `gorm:"type:blob"`
-	UserAgentCiphertext []byte    `gorm:"type:blob"`
-	ExpiresAt           time.Time `gorm:"not null;index:idx_user_expires;index"`
-	CreatedAt           time.Time `gorm:"not null"`
-	LastUsedAt          *time.Time
+	ID         uint
+	UserID     uint
+	TokenHash  []byte
+	IPAddress  string
+	UserAgent  string
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
+	LastUsedAt *time.Time
 
-	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	User User `gorm:"foreignKey:UserID"`
 }
 
 func (Session) TableName() string {
 	return "sessions"
-}
-
-func (s *Session) SetIPAddress(ip string) error {
-	encrypted, err := crypto.Encrypt(ip)
-	if err != nil {
-		return err
-	}
-	s.IPAddressCiphertext = encrypted
-	return nil
-}
-
-func (s *Session) SetUserAgent(userAgent string) error {
-	encrypted, err := crypto.Encrypt(userAgent)
-	if err != nil {
-		return err
-	}
-	s.UserAgentCiphertext = encrypted
-	return nil
 }
 
 func (s *Session) UpdateLastUsed(db *gorm.DB) error {
@@ -85,6 +67,8 @@ func CreateOrUpdateSession(db *gorm.DB, userID uint, ipAddress, userAgent string
 	session := &Session{
 		UserID:    userID,
 		TokenHash: hash,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 		CreatedAt: now,
 	}
 
@@ -95,13 +79,6 @@ func CreateOrUpdateSession(db *gorm.DB, userID uint, ipAddress, userAgent string
 		}
 	}
 	session.ExpiresAt = now.Add(time.Duration(durationHours) * time.Hour)
-
-	if err := session.SetIPAddress(ipAddress); err != nil {
-		return "", err
-	}
-	if err := session.SetUserAgent(userAgent); err != nil {
-		return "", err
-	}
 
 	if err := db.Where("user_id = ? AND expires_at <= ?", userID, now).
 		Delete(&Session{}).Error; err != nil {
@@ -130,12 +107,12 @@ func CreateOrUpdateSession(db *gorm.DB, userID uint, ipAddress, userAgent string
 	}
 
 	if err := db.Model(&Session{}).Where("id = ?", oldest.ID).Updates(map[string]any{
-		"token_hash":            session.TokenHash,
-		"ip_address_ciphertext": session.IPAddressCiphertext,
-		"user_agent_ciphertext": session.UserAgentCiphertext,
-		"expires_at":            session.ExpiresAt,
-		"created_at":            now,
-		"last_used_at":          nil,
+		"token_hash":   session.TokenHash,
+		"ip_address":   session.IPAddress,
+		"user_agent":   session.UserAgent,
+		"expires_at":   session.ExpiresAt,
+		"created_at":   now,
+		"last_used_at": nil,
 	}).Error; err != nil {
 		return "", err
 	}

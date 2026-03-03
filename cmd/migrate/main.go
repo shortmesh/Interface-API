@@ -57,7 +57,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Usage: migrate [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		fmt.Fprintf(os.Stderr, "  -action string\n")
-		fmt.Fprintf(os.Stderr, "        Migration action: up, down, fresh, status (default \"up\")\n")
+		fmt.Fprintf(os.Stderr, "        Migration action: up, down, status (default \"up\")\n")
 		fmt.Fprintf(os.Stderr, "  -steps int\n")
 		fmt.Fprintf(os.Stderr, "        Number of migrations to rollback (default 1, only for 'down' action)\n\n")
 		fmt.Fprintf(os.Stderr, "Examples:\n")

@@ -50,10 +50,6 @@ migrate-down:
 	@echo "Rolling back last migration..."
 	@go run cmd/migrate/main.go -action=down -steps=1
 
-migrate-fresh:
-	@echo "Running fresh migrations..."
-	@go run cmd/migrate/main.go -action=fresh
-
 migrate-status:
 	@echo "Checking migration status..."
 	@go run cmd/migrate/main.go -action=status

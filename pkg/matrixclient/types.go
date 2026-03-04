@@ -1,5 +1,13 @@
 package matrixclient
 
+import "net/http"
+
+type Client struct {
+	baseURL      string
+	clientID     string
+	clientSecret string
+	httpClient   *http.Client
+}
 type StoreCredentialsRequest struct {
 	Username    string `json:"username"`
 	AccessToken string `json:"access_token"`

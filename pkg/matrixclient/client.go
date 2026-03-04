@@ -55,13 +55,13 @@ func (c *Client) calculateSignature(method, path, timestamp, nonce, body string)
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (c *Client) addAuthHeaders(req *http.Request, method, path, body string) error {
-	timestamp := time.Now().UTC().Format(time.RFC3339)
+func (c *Client) addAuthHeaders(req *http.Request, body string) error {
+	timestamp := fmt.Sprintf("%d", time.Now().UTC().Unix())
 	nonce, err := generateNonce()
 	if err != nil {
 		return err
 	}
-	signature := c.calculateSignature(method, path, timestamp, nonce, body)
+	signature := c.calculateSignature(req.Method, req.URL.Path, timestamp, nonce, body)
 
 	req.Header.Set("X-ShortMesh-ID", c.clientID)
 	req.Header.Set("X-ShortMesh-Timestamp", timestamp)
@@ -84,7 +84,7 @@ func (c *Client) StoreCredentials(req *StoreCredentialsRequest) (*StoreCredentia
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if err := c.addAuthHeaders(httpReq, "POST", path, string(body)); err != nil {
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
 		return nil, fmt.Errorf("failed to add auth headers: %w", err)
 	}
 
@@ -124,7 +124,7 @@ func (c *Client) AddDevice(req *AddDeviceRequest) (*AddDeviceResponse, error) {
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if err := c.addAuthHeaders(httpReq, "POST", path, string(body)); err != nil {
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
 		return nil, fmt.Errorf("failed to add auth headers: %w", err)
 	}
 
@@ -164,7 +164,7 @@ func (c *Client) DeleteDevice(req *DeleteDeviceRequest) (*DeleteDeviceResponse, 
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if err := c.addAuthHeaders(httpReq, "DELETE", path, string(body)); err != nil {
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
 		return nil, fmt.Errorf("failed to add auth headers: %w", err)
 	}
 
@@ -204,7 +204,7 @@ func (c *Client) ListDevices(req *ListDevicesRequest) (ListDevicesResponse, erro
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if err := c.addAuthHeaders(httpReq, "GET", path, string(body)); err != nil {
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
 		return nil, fmt.Errorf("failed to add auth headers: %w", err)
 	}
 
@@ -248,7 +248,7 @@ func (c *Client) SendMessage(deviceID string, req *SendMessageRequest) (*SendMes
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if err := c.addAuthHeaders(httpReq, "POST", path, string(body)); err != nil {
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
 		return nil, fmt.Errorf("failed to add auth headers: %w", err)
 	}
 

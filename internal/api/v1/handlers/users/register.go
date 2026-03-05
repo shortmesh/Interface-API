@@ -1,7 +1,6 @@
 package users
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,14 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"interface-api/internal/api/v1/handlers"
 	"interface-api/internal/database/models"
 	"interface-api/pkg/logger"
-	"interface-api/pkg/masclient"
-	"interface-api/pkg/matrixclient"
 	"interface-api/pkg/password"
 
-	"github.com/google/uuid"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -86,56 +81,6 @@ func (h *UserHandler) Create(c echo.Context) error {
 
 	var sessionToken string
 	txErr := h.db.DB().Transaction(func(tx *gorm.DB) error {
-		masClient, err := masclient.New()
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to initialize MAS client: %v", err))
-			return err
-		}
-
-		matrixClient, err := matrixclient.New()
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to initialize Matrix client: %v", err))
-			return err
-		}
-
-		adminToken, err := masClient.GetAdminToken()
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to get MAS admin token:\n%v\n\n%s", err, debug.Stack()))
-			return err
-		}
-
-		u := uuid.New()
-		username := hex.EncodeToString(u[:])[:16]
-
-		userResp, err := masClient.CreateUser(adminToken, username)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to create MAS user:\n%v\n\n%s", err, debug.Stack()))
-			return err
-		}
-		logger.Info("Created MAS user")
-
-		u = uuid.New()
-		deviceID := hex.EncodeToString(u[:])[:16]
-		sessionResp, err := masClient.CreatePersonalSession(adminToken, userResp.Data.ID, deviceID)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to create MAS personal session:\n%v\n\n%s", err, debug.Stack()))
-			return err
-		}
-		matrixAccessToken := sessionResp.Data.Attributes.AccessToken
-		logger.Info("Created MAS personal session")
-
-		storeReq := &matrixclient.StoreCredentialsRequest{
-			Username:    username,
-			AccessToken: matrixAccessToken,
-			DeviceID:    deviceID,
-		}
-		_, err = matrixClient.StoreCredentials(storeReq)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to store Matrix credentials:\n%v\n\n%s", err, debug.Stack()))
-			return err
-		}
-		logger.Info("Stored Matrix credentials")
-
 		user := &models.User{
 			CreatedAt: time.Now().UTC(),
 			UpdatedAt: time.Now().UTC(),
@@ -153,19 +98,6 @@ func (h *UserHandler) Create(c echo.Context) error {
 			return err
 		}
 
-		matrixProfile := &models.MatrixProfile{
-			UserID:         user.ID,
-			MatrixUsername: username,
-			MatrixDeviceID: deviceID,
-			CreatedAt:      time.Now().UTC(),
-			UpdatedAt:      time.Now().UTC(),
-		}
-
-		if err := tx.Create(matrixProfile).Error; err != nil {
-			logger.Error(fmt.Sprintf("Failed to create matrix profile: %v", err))
-			return err
-		}
-
 		sessionToken, err = models.CreateOrUpdateSession(
 			tx, user.ID, c.RealIP(), c.Request().UserAgent(),
 		)
@@ -178,12 +110,6 @@ func (h *UserHandler) Create(c echo.Context) error {
 	})
 
 	if txErr != nil {
-		var tErr *handlers.TxError
-		if errors.As(txErr, &tErr) {
-			return c.JSON(tErr.StatusCode, ErrorResponse{
-				Error: tErr.Message,
-			})
-		}
 		return echo.ErrInternalServerError
 	}
 

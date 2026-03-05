@@ -16,6 +16,7 @@ import (
 //	@Description	Invalidate the current session token
 //	@Tags			auth
 //	@Produce		json
+//	@Param			Authorization	header	string	false	"Session token in format: Bearer sk_xxxxx (obtained from /auth/login or /auth/register)"
 //	@Security		BearerAuth
 //	@Success		200	{object}	UserResponse	"Logout successful"
 //	@Failure		401	{object}	ErrorResponse	"Unauthorized"

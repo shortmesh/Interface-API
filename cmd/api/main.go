@@ -23,7 +23,6 @@ import (
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
-//	@description				Enter your token in the format: Bearer {token}
 
 func gracefulShutdown(apiServer *http.Server, w *worker.Worker, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

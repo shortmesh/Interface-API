@@ -77,7 +77,7 @@ See `.env.example` for all available options.
 
 > [!WARNING]
 >
-> **Production:** Set `AUTO_MIGRATE=false` and `AUTO_CREATE_TABLES=false`, then run `make migrate-up`.
+> **Production:** Set `AUTO_MIGRATE=false`, then run `make migrate-up`.
 
 ## Development
 

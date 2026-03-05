@@ -8,39 +8,29 @@ import (
 	"interface-api/pkg/matrixclient"
 
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 )
 
 // List godoc
 //
 //	@Summary		List all devices
-//	@Description	List all devices for the authenticated user
+//	@Description	List all devices for the Matrix identity
 //	@Tags			devices
 //	@Accept			json
 //	@Produce		json
+//	@Param			Authorization	header	string	false	"Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)"
 //	@Security		BearerAuth
 //	@Success		200	{array}		Device			"List of devices"
-//	@Failure		400	{object}	ErrorResponse	"Invalid request body or validation error"
+//	@Failure		401	{object}	ErrorResponse	"Invalid or expired matrix token"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/devices [get]
 func (h *DeviceHandler) List(c echo.Context) error {
-	user, ok := c.Get("user").(*models.User)
+	matrixIdentity, ok := c.Get("matrix_identity").(*models.MatrixIdentity)
 	if !ok {
-		logger.Error("User not found in context")
+		logger.Error("Matrix identity not found in context")
 		return echo.ErrUnauthorized
 	}
 
-	matrixProfile, err := models.FindMatrixProfileByUserID(h.db.DB(), user.ID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			logger.Warn("Matrix profile not found for user")
-			return echo.ErrUnauthorized
-		}
-		logger.Error(fmt.Sprintf("Matrix profile lookup error: %v", err))
-		return echo.ErrInternalServerError
-	}
-
-	matrixUsername := matrixProfile.MatrixUsername
+	matrixUsername := matrixIdentity.MatrixUsername
 
 	matrixClient, err := matrixclient.New()
 	if err != nil {

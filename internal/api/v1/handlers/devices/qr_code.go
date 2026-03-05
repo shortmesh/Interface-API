@@ -12,7 +12,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/streadway/amqp"
-	"gorm.io/gorm"
 )
 
 // QRCode godoc
@@ -20,31 +19,22 @@ import (
 //	@Summary		WebSocket qr-code endpoint (Not executable in Swagger UI)
 //	@Description	Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
 //	@Tags			devices
-//	@Security		BearerAuth
 //	@Produce		json
+//	@Param			Authorization	header	string	false	"Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)"
+//	@Security		BearerAuth
 //	@Success		101	{string}	string			"WebSocket connection established"
-//	@Failure		401	{object}	ErrorResponse	"Missing or invalid authentication token"
+//	@Failure		401	{object}	ErrorResponse	"Missing or invalid matrix token"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/devices/qr-code [get]
 //	@deprecated
 func (h *DeviceHandler) QRCode(c echo.Context) error {
-	user, ok := c.Get("user").(*models.User)
+	matrixIdentity, ok := c.Get("matrix_identity").(*models.MatrixIdentity)
 	if !ok {
-		logger.Error("User not found in context")
+		logger.Error("Matrix identity not found in context")
 		return echo.ErrUnauthorized
 	}
 
-	matrixProfile, err := models.FindMatrixProfileByUserID(h.db.DB(), user.ID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			logger.Warn("Matrix profile not found for user")
-			return echo.ErrUnauthorized
-		}
-		logger.Error(fmt.Sprintf("Matrix profile lookup error: %v", err))
-		return echo.ErrInternalServerError
-	}
-
-	matrixUsername := matrixProfile.MatrixUsername
+	matrixUsername := matrixIdentity.MatrixUsername
 
 	queueName := matrixUsername
 

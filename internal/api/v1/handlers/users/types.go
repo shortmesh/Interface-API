@@ -17,7 +17,7 @@ type LoginRequest struct {
 // UserResponse represents the response after user operations
 type UserResponse struct {
 	Message string `json:"message,omitempty" example:"User created successfully"`
-	Token   string `json:"token,omitempty" example:"sk_123456789abcdef123456789abcdef123456789"`
+	Token   string `json:"token,omitempty" example:"sk_xxxxx"`
 }
 
 // ErrorResponse represents an error response

@@ -12,26 +12,27 @@ import (
 	"interface-api/pkg/rabbitmq"
 
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 )
 
 // Create godoc
 //
 //	@Summary		Create a new device
-//	@Description	Create a new device for the authenticated user
+//	@Description	Create a new device for the Matrix identity
 //	@Tags			devices
 //	@Accept			json
 //	@Produce		json
+//	@Param			Authorization	header	string	false	"Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)"
 //	@Security		BearerAuth
 //	@Param			request	body		CreateDeviceRequest	true	"Device creation request"
 //	@Success		201		{object}	DeviceResponse		"Requested to add device successfully"
 //	@Failure		400		{object}	ErrorResponse		"Invalid request body or validation error"
+//	@Failure		401		{object}	ErrorResponse		"Invalid or expired matrix token"
 //	@Failure		500		{object}	ErrorResponse		"Internal server error"
 //	@Router			/api/v1/devices [post]
 func (h *DeviceHandler) Create(c echo.Context) error {
-	user, ok := c.Get("user").(*models.User)
+	matrixIdentity, ok := c.Get("matrix_identity").(*models.MatrixIdentity)
 	if !ok {
-		logger.Error("User not found in context")
+		logger.Error("Matrix identity not found in context")
 		return echo.ErrUnauthorized
 	}
 
@@ -50,17 +51,13 @@ func (h *DeviceHandler) Create(c echo.Context) error {
 		})
 	}
 
-	matrixProfile, err := models.FindMatrixProfileByUserID(h.db.DB(), user.ID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			logger.Warn("Matrix profile not found for user")
-			return echo.ErrUnauthorized
-		}
-		logger.Error(fmt.Sprintf("Matrix profile lookup error: %v", err))
-		return echo.ErrInternalServerError
-	}
+	matrixUsername := matrixIdentity.MatrixUsername
 
-	matrixUsername := matrixProfile.MatrixUsername
+	scheme := "ws"
+	if c.Request().TLS != nil || c.Request().Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "wss"
+	}
+	qrCodeURL := fmt.Sprintf("%s://%s/api/v1/devices/qr-code", scheme, c.Request().Host)
 
 	consumer, err := rabbitmq.NewConsumer(*h.rabbitURL)
 	if err != nil {
@@ -74,7 +71,7 @@ func (h *DeviceHandler) Create(c echo.Context) error {
 	if queueExists {
 		return c.JSON(http.StatusCreated, DeviceResponse{
 			Message:   "Scan the QR code to link your device",
-			QrCodeURL: "/api/v1/devices/qr-code",
+			QrCodeURL: qrCodeURL,
 		})
 	}
 
@@ -96,6 +93,6 @@ func (h *DeviceHandler) Create(c echo.Context) error {
 	logger.Info("Device addition requested successfully")
 	return c.JSON(http.StatusCreated, DeviceResponse{
 		Message:   "Scan the QR code to link your device",
-		QrCodeURL: "/api/v1/devices/qr-code",
+		QrCodeURL: qrCodeURL,
 	})
 }

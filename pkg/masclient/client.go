@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"interface-api/pkg/config"
 )
 
 type Client struct {
@@ -26,9 +28,17 @@ func New() (*Client, error) {
 		return nil, fmt.Errorf("MAS_URL environment variable is not set")
 	}
 
+	if err := config.ValidateExternalURL(baseURL, "MAS_URL"); err != nil {
+		return nil, err
+	}
+
 	adminBaseURL := os.Getenv("MAS_ADMIN_URL")
 	if adminBaseURL == "" {
 		return nil, fmt.Errorf("MAS_ADMIN_URL environment variable is not set")
+	}
+
+	if err := config.ValidateExternalURL(adminBaseURL, "MAS_ADMIN_URL"); err != nil {
+		return nil, err
 	}
 
 	clientID := os.Getenv("ADMIN_CLIENT_ID")
@@ -133,14 +143,22 @@ func (c *Client) CreateUser(adminToken, username string) (*CreateUserResponse, e
 	return &createUserResp, nil
 }
 
-func (c *Client) CreatePersonalSession(adminToken, userID, deviceID string) (*CreatePersonalSessionResponse, error) {
+func (c *Client) CreatePersonalSession(adminToken, userID, deviceID string, expiresAt *time.Time) (*CreatePersonalSessionResponse, error) {
 	scope := fmt.Sprintf("openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:%s", deviceID)
+
+	expiresIn := c.tokenLifetime
+	if expiresAt != nil {
+		expiresIn = int(time.Until(*expiresAt).Seconds())
+		if expiresIn <= 0 {
+			return nil, fmt.Errorf("expiresAt must be in the future")
+		}
+	}
 
 	reqBody := map[string]any{
 		"actor_user_id": userID,
 		"human_name":    fmt.Sprintf("App session (%s)", deviceID),
 		"scope":         scope,
-		"expires_in":    c.tokenLifetime,
+		"expires_in":    expiresIn,
 	}
 
 	body, err := json.Marshal(reqBody)

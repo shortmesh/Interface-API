@@ -12,43 +12,28 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/streadway/amqp"
-	"gorm.io/gorm"
 )
 
 // QRCode godoc
 //
 //	@Summary		WebSocket qr-code endpoint (Not executable in Swagger UI)
-//	@Description	Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
+//	@Description	Establishes a WebSocket connection to stream real-time add devices qr-code. Authentication via query parameter 'token' (e.g., wss://api/v1/devices/qr-code?token=mt_xxxxx). This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
 //	@Tags			devices
-//	@Security		BearerAuth
 //	@Produce		json
-//	@Success		101	{string}	string			"WebSocket connection established"
-//	@Failure		401	{object}	ErrorResponse	"Missing or invalid authentication token"
-//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Param			token	query		string			true	"Matrix token (obtained from /tokens) - format: mt_xxxxx"
+//	@Success		101		{string}	string			"WebSocket connection established"
+//	@Failure		401		{object}	ErrorResponse	"Missing or invalid matrix token"
+//	@Failure		500		{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/devices/qr-code [get]
 //	@deprecated
 func (h *DeviceHandler) QRCode(c echo.Context) error {
-	user, ok := c.Get("user").(*models.User)
+	matrixIdentity, ok := c.Get("matrix_identity").(*models.MatrixIdentity)
 	if !ok {
-		logger.Error("User not found in context")
+		logger.Error("Matrix identity not found in context")
 		return echo.ErrUnauthorized
 	}
 
-	matrixProfile, err := models.FindMatrixProfileByUserID(h.db.DB(), user.ID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			logger.Warn("Matrix profile not found for user")
-			return echo.ErrUnauthorized
-		}
-		logger.Error(fmt.Sprintf("Matrix profile lookup error: %v", err))
-		return echo.ErrInternalServerError
-	}
-
-	matrixUsername, err := matrixProfile.GetMatrixUsername()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Matrix username decryption failed: %v", err))
-		return echo.ErrInternalServerError
-	}
+	matrixUsername := matrixIdentity.MatrixUsername
 
 	queueName := matrixUsername
 

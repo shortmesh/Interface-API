@@ -15,162 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/api-keys": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all API keys for the authenticated user",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "apikeys"
-                ],
-                "summary": "List API keys",
-                "responses": {
-                    "200": {
-                        "description": "List of API keys",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/apikeys.APIKeyInfo"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new API key for the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "apikeys"
-                ],
-                "summary": "Create a new API key",
-                "parameters": [
-                    {
-                        "description": "API key creation request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.CreateAPIKeyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "API key created successfully",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.APIKeyResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body or validation error",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete an API key for the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "apikeys"
-                ],
-                "summary": "Delete an API key",
-                "parameters": [
-                    {
-                        "description": "API key ID to delete",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.DeleteAPIKeyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "API key deleted successfully",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.MessageResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "API key not found",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/apikeys.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Authenticate a user and return a session token",
@@ -238,6 +82,14 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "User logout",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session token in format: Bearer sk_xxxxx (obtained from /auth/login or /auth/register)",
+                        "name": "Authorization",
+                        "in": "header"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Logout successful",
@@ -319,7 +171,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List all devices for the authenticated user",
+                "description": "List all devices for the Matrix identity",
                 "consumes": [
                     "application/json"
                 ],
@@ -330,6 +182,14 @@ const docTemplate = `{
                     "devices"
                 ],
                 "summary": "List all devices",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)",
+                        "name": "Authorization",
+                        "in": "header"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of devices",
@@ -340,8 +200,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "400": {
-                        "description": "Invalid request body or validation error",
+                    "401": {
+                        "description": "Invalid or expired matrix token",
                         "schema": {
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
@@ -360,7 +220,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new device for the authenticated user",
+                "description": "Create a new device for the Matrix identity",
                 "consumes": [
                     "application/json"
                 ],
@@ -372,6 +232,12 @@ const docTemplate = `{
                 ],
                 "summary": "Create a new device",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
                     {
                         "description": "Device creation request",
                         "name": "request",
@@ -395,6 +261,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -409,7 +281,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a device for the authenticated user",
+                "description": "Delete a device for the Matrix identity",
                 "consumes": [
                     "application/json"
                 ],
@@ -421,6 +293,12 @@ const docTemplate = `{
                 ],
                 "summary": "Delete a device",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
                     {
                         "description": "Device deletion request",
                         "name": "request",
@@ -444,6 +322,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -455,12 +339,7 @@ const docTemplate = `{
         },
         "/api/v1/devices/qr-code": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
+                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. Authentication via query parameter 'token' (e.g., wss://api/v1/devices/qr-code?token=mt_xxxxx). This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
                 "produces": [
                     "application/json"
                 ],
@@ -469,6 +348,15 @@ const docTemplate = `{
                 ],
                 "summary": "WebSocket qr-code endpoint (Not executable in Swagger UI)",
                 "deprecated": true,
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Matrix token (obtained from /tokens) - format: mt_xxxxx",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "101": {
                         "description": "WebSocket connection established",
@@ -477,7 +365,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Missing or invalid authentication token",
+                        "description": "Missing or invalid matrix token",
                         "schema": {
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
@@ -512,6 +400,12 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
                         "description": "Device ID",
                         "name": "device_id",
                         "in": "path",
@@ -540,6 +434,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -548,98 +448,59 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/tokens": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a Matrix identity and get a token for Matrix operations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens"
+                ],
+                "summary": "Create a Matrix token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session token in format: Bearer sk_xxxxx (obtained from /auth/login or /auth/register)",
+                        "name": "Authorization",
+                        "in": "header"
+                    },
+                    {
+                        "description": "Optional expiry configuration",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Matrix token created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.CreateResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "apikeys.APIKeyInfo": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2026-02-19T20:00:00Z"
-                },
-                "expires_at": {
-                    "type": "string",
-                    "example": "2026-12-31T23:59:59Z"
-                },
-                "key_id": {
-                    "type": "string",
-                    "example": "a1b2c3d4e5f6g7h8"
-                },
-                "last_used_at": {
-                    "type": "string",
-                    "example": "2026-02-19T20:30:00Z"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Production API Key"
-                }
-            }
-        },
-        "apikeys.APIKeyResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/apikeys.APIKeyInfo"
-                },
-                "key": {
-                    "type": "string",
-                    "example": "ak_123456789abcdef123456789abcdef123456789"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "API key created successfully"
-                }
-            }
-        },
-        "apikeys.CreateAPIKeyRequest": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "expires_at": {
-                    "type": "string",
-                    "example": "2026-12-31T23:59:59Z"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1,
-                    "example": "Production API Key"
-                }
-            }
-        },
-        "apikeys.DeleteAPIKeyRequest": {
-            "type": "object",
-            "required": [
-                "key_id"
-            ],
-            "properties": {
-                "key_id": {
-                    "type": "string",
-                    "example": "a1b2c3d4e5f6g7h8"
-                }
-            }
-        },
-        "apikeys.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "message"
-                }
-            }
-        },
-        "apikeys.MessageResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "API key deleted successfully"
-                }
-            }
-        },
         "devices.CreateDeviceRequest": {
             "type": "object",
             "required": [
@@ -738,6 +599,35 @@ const docTemplate = `{
                 }
             }
         },
+        "tokens.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-12-31T23:59:59Z"
+                }
+            }
+        },
+        "tokens.CreateResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "mt_xxxxx"
+                }
+            }
+        },
+        "tokens.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
         "users.CreateUserRequest": {
             "type": "object",
             "required": [
@@ -792,14 +682,13 @@ const docTemplate = `{
                 },
                 "token": {
                     "type": "string",
-                    "example": "sk_123456789abcdef123456789abcdef123456789"
+                    "example": "sk_xxxxx"
                 }
             }
         }
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Enter your token in the format: Bearer {token}",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

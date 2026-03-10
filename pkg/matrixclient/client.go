@@ -2,18 +2,19 @@ package matrixclient
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
-)
 
-type Client struct {
-	baseURL    string
-	httpClient *http.Client
-}
+	"interface-api/pkg/config"
+)
 
 func New() (*Client, error) {
 	baseURL := os.Getenv("MATRIX_CLIENT_URL")
@@ -21,12 +22,59 @@ func New() (*Client, error) {
 		return nil, fmt.Errorf("MATRIX_CLIENT_URL environment variable is not set")
 	}
 
+	if err := config.ValidateExternalURL(baseURL, "MATRIX_CLIENT_URL"); err != nil {
+		return nil, err
+	}
+
+	clientID := os.Getenv("ADMIN_CLIENT_ID")
+	if clientID == "" {
+		return nil, fmt.Errorf("ADMIN_CLIENT_ID environment variable is not set")
+	}
+
+	clientSecret := os.Getenv("ADMIN_CLIENT_SECRET")
+	if clientSecret == "" {
+		return nil, fmt.Errorf("ADMIN_CLIENT_SECRET environment variable is not set")
+	}
+
 	return &Client{
-		baseURL: baseURL,
+		baseURL:      baseURL,
+		clientID:     clientID,
+		clientSecret: clientSecret,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 	}, nil
+}
+
+func generateNonce() (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("failed to generate nonce: %w", err)
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+func (c *Client) calculateSignature(method, path, timestamp, nonce, body string) string {
+	stringToSign := c.clientID + method + path + timestamp + nonce + body
+	h := hmac.New(sha256.New, []byte(c.clientSecret))
+	h.Write([]byte(stringToSign))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func (c *Client) addAuthHeaders(req *http.Request, body string) error {
+	timestamp := fmt.Sprintf("%d", time.Now().UTC().Unix())
+	nonce, err := generateNonce()
+	if err != nil {
+		return err
+	}
+	signature := c.calculateSignature(req.Method, req.URL.Path, timestamp, nonce, body)
+
+	req.Header.Set("X-ShortMesh-ID", c.clientID)
+	req.Header.Set("X-ShortMesh-Timestamp", timestamp)
+	req.Header.Set("X-ShortMesh-Nonce", nonce)
+	req.Header.Set("X-ShortMesh-Signature", signature)
+
+	return nil
 }
 
 func (c *Client) StoreCredentials(req *StoreCredentialsRequest) (*StoreCredentialsResponse, error) {
@@ -35,12 +83,16 @@ func (c *Client) StoreCredentials(req *StoreCredentialsRequest) (*StoreCredentia
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/store", c.baseURL), bytes.NewBuffer(body))
+	path := "/api/v1/store"
+	httpReq, err := http.NewRequest("POST", fmt.Sprintf("%s%s", c.baseURL, path), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
+		return nil, fmt.Errorf("failed to add auth headers: %w", err)
+	}
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -71,12 +123,16 @@ func (c *Client) AddDevice(req *AddDeviceRequest) (*AddDeviceResponse, error) {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/devices", c.baseURL), bytes.NewBuffer(body))
+	path := "/api/v1/devices"
+	httpReq, err := http.NewRequest("POST", fmt.Sprintf("%s%s", c.baseURL, path), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
+		return nil, fmt.Errorf("failed to add auth headers: %w", err)
+	}
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -107,12 +163,16 @@ func (c *Client) DeleteDevice(req *DeleteDeviceRequest) (*DeleteDeviceResponse, 
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/v1/devices", c.baseURL), bytes.NewBuffer(body))
+	path := "/api/v1/devices"
+	httpReq, err := http.NewRequest("DELETE", fmt.Sprintf("%s%s", c.baseURL, path), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
+		return nil, fmt.Errorf("failed to add auth headers: %w", err)
+	}
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -143,12 +203,16 @@ func (c *Client) ListDevices(req *ListDevicesRequest) (ListDevicesResponse, erro
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/devices", c.baseURL), bytes.NewBuffer(body))
+	path := "/api/v1/devices"
+	httpReq, err := http.NewRequest("GET", fmt.Sprintf("%s%s", c.baseURL, path), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
+		return nil, fmt.Errorf("failed to add auth headers: %w", err)
+	}
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -183,12 +247,16 @@ func (c *Client) SendMessage(deviceID string, req *SendMessageRequest) (*SendMes
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/devices/%s/message", c.baseURL, deviceID), bytes.NewBuffer(body))
+	path := fmt.Sprintf("/api/v1/devices/%s/message", deviceID)
+	httpReq, err := http.NewRequest("POST", fmt.Sprintf("%s%s", c.baseURL, path), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
+		return nil, fmt.Errorf("failed to add auth headers: %w", err)
+	}
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {

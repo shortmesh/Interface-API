@@ -1,66 +1,4 @@
 definitions:
-  apikeys.APIKeyInfo:
-    properties:
-      created_at:
-        example: "2026-02-19T20:00:00Z"
-        type: string
-      expires_at:
-        example: "2026-12-31T23:59:59Z"
-        type: string
-      key_id:
-        example: a1b2c3d4e5f6g7h8
-        type: string
-      last_used_at:
-        example: "2026-02-19T20:30:00Z"
-        type: string
-      name:
-        example: Production API Key
-        type: string
-    type: object
-  apikeys.APIKeyResponse:
-    properties:
-      data:
-        $ref: '#/definitions/apikeys.APIKeyInfo'
-      key:
-        example: ak_123456789abcdef123456789abcdef123456789
-        type: string
-      message:
-        example: API key created successfully
-        type: string
-    type: object
-  apikeys.CreateAPIKeyRequest:
-    properties:
-      expires_at:
-        example: "2026-12-31T23:59:59Z"
-        type: string
-      name:
-        example: Production API Key
-        maxLength: 255
-        minLength: 1
-        type: string
-    required:
-    - name
-    type: object
-  apikeys.DeleteAPIKeyRequest:
-    properties:
-      key_id:
-        example: a1b2c3d4e5f6g7h8
-        type: string
-    required:
-    - key_id
-    type: object
-  apikeys.ErrorResponse:
-    properties:
-      error:
-        example: message
-        type: string
-    type: object
-  apikeys.MessageResponse:
-    properties:
-      message:
-        example: API key deleted successfully
-        type: string
-    type: object
   devices.CreateDeviceRequest:
     properties:
       platform:
@@ -130,6 +68,25 @@ definitions:
         example: Message queued successfully
         type: string
     type: object
+  tokens.CreateRequest:
+    properties:
+      expires_at:
+        example: "2026-12-31T23:59:59Z"
+        type: string
+    type: object
+  tokens.CreateResponse:
+    properties:
+      message:
+        type: string
+      token:
+        example: mt_xxxxx
+        type: string
+    type: object
+  tokens.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
   users.CreateUserRequest:
     properties:
       email:
@@ -168,7 +125,7 @@ definitions:
         example: User created successfully
         type: string
       token:
-        example: sk_123456789abcdef123456789abcdef123456789
+        example: sk_xxxxx
         type: string
     type: object
 info:
@@ -177,105 +134,6 @@ info:
   title: Shortmesh - Interface API
   version: "1.0"
 paths:
-  /api/v1/api-keys:
-    delete:
-      consumes:
-      - application/json
-      description: Delete an API key for the authenticated user
-      parameters:
-      - description: API key ID to delete
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/apikeys.DeleteAPIKeyRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: API key deleted successfully
-          schema:
-            $ref: '#/definitions/apikeys.MessageResponse'
-        "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-        "404":
-          description: API key not found
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete an API key
-      tags:
-      - apikeys
-    get:
-      description: Get all API keys for the authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of API keys
-          schema:
-            items:
-              $ref: '#/definitions/apikeys.APIKeyInfo'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List API keys
-      tags:
-      - apikeys
-    post:
-      consumes:
-      - application/json
-      description: Create a new API key for the authenticated user
-      parameters:
-      - description: API key creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/apikeys.CreateAPIKeyRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: API key created successfully
-          schema:
-            $ref: '#/definitions/apikeys.APIKeyResponse'
-        "400":
-          description: Invalid request body or validation error
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/apikeys.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create a new API key
-      tags:
-      - apikeys
   /api/v1/auth/login:
     post:
       consumes:
@@ -313,6 +171,12 @@ paths:
   /api/v1/auth/logout:
     post:
       description: Invalidate the current session token
+      parameters:
+      - description: 'Session token in format: Bearer sk_xxxxx (obtained from /auth/login
+          or /auth/register)'
+        in: header
+        name: Authorization
+        type: string
       produces:
       - application/json
       responses:
@@ -371,8 +235,12 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete a device for the authenticated user
+      description: Delete a device for the Matrix identity
       parameters:
+      - description: 'Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)'
+        in: header
+        name: Authorization
+        type: string
       - description: Device deletion request
         in: body
         name: request
@@ -390,6 +258,10 @@ paths:
           description: Invalid request body or validation error
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
+        "401":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -402,7 +274,12 @@ paths:
     get:
       consumes:
       - application/json
-      description: List all devices for the authenticated user
+      description: List all devices for the Matrix identity
+      parameters:
+      - description: 'Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)'
+        in: header
+        name: Authorization
+        type: string
       produces:
       - application/json
       responses:
@@ -412,8 +289,8 @@ paths:
             items:
               $ref: '#/definitions/devices.Device'
             type: array
-        "400":
-          description: Invalid request body or validation error
+        "401":
+          description: Invalid or expired matrix token
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
         "500":
@@ -428,8 +305,12 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new device for the authenticated user
+      description: Create a new device for the Matrix identity
       parameters:
+      - description: 'Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)'
+        in: header
+        name: Authorization
+        type: string
       - description: Device creation request
         in: body
         name: request
@@ -447,6 +328,10 @@ paths:
           description: Invalid request body or validation error
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
+        "401":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -462,6 +347,10 @@ paths:
       - application/json
       description: Queue a message to be sent via the specified device
       parameters:
+      - description: 'Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)'
+        in: header
+        name: Authorization
+        type: string
       - description: Device ID
         in: path
         name: device_id
@@ -484,6 +373,10 @@ paths:
           description: Invalid request body or validation error
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
+        "401":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -497,8 +390,14 @@ paths:
     get:
       deprecated: true
       description: Establishes a WebSocket connection to stream real-time add devices
-        qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client
-        instead.
+        qr-code. Authentication via query parameter 'token' (e.g., wss://api/v1/devices/qr-code?token=mt_xxxxx).
+        This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
+      parameters:
+      - description: 'Matrix token (obtained from /tokens) - format: mt_xxxxx'
+        in: query
+        name: token
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -507,21 +406,50 @@ paths:
           schema:
             type: string
         "401":
-          description: Missing or invalid authentication token
+          description: Missing or invalid matrix token
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: WebSocket qr-code endpoint (Not executable in Swagger UI)
       tags:
       - devices
+  /api/v1/tokens:
+    post:
+      consumes:
+      - application/json
+      description: Create a Matrix identity and get a token for Matrix operations
+      parameters:
+      - description: 'Session token in format: Bearer sk_xxxxx (obtained from /auth/login
+          or /auth/register)'
+        in: header
+        name: Authorization
+        type: string
+      - description: Optional expiry configuration
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/tokens.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Matrix token created successfully
+          schema:
+            $ref: '#/definitions/tokens.CreateResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a Matrix token
+      tags:
+      - tokens
 securityDefinitions:
   BearerAuth:
-    description: 'Enter your token in the format: Bearer {token}'
     in: header
     name: Authorization
     type: apiKey

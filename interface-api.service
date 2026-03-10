@@ -1,0 +1,29 @@
+[Unit]
+Description=Interface API Service
+After=network.target
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+User=interface-api
+Group=interface-api
+WorkingDirectory=/opt/interface-api
+ExecStart=/opt/interface-api/bin/api
+Restart=on-failure
+RestartSec=5
+
+EnvironmentFile=/opt/interface-api/.env.default
+EnvironmentFile=/opt/interface-api/.env
+
+; Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/interface-api
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

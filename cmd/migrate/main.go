@@ -7,15 +7,12 @@ import (
 
 	"interface-api/internal/database"
 	"interface-api/migrations"
+	_ "interface-api/pkg/config"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/migrator"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	godotenv.Load(".env.default", ".env")
-
 	var (
 		action string
 		steps  int
@@ -57,7 +54,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Usage: migrate [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		fmt.Fprintf(os.Stderr, "  -action string\n")
-		fmt.Fprintf(os.Stderr, "        Migration action: up, down, fresh, status (default \"up\")\n")
+		fmt.Fprintf(os.Stderr, "        Migration action: up, down, status (default \"up\")\n")
 		fmt.Fprintf(os.Stderr, "  -steps int\n")
 		fmt.Fprintf(os.Stderr, "        Number of migrations to rollback (default 1, only for 'down' action)\n\n")
 		fmt.Fprintf(os.Stderr, "Examples:\n")
@@ -67,6 +64,5 @@ func init() {
 		fmt.Fprintf(os.Stderr, "  migrate -action=status                # Show migration status\n\n")
 		fmt.Fprintf(os.Stderr, "Environment Variables:\n")
 		fmt.Fprintf(os.Stderr, "  AUTO_MIGRATE=true                     # Auto-run migrations on app start\n")
-		fmt.Fprintf(os.Stderr, "  AUTO_CREATE_TABLES=true               # Auto-create tables on first run\n")
 	}
 }

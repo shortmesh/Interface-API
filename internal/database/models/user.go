@@ -10,14 +10,13 @@ import (
 )
 
 type User struct {
-	ID              uint      `gorm:"primaryKey"`
-	EmailCiphertext []byte    `gorm:"type:blob;not null"`
-	EmailHash       []byte    `gorm:"type:binary(32);uniqueIndex;not null"`
-	PasswordHash    string    `gorm:"not null;size:255"`
-	IsVerified      bool      `gorm:"default:false"`
-	CreatedAt       time.Time `gorm:"not null"`
-	UpdatedAt       time.Time `gorm:"not null"`
-	LastLoginAt     *time.Time
+	ID           uint
+	Email        string
+	PasswordHash string
+	IsVerified   bool
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	LastLoginAt  *time.Time
 }
 
 func (User) TableName() string {
@@ -53,33 +52,8 @@ func (u *User) RecordLogin(db *gorm.DB) error {
 	}).Error
 }
 
-func (u *User) SetEmail(email string) error {
-	encrypted, err := crypto.Encrypt(email)
-	if err != nil {
-		return err
-	}
-	u.EmailCiphertext = encrypted
-
-	hash, err := crypto.Hash(email)
-	if err != nil {
-		return err
-	}
-	u.EmailHash = hash
-
-	return nil
-}
-
-func (u *User) GetEmail() (string, error) {
-	return crypto.Decrypt(u.EmailCiphertext)
-}
-
 func FindUserByEmail(db *gorm.DB, email string) (*User, error) {
-	hash, err := crypto.Hash(email)
-	if err != nil {
-		return nil, err
-	}
-
 	var user User
-	err = db.Where("email_hash = ?", hash).First(&user).Error
+	err := db.Where("email = ?", email).First(&user).Error
 	return &user, err
 }

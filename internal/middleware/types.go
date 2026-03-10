@@ -5,8 +5,8 @@ import "interface-api/internal/database"
 type AuthMethod string
 
 const (
-	AuthMethodSession AuthMethod = "session"
-	AuthMethodAPIKey  AuthMethod = "apikey"
+	AuthMethodSession     AuthMethod = "session"
+	AuthMethodMatrixToken AuthMethod = "matrix_token"
 )
 
 type AuthMiddleware struct {

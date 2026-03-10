@@ -15,6 +15,7 @@ RestartSec=5
 
 EnvironmentFile=/opt/interface-api/.env.default
 EnvironmentFile=/opt/interface-api/.env
+Environment="XDG_CACHE_HOME=/opt/interface-api/.cache"
 Environment="GOCACHE=/opt/interface-api/.cache/go-build"
 Environment="GOMODCACHE=/opt/interface-api/.cache/go-mod"
 

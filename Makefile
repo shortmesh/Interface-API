@@ -135,6 +135,8 @@ setup-systemd:
 	@cp .env.default /opt/interface-api/.env.default
 	@echo "Creating data directory..."
 	@mkdir -p /opt/interface-api/data
+	@echo "Creating cache directories..."
+	@mkdir -p /opt/interface-api/.cache/go-build /opt/interface-api/.cache/go-mod
 	@echo "Setting permissions..."
 	@chown -R interface-api:interface-api /opt/interface-api
 	@chmod 600 /opt/interface-api/.env

@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"interface-api/pkg/config"
 	"interface-api/pkg/logger"
 
-	sqlcipher "github.com/gdanko/gorm-sqlcipher"
 	"gorm.io/gorm"
 )
 
@@ -43,6 +44,7 @@ func New(opts ...Options) Service {
 		sqlitePath = "./data/shortmesh.db"
 	}
 	dbEncryptionKey := os.Getenv("DB_ENCRYPTION_KEY")
+	disableEncryption := strings.ToLower(os.Getenv("DISABLE_DB_ENCRYPTION"))
 
 	var db *gorm.DB
 	var err error
@@ -59,16 +61,28 @@ func New(opts ...Options) Service {
 		os.Exit(1)
 	}
 
-	logger.Info("Initializing encrypted SQLite database with SQLCipher")
-	dsn := fmt.Sprintf(
-		"%s?_pragma_key=x'%s'&_pragma_cipher_compatibility=3&_pragma_cipher_page_size=4096",
-		sqlitePath,
-		dbEncryptionKey,
-	)
-	db, err = gorm.Open(sqlcipher.Open(dsn), gormConfig)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Encrypted SQLite connection failed: %v", err))
-		os.Exit(1)
+	shouldEncrypt := true
+	if disableEncryption == "true" {
+		shouldEncrypt = false
+		if config.IsProd() {
+			logger.Warn("SECURITY WARNING: Database encryption disabled in production mode")
+		}
+	}
+
+	if shouldEncrypt {
+		logger.Info("Initializing encrypted SQLite database with SQLCipher")
+		db, err = openDatabase(sqlitePath, dbEncryptionKey, gormConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Encrypted SQLite connection failed: %v", err))
+			os.Exit(1)
+		}
+	} else {
+		logger.Info("Initializing standard SQLite database (unencrypted)")
+		db, err = openDatabase(sqlitePath, "", gormConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("SQLite connection failed: %v", err))
+			os.Exit(1)
+		}
 	}
 
 	sqlDB, err := db.DB()

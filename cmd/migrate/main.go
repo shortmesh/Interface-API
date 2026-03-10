@@ -64,6 +64,5 @@ func init() {
 		fmt.Fprintf(os.Stderr, "  migrate -action=status                # Show migration status\n\n")
 		fmt.Fprintf(os.Stderr, "Environment Variables:\n")
 		fmt.Fprintf(os.Stderr, "  AUTO_MIGRATE=true                     # Auto-run migrations on app start\n")
-		fmt.Fprintf(os.Stderr, "  AUTO_CREATE_TABLES=true               # Auto-create tables on first run\n")
 	}
 }

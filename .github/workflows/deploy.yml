@@ -31,6 +31,7 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            mkdir -p /opt/interface-api
             systemctl stop interface-api
 
       - name: Upload binary via SSH
@@ -40,7 +41,7 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "bin"
-          target: "/srv/Interface-API/"
+          target: "/opt/interface-api/"
           overwrite: true
 
       - name: Start service

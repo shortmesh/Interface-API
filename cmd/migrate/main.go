@@ -7,15 +7,12 @@ import (
 
 	"interface-api/internal/database"
 	"interface-api/migrations"
+	_ "interface-api/pkg/config"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/migrator"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	godotenv.Load(".env.default", ".env")
-
 	var (
 		action string
 		steps  int

@@ -5,15 +5,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "interface-api/pkg/config"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/worker"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	godotenv.Load(".env.default", ".env")
-
 	logger.Info("Starting standalone message worker service")
 
 	w := worker.New()

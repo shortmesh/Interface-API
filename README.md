@@ -44,8 +44,27 @@ cp .env.example .env
 
 ### Server Configuration
 
+- `APP_MODE` - Application mode: `development` or `production`
+  - **Production mode** enforces HTTPS for server and external services
+  - **Development mode** has relaxed security settings
 - `HOST` - Host address the server will bind to (default: `127.0.0.1`)
 - `PORT` - Port the server will listen on (default: `8080`)
+
+#### TLS/HTTPS Configuration (Production)
+
+In production mode (`APP_MODE=prod`), the server requires HTTPS unless explicitly disabled:
+
+- `TLS_CERT_FILE` - Path to TLS certificate file
+- `TLS_KEY_FILE` - Path to TLS private key file
+
+#### Security Overrides
+
+> [!WARNING]
+>
+> Use these overrides with caution in production environments
+
+- `ALLOW_INSECURE_SERVER` - Allow server to run without HTTPS in production (e.g., behind reverse proxy with TLS termination)
+- `ALLOW_INSECURE_EXTERNAL` - Allow connections to external services over non-HTTPS protocols in production
 
 ### Required Environment Variables
 
@@ -110,6 +129,7 @@ Regenerate: `make docs`
 
 ## Resources
 
+- [Security & Environment Configuration](docs/SECURITY.md)
 - [Migration Guide](docs/MIGRATIONS.md)
 - [Throttler Documentation](docs/THROTTLER.md)
 - [QR Worker Documentation](docs/QR_WORKER.md)

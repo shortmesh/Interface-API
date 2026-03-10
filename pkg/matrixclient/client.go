@@ -12,12 +12,18 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"interface-api/pkg/config"
 )
 
 func New() (*Client, error) {
 	baseURL := os.Getenv("MATRIX_CLIENT_URL")
 	if baseURL == "" {
 		return nil, fmt.Errorf("MATRIX_CLIENT_URL environment variable is not set")
+	}
+
+	if err := config.ValidateExternalURL(baseURL, "MATRIX_CLIENT_URL"); err != nil {
+		return nil, err
 	}
 
 	clientID := os.Getenv("ADMIN_CLIENT_ID")

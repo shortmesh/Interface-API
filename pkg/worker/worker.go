@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 
+	"interface-api/pkg/config"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/matrixclient"
 	"interface-api/pkg/rabbitmq"
@@ -48,6 +49,10 @@ func New() *Worker {
 	rabbitURL := os.Getenv("RABBITMQ_URL")
 	if rabbitURL == "" {
 		rabbitURL = "amqp://guest:guest@localhost:5672/"
+	}
+
+	if err := config.ValidateExternalURL(rabbitURL, "RABBITMQ_URL"); err != nil {
+		logger.Warn(fmt.Sprintf("RabbitMQ URL validation warning: %v", err))
 	}
 
 	exchangeName := os.Getenv("MESSAGE_EXCHANGE_NAME")

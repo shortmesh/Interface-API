@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"interface-api/internal/server"
+	"interface-api/pkg/config"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/worker"
-
-	"github.com/joho/godotenv"
 )
 
 //	@title			Shortmesh - Interface API
@@ -49,8 +48,6 @@ func gracefulShutdown(apiServer *http.Server, w *worker.Worker, done chan bool) 
 }
 
 func main() {
-	godotenv.Load(".env.default", ".env")
-
 	var w *worker.Worker
 	if worker.IsEnabled() {
 		w = worker.New()
@@ -61,13 +58,31 @@ func main() {
 
 	srv := server.NewServer()
 
-	logger.Info(fmt.Sprintf("Starting server on %s", srv.Addr))
-
 	done := make(chan bool, 1)
 
 	go gracefulShutdown(srv, w, done)
 
-	err := srv.ListenAndServe()
+	var err error
+	if config.RequiresHTTPS() {
+		certFile := os.Getenv("TLS_CERT_FILE")
+		keyFile := os.Getenv("TLS_KEY_FILE")
+
+		if certFile == "" || keyFile == "" {
+			logger.Error("TLS_CERT_FILE and TLS_KEY_FILE must be set when running in production mode without ALLOW_INSECURE_SERVER")
+			os.Exit(1)
+		}
+
+		logger.Info(fmt.Sprintf("Starting HTTPS server on %s", srv.Addr))
+		err = srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		protocol := "HTTP"
+		if config.IsProd() {
+			protocol = "HTTP (insecure mode for reverse proxy)"
+		}
+		logger.Info(fmt.Sprintf("Starting %s server on %s", protocol, srv.Addr))
+		err = srv.ListenAndServe()
+	}
+
 	if err != nil && err != http.ErrServerClosed {
 		logger.Error(fmt.Sprintf("Server startup failed: %v", err))
 		os.Exit(1)

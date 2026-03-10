@@ -44,6 +44,19 @@ jobs:
           target: "/opt/interface-api/"
           overwrite: true
 
+      - name: Clone/Update code
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            if [ -d ~/projects/Interface-API ]; then
+              cd ~/projects/Interface-API && git pull
+            else
+              git clone https://github.com/${{ github.repository }}.git ~/projects/Interface-API
+            fi
+
       - name: Start service
         uses: appleboy/ssh-action@v1.0.3
         with:

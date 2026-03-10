@@ -34,7 +34,7 @@ func NewServer() *http.Server {
 		Handler:           NewServer.RegisterRoutes(),
 		IdleTimeout:       time.Minute,
 		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		WriteTimeout:      120 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		MaxHeaderBytes:    1 << 20, // 1 MB
 	}

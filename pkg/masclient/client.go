@@ -60,12 +60,7 @@ func New() (*Client, error) {
 		clientSecret:  clientSecret,
 		tokenLifetime: tokenLifetime,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &http.Transport{
-				MaxIdleConns:        10,
-				MaxIdleConnsPerHost: 2,
-				IdleConnTimeout:     90 * time.Second,
-			},
+			Timeout: 120 * time.Second,
 		},
 	}, nil
 }

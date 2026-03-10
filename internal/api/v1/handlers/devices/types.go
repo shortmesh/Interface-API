@@ -77,7 +77,7 @@ type SendMessageResponse struct {
 // DeviceResponse represents the response after device operations
 type DeviceResponse struct {
 	Message   string `json:"message,omitempty" example:"Scan the QR code to link your device"`
-	QrCodeURL string `json:"qr_code_url,omitempty" example:"/api/v1/devices/qr-code"`
+	QrCodeURL string `json:"qr_code_url,omitempty" example:"wss://example.com/api/v1/devices/qr-code?token=mt_xxxxx"`
 }
 
 // ListDevicesResponse represents the response for listing devices

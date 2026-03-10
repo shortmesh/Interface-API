@@ -53,11 +53,14 @@ func (h *DeviceHandler) Create(c echo.Context) error {
 
 	matrixUsername := matrixIdentity.MatrixUsername
 
+	authHeader := c.Request().Header.Get("Authorization")
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
 	scheme := "ws"
 	if c.Request().TLS != nil || c.Request().Header.Get("X-Forwarded-Proto") == "https" {
 		scheme = "wss"
 	}
-	qrCodeURL := fmt.Sprintf("%s://%s/api/v1/devices/qr-code", scheme, c.Request().Host)
+	qrCodeURL := fmt.Sprintf("%s://%s/api/v1/devices/qr-code?token=%s", scheme, c.Request().Host, token)
 
 	consumer, err := rabbitmq.NewConsumer(*h.rabbitURL)
 	if err != nil {

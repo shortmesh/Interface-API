@@ -390,12 +390,13 @@ paths:
     get:
       deprecated: true
       description: Establishes a WebSocket connection to stream real-time add devices
-        qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client
-        instead.
+        qr-code. Authentication via query parameter 'token' (e.g., wss://api/v1/devices/qr-code?token=mt_xxxxx).
+        This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
       parameters:
-      - description: 'Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)'
-        in: header
-        name: Authorization
+      - description: 'Matrix token (obtained from /tokens) - format: mt_xxxxx'
+        in: query
+        name: token
+        required: true
         type: string
       produces:
       - application/json
@@ -412,8 +413,6 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: WebSocket qr-code endpoint (Not executable in Swagger UI)
       tags:
       - devices

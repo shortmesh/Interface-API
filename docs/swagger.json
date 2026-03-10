@@ -331,12 +331,7 @@
         },
         "/api/v1/devices/qr-code": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
+                "description": "Establishes a WebSocket connection to stream real-time add devices qr-code. Authentication via query parameter 'token' (e.g., wss://api/v1/devices/qr-code?token=mt_xxxxx). This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.",
                 "produces": [
                     "application/json"
                 ],
@@ -348,9 +343,10 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)",
-                        "name": "Authorization",
-                        "in": "header"
+                        "description": "Matrix token (obtained from /tokens) - format: mt_xxxxx",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {

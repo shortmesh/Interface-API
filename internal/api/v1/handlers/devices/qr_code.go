@@ -17,14 +17,13 @@ import (
 // QRCode godoc
 //
 //	@Summary		WebSocket qr-code endpoint (Not executable in Swagger UI)
-//	@Description	Establishes a WebSocket connection to stream real-time add devices qr-code. This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
+//	@Description	Establishes a WebSocket connection to stream real-time add devices qr-code. Authentication via query parameter 'token' (e.g., wss://api/v1/devices/qr-code?token=mt_xxxxx). This endpoint cannot be tested in Swagger UI - use a WebSocket client instead.
 //	@Tags			devices
 //	@Produce		json
-//	@Param			Authorization	header	string	false	"Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)"
-//	@Security		BearerAuth
-//	@Success		101	{string}	string			"WebSocket connection established"
-//	@Failure		401	{object}	ErrorResponse	"Missing or invalid matrix token"
-//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Param			token	query		string			true	"Matrix token (obtained from /tokens) - format: mt_xxxxx"
+//	@Success		101		{string}	string			"WebSocket connection established"
+//	@Failure		401		{object}	ErrorResponse	"Missing or invalid matrix token"
+//	@Failure		500		{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/devices/qr-code [get]
 //	@deprecated
 func (h *DeviceHandler) QRCode(c echo.Context) error {

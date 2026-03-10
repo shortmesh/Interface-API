@@ -27,7 +27,7 @@ func RegisterRoutes(g *echo.Group, db database.Service) {
 	// Device routes
 	g.POST("/devices", deviceWsHandler.Create, auth.Authenticate(middleware.AuthMethodMatrixToken))
 	g.GET("/devices", deviceWsHandler.List, auth.Authenticate(middleware.AuthMethodMatrixToken))
-	g.GET("/devices/qr-code", deviceWsHandler.QRCode, auth.Authenticate(middleware.AuthMethodMatrixToken))
+	g.GET("/devices/qr-code", deviceWsHandler.QRCode, auth.AuthenticateWebSocket(middleware.AuthMethodMatrixToken))
 	g.DELETE("/devices", deviceWsHandler.Delete, auth.Authenticate(middleware.AuthMethodMatrixToken))
 	g.POST("/devices/:device_id/message", deviceWsHandler.SendMessage, auth.Authenticate(middleware.AuthMethodMatrixToken))
 }

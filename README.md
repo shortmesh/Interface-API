@@ -29,6 +29,14 @@ Server: `http://localhost:8080`
 - SQLite (SQLCipher optional, see [Security](docs/SECURITY.md))
 - RabbitMQ (for worker service)
 
+### Ubuntu/Debian Dependencies
+
+For SQLCipher support (encrypted database):
+```bash
+sudo apt-get update
+sudo apt-get install -y libsqlite3-dev libsqlcipher-dev
+```
+
 ## Configuration
 
 > [!NOTE]

@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"sync"
+	"time"
 
 	"interface-api/pkg/config"
 	"interface-api/pkg/logger"
@@ -116,26 +117,66 @@ func (w *Worker) runWorker(workerID int) {
 
 	logger.Info(fmt.Sprintf("Worker %d starting", workerID))
 
-	ctx, cancel := context.WithCancel(w.ctx)
-	defer cancel()
-
 	matrixClient, err := matrixclient.New()
 	if err != nil {
 		logger.Error(fmt.Sprintf("Worker %d: Matrix client initialization failed: %v", workerID, err))
 		return
 	}
 
+	retryDelay := 1 * time.Second
+	maxRetryDelay := 60 * time.Second
+	connectionSuccessThreshold := 30 * time.Second
+
+	for {
+		select {
+		case <-w.ctx.Done():
+			logger.Info(fmt.Sprintf("Worker %d: Shutting down", workerID))
+			return
+		default:
+		}
+
+		logger.Info(fmt.Sprintf("Worker %d: Connecting to RabbitMQ", workerID))
+		connectionStart := time.Now()
+		err := w.runWorkerLoop(workerID, matrixClient)
+		connectionDuration := time.Since(connectionStart)
+
+		if err == nil {
+			logger.Info(fmt.Sprintf("Worker %d: Connection closed cleanly", workerID))
+			return
+		}
+
+		if connectionDuration >= connectionSuccessThreshold {
+			retryDelay = 1 * time.Second
+		}
+
+		select {
+		case <-w.ctx.Done():
+			logger.Info(fmt.Sprintf("Worker %d: Shutting down", workerID))
+			return
+		default:
+			logger.Warn(fmt.Sprintf("Worker %d: Connection lost after %v, reconnecting in %v", workerID, connectionDuration.Round(time.Second), retryDelay))
+			time.Sleep(retryDelay)
+			retryDelay *= 2
+			if retryDelay > maxRetryDelay {
+				retryDelay = maxRetryDelay
+			}
+		}
+	}
+}
+
+func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) error {
+	ctx, cancel := context.WithCancel(w.ctx)
+	defer cancel()
+
 	consumer, err := rabbitmq.NewConsumer(w.rabbitURL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Worker %d: RabbitMQ consumer initialization failed: %v", workerID, err))
-		return
+		return err
 	}
 	defer consumer.Close()
 
 	producer, err := rabbitmq.NewProducer(w.rabbitURL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Worker %d: RabbitMQ producer initialization failed: %v", workerID, err))
-		return
+		return err
 	}
 	defer producer.Close()
 
@@ -147,8 +188,7 @@ func (w *Worker) runWorker(workerID int) {
 	delayQueueConfig.Args = delayQueueArgs
 
 	if err := consumer.DeclareQueue(delayQueueConfig); err != nil {
-		logger.Error(fmt.Sprintf("Worker %d: Delay queue declaration failed: %v", workerID, err))
-		return
+		return err
 	}
 
 	deliveryHandler := func(delivery amqp.Delivery) error {
@@ -211,12 +251,17 @@ func (w *Worker) runWorker(workerID int) {
 
 	err = consumer.Consume(ctx, w.queueName, deliveryHandler, cancel, opts)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Worker %d: Queue consumption failed: %v", workerID, err))
-		return
+		return err
 	}
 
-	logger.Info(fmt.Sprintf("Worker %d: Listening for messages on exchange '%s' with pattern 'message.*.*'", workerID, w.exchangeName))
+	logger.Info(fmt.Sprintf("Worker %d: Connected and listening on exchange '%s' with pattern 'message.*.*'", workerID, w.exchangeName))
 
 	<-ctx.Done()
-	logger.Info(fmt.Sprintf("Worker %d: Shutting down", workerID))
+
+	select {
+	case <-w.ctx.Done():
+		return nil
+	default:
+		return fmt.Errorf("connection closed")
+	}
 }

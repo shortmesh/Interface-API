@@ -36,7 +36,7 @@ definitions:
         example: Scan the QR code to link your device
         type: string
       qr_code_url:
-        example: /api/v1/devices/qr-code
+        example: wss://example.com/api/v1/devices/qr-code?token=mt_xxxxx
         type: string
     type: object
   devices.ErrorResponse:

@@ -22,7 +22,7 @@ setup:
 	fi
 	@echo "Setup complete! Run 'make migrate-up && make run' to start."
 
-build:
+build: docs
 	@echo "Building binaries..."
 	@if [ "$$(grep -E '^DISABLE_DB_ENCRYPTION=(false|False|FALSE)' .env 2>/dev/null)" ]; then \
 		echo "  - With SQLCipher encryption"; \

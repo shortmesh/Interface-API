@@ -554,7 +554,7 @@ const docTemplate = `{
                 },
                 "qr_code_url": {
                     "type": "string",
-                    "example": "/api/v1/devices/qr-code"
+                    "example": "wss://example.com/api/v1/devices/qr-code?token=mt_xxxxx"
                 }
             }
         },

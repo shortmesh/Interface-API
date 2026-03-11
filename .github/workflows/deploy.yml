@@ -25,6 +25,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsqlite3-dev libsqlcipher-dev
 
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
       - name: Configure for production build
         run: |
           echo "DISABLE_DB_ENCRYPTION=false" > .env

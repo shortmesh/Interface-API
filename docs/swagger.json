@@ -198,6 +198,12 @@
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -254,6 +260,12 @@
                         }
                     },
                     "401": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "403": {
                         "description": "Invalid or expired matrix token",
                         "schema": {
                             "$ref": "#/definitions/devices.ErrorResponse"
@@ -320,6 +332,12 @@
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -358,6 +376,12 @@
                     },
                     "401": {
                         "description": "Missing or invalid matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
                         "schema": {
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
@@ -432,6 +456,12 @@
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -453,7 +483,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Services"
+                    "services"
                 ],
                 "summary": "List available services",
                 "parameters": [
@@ -469,7 +499,10 @@
                     "200": {
                         "description": "List of available services",
                         "schema": {
-                            "$ref": "#/definitions/services.ListServicesResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/services.ServiceInfo"
+                            }
                         }
                     },
                     "401": {
@@ -502,7 +535,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Authy"
+                    "services - authy"
                 ],
                 "summary": "Generate and send OTP",
                 "parameters": [
@@ -543,6 +576,12 @@
                             "$ref": "#/definitions/otp.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -567,7 +606,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Authy"
+                    "services - authy"
                 ],
                 "summary": "Verify OTP",
                 "parameters": [
@@ -614,6 +653,12 @@
                             "$ref": "#/definitions/otp.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
                     "429": {
                         "description": "TooManyRequests",
                         "schema": {
@@ -641,7 +686,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Subscriptions"
+                    "services"
                 ],
                 "summary": "List user's subscribed services",
                 "parameters": [
@@ -657,7 +702,10 @@
                     "200": {
                         "description": "List of user's services",
                         "schema": {
-                            "$ref": "#/definitions/services.ListUserServicesResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/services.UserServiceInfo"
+                            }
                         }
                     },
                     "401": {
@@ -687,7 +735,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Subscriptions"
+                    "services"
                 ],
                 "summary": "Get service subscription status",
                 "parameters": [
@@ -749,7 +797,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Subscriptions"
+                    "services"
                 ],
                 "summary": "Subscribe to a service",
                 "parameters": [
@@ -965,7 +1013,7 @@
             "properties": {
                 "identifier": {
                     "type": "string",
-                    "example": "237123456780"
+                    "example": "+237123456780"
                 },
                 "platform": {
                     "type": "string",
@@ -1005,7 +1053,7 @@
                 },
                 "identifier": {
                     "type": "string",
-                    "example": "237123456780"
+                    "example": "+237123456780"
                 },
                 "platform": {
                     "type": "string",
@@ -1035,28 +1083,6 @@
                 }
             }
         },
-        "services.ListServicesResponse": {
-            "type": "object",
-            "properties": {
-                "services": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/services.ServiceInfo"
-                    }
-                }
-            }
-        },
-        "services.ListUserServicesResponse": {
-            "type": "object",
-            "properties": {
-                "services": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/services.UserServiceInfo"
-                    }
-                }
-            }
-        },
         "services.ServiceInfo": {
             "type": "object",
             "properties": {
@@ -1077,25 +1103,9 @@
         "services.ServiceStatusResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
-                    "type": "string",
-                    "example": "your_client_id"
-                },
-                "client_secret": {
-                    "type": "string",
-                    "example": "your_client_secret"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2026-03-12T10:00:00Z"
-                },
                 "display_name": {
                     "type": "string",
                     "example": "Authy OTP Service"
-                },
-                "expires_at": {
-                    "type": "string",
-                    "example": "2027-03-12T10:00:00Z"
                 },
                 "is_enabled": {
                     "type": "boolean",

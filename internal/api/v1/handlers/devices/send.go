@@ -36,6 +36,7 @@ type queuedMessage struct {
 //	@Success		200			{object}	SendMessageResponse	"Message queued successfully"
 //	@Failure		400			{object}	ErrorResponse		"Invalid request body or validation error"
 //	@Failure		401			{object}	ErrorResponse		"Invalid or expired matrix token"
+//	@Failure		403			{object}	ErrorResponse		"Invalid or expired matrix token"
 //	@Failure		500			{object}	ErrorResponse		"Internal server error"
 //	@Router			/api/v1/devices/{device_id}/message [post]
 func (h *DeviceHandler) SendMessage(c echo.Context) error {

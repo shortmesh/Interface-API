@@ -15,7 +15,7 @@ import (
 //
 //	@Summary		Subscribe to a service
 //	@Description	Subscribe the authenticated user to a service with auto-generated credentials
-//	@Tags			Services - Subscriptions
+//	@Tags			services
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth

@@ -7,7 +7,7 @@ import (
 )
 
 type GenerateOTPRequest struct {
-	Identifier string `json:"identifier" example:"237123456780" validate:"required"`
+	Identifier string `json:"identifier" example:"+237123456780" validate:"required"`
 	Platform   string `json:"platform" example:"wa" validate:"required"`
 	Sender     string `json:"sender" example:"237123456789" validate:"required"`
 }
@@ -18,7 +18,7 @@ type GenerateOTPResponse struct {
 }
 
 type VerifyOTPRequest struct {
-	Identifier string `json:"identifier" example:"237123456780" validate:"required"`
+	Identifier string `json:"identifier" example:"+237123456780" validate:"required"`
 	Platform   string `json:"platform" example:"wa" validate:"required"`
 	Sender     string `json:"sender" example:"237123456789" validate:"required"`
 	Code       string `json:"code" example:"123456" validate:"required"`

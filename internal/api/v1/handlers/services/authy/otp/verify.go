@@ -7,6 +7,7 @@ import (
 
 	"interface-api/internal/database/models"
 	"interface-api/pkg/logger"
+	"interface-api/pkg/phoneutil"
 
 	"github.com/labstack/echo/v4"
 )
@@ -15,7 +16,7 @@ import (
 //
 //	@Summary		Verify OTP
 //	@Description	Verify an OTP code for the authenticated user
-//	@Tags			Services - Authy
+//	@Tags			services - authy
 //	@Accept			json
 //	@Produce		json
 //	@Security		BasicAuth
@@ -25,6 +26,7 @@ import (
 //	@Success		200				{object}	VerifyOTPResponse	"OTP verified successfully"
 //	@Failure		400				{object}	ErrorResponse		"Invalid request body or validation error"
 //	@Failure		401				{object}	ErrorResponse		"Unauthorized"
+//	@Failure		403				{object}	ErrorResponse		"Invalid or expired matrix token"
 //	@Failure		429				{object}	ErrorResponse		"TooManyRequests"
 //	@Failure		500				{object}	ErrorResponse		"Internal server error"
 //	@Router			/api/v1/services/authy/otp/verify [post]
@@ -53,6 +55,13 @@ func (h *Handler) Verify(c echo.Context) error {
 		logger.Info("OTP verification failed: missing identifier")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: identifier",
+		})
+	}
+
+	if err := phoneutil.ValidateE164(req.Identifier); err != nil {
+		logger.Info("OTP verification failed: identifier not in E.164 format")
+		return c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "identifier must be in E.164 format (e.g., +1234567890)",
 		})
 	}
 

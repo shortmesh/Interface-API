@@ -13,13 +13,13 @@ import (
 //
 //	@Summary		List available services
 //	@Description	Get all active services available for subscription
-//	@Tags			Services
+//	@Tags			services
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			Authorization	header		string					true	"Session token in format: Bearer sk_xxxxx"
-//	@Success		200				{object}	ListServicesResponse	"List of available services"
-//	@Failure		401				{object}	ErrorResponse			"Unauthorized"
-//	@Failure		500				{object}	ErrorResponse			"Internal server error"
+//	@Param			Authorization	header		string			true	"Session token in format: Bearer sk_xxxxx"
+//	@Success		200				{array}		ServiceInfo		"List of available services"
+//	@Failure		401				{object}	ErrorResponse	"Unauthorized"
+//	@Failure		500				{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/services [get]
 func (h *ServiceHandler) ListAvailableServices(c echo.Context) error {
 	services, err := models.FindAllActiveServices(h.db.DB())
@@ -37,7 +37,5 @@ func (h *ServiceHandler) ListAvailableServices(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, ListServicesResponse{
-		Services: serviceList,
-	})
+	return c.JSON(http.StatusOK, serviceList)
 }

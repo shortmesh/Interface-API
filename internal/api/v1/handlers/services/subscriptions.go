@@ -13,13 +13,13 @@ import (
 //
 //	@Summary		List user's subscribed services
 //	@Description	Get all services the authenticated user has subscribed to, including their status
-//	@Tags			Services - Subscriptions
+//	@Tags			services
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			Authorization	header		string						true	"Session token in format: Bearer sk_xxxxx"
-//	@Success		200				{object}	ListUserServicesResponse	"List of user's services"
-//	@Failure		401				{object}	ErrorResponse				"Unauthorized"
-//	@Failure		500				{object}	ErrorResponse				"Internal server error"
+//	@Param			Authorization	header		string			true	"Session token in format: Bearer sk_xxxxx"
+//	@Success		200				{array}		UserServiceInfo	"List of user's services"
+//	@Failure		401				{object}	ErrorResponse	"Unauthorized"
+//	@Failure		500				{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/services/subscriptions [get]
 func (h *ServiceHandler) ListUserServices(c echo.Context) error {
 	user, ok := c.Get("user").(*models.User)
@@ -54,7 +54,5 @@ func (h *ServiceHandler) ListUserServices(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, ListUserServicesResponse{
-		Services: serviceList,
-	})
+	return c.JSON(http.StatusOK, serviceList)
 }

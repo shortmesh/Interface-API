@@ -11,6 +11,7 @@ import (
 	"interface-api/internal/database/models"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/messagetemplate"
+	"interface-api/pkg/phoneutil"
 	"interface-api/pkg/rabbitmq"
 
 	"github.com/labstack/echo/v4"
@@ -29,7 +30,7 @@ type queuedMessage struct {
 //
 //	@Summary		Generate and send OTP
 //	@Description	Generate a secure OTP code and send it to the specified identifier via the Authy service
-//	@Tags			Services - Authy
+//	@Tags			services - authy
 //	@Accept			json
 //	@Produce		json
 //	@Security		BasicAuth
@@ -38,6 +39,7 @@ type queuedMessage struct {
 //	@Param			request			body		GenerateOTPRequest	true	"OTP generation request"
 //	@Success		200				{object}	GenerateOTPResponse	"OTP sent successfully"
 //	@Failure		400				{object}	ErrorResponse		"Invalid request body or validation error"
+//	@Failure		403				{object}	ErrorResponse		"Invalid or expired matrix token"
 //	@Failure		500				{object}	ErrorResponse		"Internal server error"
 //	@Router			/api/v1/services/authy/otp/generate [post]
 func (h *Handler) Generate(c echo.Context) error {
@@ -71,6 +73,13 @@ func (h *Handler) Generate(c echo.Context) error {
 		logger.Info("OTP generation failed: missing identifier")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Missing required field: identifier",
+		})
+	}
+
+	if err := phoneutil.ValidateE164(req.Identifier); err != nil {
+		logger.Info("OTP generation failed: identifier not in E.164 format")
+		return c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "identifier must be in E.164 format (e.g., +1234567890)",
 		})
 	}
 

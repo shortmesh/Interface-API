@@ -12,7 +12,7 @@ import (
 //
 //	@Summary		Get service subscription status
 //	@Description	Check if the authenticated user has subscribed to a specific service and its status
-//	@Tags			Services - Subscriptions
+//	@Tags			services
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			Authorization	header		string					true	"Session token in format: Bearer sk_xxxxx"
@@ -44,21 +44,11 @@ func (h *ServiceHandler) GetServiceStatus(c echo.Context) error {
 		})
 	}
 
-	var expiresAt *string
-	if userService.ExpiresAt != nil {
-		exp := userService.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")
-		expiresAt = &exp
-	}
-
 	return c.JSON(http.StatusOK, ServiceStatusResponse{
 		Name:         service.Name,
 		DisplayName:  service.DisplayName,
 		IsSubscribed: true,
 		IsEnabled:    userService.IsEnabled,
 		IsExpired:    userService.IsExpired(),
-		ClientID:     userService.ClientID,
-		ClientSecret: userService.ClientSecret,
-		CreatedAt:    userService.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		ExpiresAt:    expiresAt,
 	})
 }

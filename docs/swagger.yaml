@@ -77,7 +77,7 @@ definitions:
   otp.GenerateOTPRequest:
     properties:
       identifier:
-        example: "237123456780"
+        example: "+237123456780"
         type: string
       platform:
         example: wa
@@ -105,7 +105,7 @@ definitions:
         example: "123456"
         type: string
       identifier:
-        example: "237123456780"
+        example: "+237123456780"
         type: string
       platform:
         example: wa
@@ -131,20 +131,6 @@ definitions:
         example: error message
         type: string
     type: object
-  services.ListServicesResponse:
-    properties:
-      services:
-        items:
-          $ref: '#/definitions/services.ServiceInfo'
-        type: array
-    type: object
-  services.ListUserServicesResponse:
-    properties:
-      services:
-        items:
-          $ref: '#/definitions/services.UserServiceInfo'
-        type: array
-    type: object
   services.ServiceInfo:
     properties:
       description:
@@ -159,20 +145,8 @@ definitions:
     type: object
   services.ServiceStatusResponse:
     properties:
-      client_id:
-        example: your_client_id
-        type: string
-      client_secret:
-        example: your_client_secret
-        type: string
-      created_at:
-        example: "2026-03-12T10:00:00Z"
-        type: string
       display_name:
         example: Authy OTP Service
-        type: string
-      expires_at:
-        example: "2027-03-12T10:00:00Z"
         type: string
       is_enabled:
         example: true
@@ -426,6 +400,10 @@ paths:
           description: Invalid or expired matrix token
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
+        "403":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -454,6 +432,10 @@ paths:
               $ref: '#/definitions/devices.Device'
             type: array
         "401":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+        "403":
           description: Invalid or expired matrix token
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
@@ -493,6 +475,10 @@ paths:
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
         "401":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
+        "403":
           description: Invalid or expired matrix token
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
@@ -541,6 +527,10 @@ paths:
           description: Invalid or expired matrix token
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
+        "403":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -573,6 +563,10 @@ paths:
           description: Missing or invalid matrix token
           schema:
             $ref: '#/definitions/devices.ErrorResponse'
+        "403":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/devices.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -595,7 +589,9 @@ paths:
         "200":
           description: List of available services
           schema:
-            $ref: '#/definitions/services.ListServicesResponse'
+            items:
+              $ref: '#/definitions/services.ServiceInfo'
+            type: array
         "401":
           description: Unauthorized
           schema:
@@ -608,7 +604,7 @@ paths:
       - BearerAuth: []
       summary: List available services
       tags:
-      - Services
+      - services
   /api/v1/services/{service_name}/status:
     get:
       description: Check if the authenticated user has subscribed to a specific service
@@ -647,7 +643,7 @@ paths:
       - BearerAuth: []
       summary: Get service subscription status
       tags:
-      - Services - Subscriptions
+      - services
   /api/v1/services/{service_name}/subscribe:
     post:
       consumes:
@@ -688,7 +684,7 @@ paths:
       - BearerAuth: []
       summary: Subscribe to a service
       tags:
-      - Services - Subscriptions
+      - services
   /api/v1/services/authy/otp/generate:
     post:
       consumes:
@@ -723,6 +719,10 @@ paths:
           description: Invalid request body or validation error
           schema:
             $ref: '#/definitions/otp.ErrorResponse'
+        "403":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -731,7 +731,7 @@ paths:
       - BasicAuth: []
       summary: Generate and send OTP
       tags:
-      - Services - Authy
+      - services - authy
   /api/v1/services/authy/otp/verify:
     post:
       consumes:
@@ -769,6 +769,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/otp.ErrorResponse'
+        "403":
+          description: Invalid or expired matrix token
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
         "429":
           description: TooManyRequests
           schema:
@@ -781,7 +785,7 @@ paths:
       - BasicAuth: []
       summary: Verify OTP
       tags:
-      - Services - Authy
+      - services - authy
   /api/v1/services/subscriptions:
     get:
       description: Get all services the authenticated user has subscribed to, including
@@ -798,7 +802,9 @@ paths:
         "200":
           description: List of user's services
           schema:
-            $ref: '#/definitions/services.ListUserServicesResponse'
+            items:
+              $ref: '#/definitions/services.UserServiceInfo'
+            type: array
         "401":
           description: Unauthorized
           schema:
@@ -811,7 +817,7 @@ paths:
       - BearerAuth: []
       summary: List user's subscribed services
       tags:
-      - Services - Subscriptions
+      - services
   /api/v1/tokens:
     post:
       consumes:

@@ -23,6 +23,7 @@ import (
 //	@Param			token	query		string			true	"Matrix token (obtained from /tokens) - format: mt_xxxxx"
 //	@Success		101		{string}	string			"WebSocket connection established"
 //	@Failure		401		{object}	ErrorResponse	"Missing or invalid matrix token"
+//	@Failure		403		{object}	ErrorResponse	"Invalid or expired matrix token"
 //	@Failure		500		{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/devices/qr-code [get]
 //	@deprecated

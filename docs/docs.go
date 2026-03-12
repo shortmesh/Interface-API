@@ -206,6 +206,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -262,6 +268,12 @@ const docTemplate = `{
                         }
                     },
                     "401": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "403": {
                         "description": "Invalid or expired matrix token",
                         "schema": {
                             "$ref": "#/definitions/devices.ErrorResponse"
@@ -328,6 +340,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -366,6 +384,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Missing or invalid matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
                         "schema": {
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
@@ -440,6 +464,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/devices.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/devices.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -461,7 +491,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Services"
+                    "services"
                 ],
                 "summary": "List available services",
                 "parameters": [
@@ -477,7 +507,10 @@ const docTemplate = `{
                     "200": {
                         "description": "List of available services",
                         "schema": {
-                            "$ref": "#/definitions/services.ListServicesResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/services.ServiceInfo"
+                            }
                         }
                     },
                     "401": {
@@ -510,7 +543,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Authy"
+                    "services - authy"
                 ],
                 "summary": "Generate and send OTP",
                 "parameters": [
@@ -551,6 +584,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/otp.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -575,7 +614,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Authy"
+                    "services - authy"
                 ],
                 "summary": "Verify OTP",
                 "parameters": [
@@ -622,6 +661,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/otp.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or expired matrix token",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
                     "429": {
                         "description": "TooManyRequests",
                         "schema": {
@@ -649,7 +694,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Subscriptions"
+                    "services"
                 ],
                 "summary": "List user's subscribed services",
                 "parameters": [
@@ -665,7 +710,10 @@ const docTemplate = `{
                     "200": {
                         "description": "List of user's services",
                         "schema": {
-                            "$ref": "#/definitions/services.ListUserServicesResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/services.UserServiceInfo"
+                            }
                         }
                     },
                     "401": {
@@ -695,7 +743,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Subscriptions"
+                    "services"
                 ],
                 "summary": "Get service subscription status",
                 "parameters": [
@@ -757,7 +805,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Services - Subscriptions"
+                    "services"
                 ],
                 "summary": "Subscribe to a service",
                 "parameters": [
@@ -973,7 +1021,7 @@ const docTemplate = `{
             "properties": {
                 "identifier": {
                     "type": "string",
-                    "example": "237123456780"
+                    "example": "+237123456780"
                 },
                 "platform": {
                     "type": "string",
@@ -1013,7 +1061,7 @@ const docTemplate = `{
                 },
                 "identifier": {
                     "type": "string",
-                    "example": "237123456780"
+                    "example": "+237123456780"
                 },
                 "platform": {
                     "type": "string",
@@ -1043,28 +1091,6 @@ const docTemplate = `{
                 }
             }
         },
-        "services.ListServicesResponse": {
-            "type": "object",
-            "properties": {
-                "services": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/services.ServiceInfo"
-                    }
-                }
-            }
-        },
-        "services.ListUserServicesResponse": {
-            "type": "object",
-            "properties": {
-                "services": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/services.UserServiceInfo"
-                    }
-                }
-            }
-        },
         "services.ServiceInfo": {
             "type": "object",
             "properties": {
@@ -1085,25 +1111,9 @@ const docTemplate = `{
         "services.ServiceStatusResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
-                    "type": "string",
-                    "example": "your_client_id"
-                },
-                "client_secret": {
-                    "type": "string",
-                    "example": "your_client_secret"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2026-03-12T10:00:00Z"
-                },
                 "display_name": {
                     "type": "string",
                     "example": "Authy OTP Service"
-                },
-                "expires_at": {
-                    "type": "string",
-                    "example": "2027-03-12T10:00:00Z"
                 },
                 "is_enabled": {
                     "type": "boolean",

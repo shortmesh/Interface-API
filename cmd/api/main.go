@@ -23,6 +23,9 @@ import (
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
+//	@description				Bearer token authentication (use "Bearer sk_xxxxx" or "Bearer mt_xxxxx")
+
+//	@securityDefinitions.basic	BasicAuth
 
 func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.CleanupWorker, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

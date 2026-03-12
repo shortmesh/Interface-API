@@ -27,6 +27,7 @@ import (
 //	@Success		201		{object}	DeviceResponse		"Requested to add device successfully"
 //	@Failure		400		{object}	ErrorResponse		"Invalid request body or validation error"
 //	@Failure		401		{object}	ErrorResponse		"Invalid or expired matrix token"
+//	@Failure		403		{object}	ErrorResponse		"Invalid or expired matrix token"
 //	@Failure		500		{object}	ErrorResponse		"Internal server error"
 //	@Router			/api/v1/devices [post]
 func (h *DeviceHandler) Create(c echo.Context) error {

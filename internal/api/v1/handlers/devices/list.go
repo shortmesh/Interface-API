@@ -21,6 +21,7 @@ import (
 //	@Security		BearerAuth
 //	@Success		200	{array}		Device			"List of devices"
 //	@Failure		401	{object}	ErrorResponse	"Invalid or expired matrix token"
+//	@Failure		403	{object}	ErrorResponse	"Invalid or expired matrix token"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/devices [get]
 func (h *DeviceHandler) List(c echo.Context) error {

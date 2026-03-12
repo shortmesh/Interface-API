@@ -1284,7 +1284,11 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
+        "BasicAuth": {
+            "type": "basic"
+        },
         "BearerAuth": {
+            "description": "Bearer token authentication (use \"Bearer sk_xxxxx\" or \"Bearer mt_xxxxx\")",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

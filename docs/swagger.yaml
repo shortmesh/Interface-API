@@ -68,6 +68,170 @@ definitions:
         example: Message queued successfully
         type: string
     type: object
+  otp.ErrorResponse:
+    properties:
+      error:
+        example: message
+        type: string
+    type: object
+  otp.GenerateOTPRequest:
+    properties:
+      identifier:
+        example: "237123456780"
+        type: string
+      platform:
+        example: wa
+        type: string
+      sender:
+        example: "237123456789"
+        type: string
+    required:
+    - identifier
+    - platform
+    - sender
+    type: object
+  otp.GenerateOTPResponse:
+    properties:
+      expires_at:
+        example: "2026-02-19T20:30:00Z"
+        type: string
+      message:
+        example: OTP sent successfully
+        type: string
+    type: object
+  otp.VerifyOTPRequest:
+    properties:
+      code:
+        example: "123456"
+        type: string
+      identifier:
+        example: "237123456780"
+        type: string
+      platform:
+        example: wa
+        type: string
+      sender:
+        example: "237123456789"
+        type: string
+    required:
+    - code
+    - identifier
+    - platform
+    - sender
+    type: object
+  otp.VerifyOTPResponse:
+    properties:
+      message:
+        example: OTP verified successfully
+        type: string
+    type: object
+  services.ErrorResponse:
+    properties:
+      error:
+        example: error message
+        type: string
+    type: object
+  services.ListServicesResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/services.ServiceInfo'
+        type: array
+    type: object
+  services.ListUserServicesResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/services.UserServiceInfo'
+        type: array
+    type: object
+  services.ServiceInfo:
+    properties:
+      description:
+        example: One-time password generation and verification service
+        type: string
+      display_name:
+        example: Authy OTP Service
+        type: string
+      name:
+        example: authy
+        type: string
+    type: object
+  services.ServiceStatusResponse:
+    properties:
+      client_id:
+        example: your_client_id
+        type: string
+      client_secret:
+        example: your_client_secret
+        type: string
+      created_at:
+        example: "2026-03-12T10:00:00Z"
+        type: string
+      display_name:
+        example: Authy OTP Service
+        type: string
+      expires_at:
+        example: "2027-03-12T10:00:00Z"
+        type: string
+      is_enabled:
+        example: true
+        type: boolean
+      is_expired:
+        example: false
+        type: boolean
+      is_subscribed:
+        example: true
+        type: boolean
+      name:
+        example: authy
+        type: string
+    type: object
+  services.SubscribeResponse:
+    properties:
+      client_id:
+        example: your_client_id
+        type: string
+      client_secret:
+        example: your_client_secret
+        type: string
+      message:
+        example: Successfully subscribed to service
+        type: string
+      service_name:
+        example: authy
+        type: string
+    type: object
+  services.UserServiceInfo:
+    properties:
+      client_id:
+        example: your_client_id
+        type: string
+      client_secret:
+        example: your_client_secret
+        type: string
+      created_at:
+        example: "2026-03-12T10:00:00Z"
+        type: string
+      description:
+        example: One-time password generation and verification service
+        type: string
+      display_name:
+        example: Authy OTP Service
+        type: string
+      expires_at:
+        example: "2027-03-12T10:00:00Z"
+        type: string
+      is_enabled:
+        example: true
+        type: boolean
+      is_expired:
+        example: false
+        type: boolean
+      name:
+        example: authy
+        type: string
+    type: object
   tokens.CreateRequest:
     properties:
       expires_at:
@@ -416,6 +580,238 @@ paths:
       summary: WebSocket qr-code endpoint (Not executable in Swagger UI)
       tags:
       - devices
+  /api/v1/services:
+    get:
+      description: Get all active services available for subscription
+      parameters:
+      - description: 'Session token in format: Bearer sk_xxxxx'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of available services
+          schema:
+            $ref: '#/definitions/services.ListServicesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List available services
+      tags:
+      - Services
+  /api/v1/services/{service_name}/status:
+    get:
+      description: Check if the authenticated user has subscribed to a specific service
+        and its status
+      parameters:
+      - description: 'Session token in format: Bearer sk_xxxxx'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Service name (e.g., 'authy')
+        in: path
+        name: service_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service status information
+          schema:
+            $ref: '#/definitions/services.ServiceStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+        "404":
+          description: Service not found or not subscribed
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get service subscription status
+      tags:
+      - Services - Subscriptions
+  /api/v1/services/{service_name}/subscribe:
+    post:
+      consumes:
+      - application/json
+      description: Subscribe the authenticated user to a service with auto-generated
+        credentials
+      parameters:
+      - description: 'Session token in format: Bearer sk_xxxxx'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Service name (e.g., 'authy')
+        in: path
+        name: service_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service subscribed successfully
+          schema:
+            $ref: '#/definitions/services.SubscribeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+        "404":
+          description: Service not found
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Subscribe to a service
+      tags:
+      - Services - Subscriptions
+  /api/v1/services/authy/otp/generate:
+    post:
+      consumes:
+      - application/json
+      description: Generate a secure OTP code and send it to the specified identifier
+        via the Authy service
+      parameters:
+      - description: Basic Auth credentials
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Matrix token (e.g., mt_xxxxx)
+        in: header
+        name: X-Matrix-Token
+        required: true
+        type: string
+      - description: OTP generation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/otp.GenerateOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            $ref: '#/definitions/otp.GenerateOTPResponse'
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Generate and send OTP
+      tags:
+      - Services - Authy
+  /api/v1/services/authy/otp/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify an OTP code for the authenticated user
+      parameters:
+      - description: Basic Auth credentials
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Matrix token (e.g., mt_xxxxx)
+        in: header
+        name: X-Matrix-Token
+        required: true
+        type: string
+      - description: OTP verification request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/otp.VerifyOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP verified successfully
+          schema:
+            $ref: '#/definitions/otp.VerifyOTPResponse'
+        "400":
+          description: Invalid request body or validation error
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
+        "429":
+          description: TooManyRequests
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/otp.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Verify OTP
+      tags:
+      - Services - Authy
+  /api/v1/services/subscriptions:
+    get:
+      description: Get all services the authenticated user has subscribed to, including
+        their status
+      parameters:
+      - description: 'Session token in format: Bearer sk_xxxxx'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of user's services
+          schema:
+            $ref: '#/definitions/services.ListUserServicesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/services.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List user's subscribed services
+      tags:
+      - Services - Subscriptions
   /api/v1/tokens:
     post:
       consumes:

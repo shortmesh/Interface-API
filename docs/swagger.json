@@ -441,6 +441,361 @@
                 }
             }
         },
+        "/api/v1/services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all active services available for subscription",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services"
+                ],
+                "summary": "List available services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session token in format: Bearer sk_xxxxx",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of available services",
+                        "schema": {
+                            "$ref": "#/definitions/services.ListServicesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/services/authy/otp/generate": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Generate a secure OTP code and send it to the specified identifier via the Authy service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services - Authy"
+                ],
+                "summary": "Generate and send OTP",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Basic Auth credentials",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Matrix token (e.g., mt_xxxxx)",
+                        "name": "X-Matrix-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "OTP generation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/otp.GenerateOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent successfully",
+                        "schema": {
+                            "$ref": "#/definitions/otp.GenerateOTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/services/authy/otp/verify": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Verify an OTP code for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services - Authy"
+                ],
+                "summary": "Verify OTP",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Basic Auth credentials",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Matrix token (e.g., mt_xxxxx)",
+                        "name": "X-Matrix-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "OTP verification request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/otp.VerifyOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP verified successfully",
+                        "schema": {
+                            "$ref": "#/definitions/otp.VerifyOTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "TooManyRequests",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/otp.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/services/subscriptions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all services the authenticated user has subscribed to, including their status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services - Subscriptions"
+                ],
+                "summary": "List user's subscribed services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session token in format: Bearer sk_xxxxx",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of user's services",
+                        "schema": {
+                            "$ref": "#/definitions/services.ListUserServicesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/services/{service_name}/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Check if the authenticated user has subscribed to a specific service and its status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services - Subscriptions"
+                ],
+                "summary": "Get service subscription status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session token in format: Bearer sk_xxxxx",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service name (e.g., 'authy')",
+                        "name": "service_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service status information",
+                        "schema": {
+                            "$ref": "#/definitions/services.ServiceStatusResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Service not found or not subscribed",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/services/{service_name}/subscribe": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Subscribe the authenticated user to a service with auto-generated credentials",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services - Subscriptions"
+                ],
+                "summary": "Subscribe to a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session token in format: Bearer sk_xxxxx",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service name (e.g., 'authy')",
+                        "name": "service_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service subscribed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/services.SubscribeResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Service not found",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/services.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tokens": {
             "post": {
                 "security": [
@@ -588,6 +943,237 @@
                 "message": {
                     "type": "string",
                     "example": "Message queued successfully"
+                }
+            }
+        },
+        "otp.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "message"
+                }
+            }
+        },
+        "otp.GenerateOTPRequest": {
+            "type": "object",
+            "required": [
+                "identifier",
+                "platform",
+                "sender"
+            ],
+            "properties": {
+                "identifier": {
+                    "type": "string",
+                    "example": "237123456780"
+                },
+                "platform": {
+                    "type": "string",
+                    "example": "wa"
+                },
+                "sender": {
+                    "type": "string",
+                    "example": "237123456789"
+                }
+            }
+        },
+        "otp.GenerateOTPResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-02-19T20:30:00Z"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "OTP sent successfully"
+                }
+            }
+        },
+        "otp.VerifyOTPRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "identifier",
+                "platform",
+                "sender"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "identifier": {
+                    "type": "string",
+                    "example": "237123456780"
+                },
+                "platform": {
+                    "type": "string",
+                    "example": "wa"
+                },
+                "sender": {
+                    "type": "string",
+                    "example": "237123456789"
+                }
+            }
+        },
+        "otp.VerifyOTPResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "OTP verified successfully"
+                }
+            }
+        },
+        "services.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "error message"
+                }
+            }
+        },
+        "services.ListServicesResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.ServiceInfo"
+                    }
+                }
+            }
+        },
+        "services.ListUserServicesResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.UserServiceInfo"
+                    }
+                }
+            }
+        },
+        "services.ServiceInfo": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "One-time password generation and verification service"
+                },
+                "display_name": {
+                    "type": "string",
+                    "example": "Authy OTP Service"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "authy"
+                }
+            }
+        },
+        "services.ServiceStatusResponse": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string",
+                    "example": "your_client_id"
+                },
+                "client_secret": {
+                    "type": "string",
+                    "example": "your_client_secret"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-03-12T10:00:00Z"
+                },
+                "display_name": {
+                    "type": "string",
+                    "example": "Authy OTP Service"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "example": "2027-03-12T10:00:00Z"
+                },
+                "is_enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_expired": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_subscribed": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "type": "string",
+                    "example": "authy"
+                }
+            }
+        },
+        "services.SubscribeResponse": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string",
+                    "example": "your_client_id"
+                },
+                "client_secret": {
+                    "type": "string",
+                    "example": "your_client_secret"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Successfully subscribed to service"
+                },
+                "service_name": {
+                    "type": "string",
+                    "example": "authy"
+                }
+            }
+        },
+        "services.UserServiceInfo": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string",
+                    "example": "your_client_id"
+                },
+                "client_secret": {
+                    "type": "string",
+                    "example": "your_client_secret"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-03-12T10:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "One-time password generation and verification service"
+                },
+                "display_name": {
+                    "type": "string",
+                    "example": "Authy OTP Service"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "example": "2027-03-12T10:00:00Z"
+                },
+                "is_enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_expired": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "type": "string",
+                    "example": "authy"
                 }
             }
         },

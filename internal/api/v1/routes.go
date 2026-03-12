@@ -2,6 +2,8 @@ package v1
 
 import (
 	"interface-api/internal/api/v1/handlers/devices"
+	"interface-api/internal/api/v1/handlers/services"
+	"interface-api/internal/api/v1/handlers/services/authy"
 	"interface-api/internal/api/v1/handlers/tokens"
 	"interface-api/internal/api/v1/handlers/users"
 	"interface-api/internal/database"
@@ -13,8 +15,9 @@ import (
 func RegisterRoutes(g *echo.Group, db database.Service) {
 	userHandler := users.NewUserHandler(db)
 	tokenHandler := tokens.NewTokenHandler(db)
-	auth := middleware.NewAuth(db)
 	deviceWsHandler := devices.NewDeviceWebsocketHandler(db)
+	serviceHandler := services.NewServiceHandler(db)
+	auth := middleware.NewBearerAuth(db)
 
 	// Auth routes
 	g.POST("/auth/register", userHandler.Create)
@@ -30,4 +33,12 @@ func RegisterRoutes(g *echo.Group, db database.Service) {
 	g.GET("/devices/qr-code", deviceWsHandler.QRCode, auth.AuthenticateWebSocket(middleware.AuthMethodMatrixToken))
 	g.DELETE("/devices", deviceWsHandler.Delete, auth.Authenticate(middleware.AuthMethodMatrixToken))
 	g.POST("/devices/:device_id/message", deviceWsHandler.SendMessage, auth.Authenticate(middleware.AuthMethodMatrixToken))
+
+	// Service routes
+	g.GET("/services", serviceHandler.ListAvailableServices, auth.Authenticate(middleware.AuthMethodSession))
+	g.GET("/services/subscriptions", serviceHandler.ListUserServices, auth.Authenticate(middleware.AuthMethodSession))
+	g.GET("/services/:service_name/status", serviceHandler.GetServiceStatus, auth.Authenticate(middleware.AuthMethodSession))
+	g.POST("/services/:service_name/subscribe", serviceHandler.SubscribeToService, auth.Authenticate(middleware.AuthMethodSession))
+
+	authy.RegisterRoutes(g, db)
 }

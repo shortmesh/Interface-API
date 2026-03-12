@@ -28,12 +28,14 @@ build: docs
 		echo "  - With SQLCipher encryption"; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/api cmd/api/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/migrate cmd/migrate/main.go; \
+		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/admin cmd/admin/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/qr-worker cmd/qr-worker/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/worker cmd/worker/main.go; \
 	else \
 		echo "  - With standard SQLite (unencrypted)"; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/api cmd/api/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/migrate cmd/migrate/main.go; \
+		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/admin cmd/admin/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/qr-worker cmd/qr-worker/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/worker cmd/worker/main.go; \
 	fi

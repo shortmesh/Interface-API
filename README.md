@@ -32,6 +32,7 @@ Server: `http://localhost:8080`
 ### Ubuntu/Debian Dependencies
 
 For SQLCipher support (encrypted database):
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y libsqlite3-dev libsqlcipher-dev
@@ -134,6 +135,7 @@ Regenerate: `make docs`
 
 - [Security & Environment Configuration](docs/SECURITY.md)
 - [Migration Guide](docs/MIGRATIONS.md)
+- [Admin CLI Documentation](docs/ADMIN.md)
 - [Throttler Documentation](docs/THROTTLER.md)
 - [QR Worker Documentation](docs/QR_WORKER.md)
 - [Architecture Documentation](docs/architecture/)

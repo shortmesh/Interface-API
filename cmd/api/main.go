@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"interface-api/internal/server"
+	"interface-api/pkg/cleanup"
 	"interface-api/pkg/config"
 	"interface-api/pkg/logger"
 	"interface-api/pkg/worker"
@@ -23,7 +24,7 @@ import (
 //	@in							header
 //	@name						Authorization
 
-func gracefulShutdown(apiServer *http.Server, w *worker.Worker, done chan bool) {
+func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.CleanupWorker, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -34,6 +35,10 @@ func gracefulShutdown(apiServer *http.Server, w *worker.Worker, done chan bool) 
 
 	if w != nil {
 		w.Stop()
+	}
+
+	if cw != nil {
+		cw.Stop()
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -56,11 +61,19 @@ func main() {
 		logger.Info("Worker disabled via WORKER_ENABLED=false")
 	}
 
+	var cw *cleanup.CleanupWorker
+	if cleanup.IsEnabled() {
+		cw = cleanup.New()
+		cw.Start()
+	} else {
+		logger.Info("Cleanup worker disabled via CLEANUP_ENABLED=false")
+	}
+
 	srv := server.NewServer()
 
 	done := make(chan bool, 1)
 
-	go gracefulShutdown(srv, w, done)
+	go gracefulShutdown(srv, w, cw, done)
 
 	var err error
 	if config.RequiresHTTPS() {

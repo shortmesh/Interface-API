@@ -5,7 +5,7 @@ package database
 import (
 	"fmt"
 
-	sqlcipher "github.com/gdanko/gorm-sqlcipher"
+	sqlcipher "github.com/whatisusername/gorm-sqlcipher"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +14,7 @@ func openDatabase(sqlitePath string, dbEncryptionKey string, gormConfig *gorm.Co
 		return nil, fmt.Errorf("DB_ENCRYPTION_KEY is required when using SQLCipher encryption")
 	}
 	dsn := fmt.Sprintf(
-		"%s?_pragma_key=x'%s'&_pragma_cipher_compatibility=3&_pragma_cipher_page_size=4096",
+		"%s?_pragma_key=x'%s'&_pragma_cipher_compatibility=4&_pragma_cipher_page_size=4096",
 		sqlitePath,
 		dbEncryptionKey,
 	)

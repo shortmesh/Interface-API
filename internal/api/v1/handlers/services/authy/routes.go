@@ -11,10 +11,10 @@ import (
 func RegisterRoutes(g *echo.Group, db database.Service) {
 	authMiddleware := middleware.NewBasicAuth(db, "authy")
 
-	authyGroup := g.Group("/services/authy", authMiddleware.Authenticate())
+	authyGroup := g.Group("/services/authy")
 
 	otpHandler := otp.NewHandler(db)
 	otpGroup := authyGroup.Group("/otp")
-	otpGroup.POST("/generate", otpHandler.Generate)
-	otpGroup.POST("/verify", otpHandler.Verify)
+	otpGroup.POST("/generate", otpHandler.Generate, authMiddleware.Authenticate())
+	otpGroup.POST("/verify", otpHandler.Verify, authMiddleware.Authenticate())
 }

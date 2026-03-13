@@ -60,6 +60,7 @@ func (m *BasicAuthMiddleware) validateBasicAuth(c echo.Context) (*models.UserSer
 
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "basic" {
+		logger.Error(fmt.Sprintf("Expected Basic auth, got: %s", authHeader))
 		return nil, echo.NewHTTPError(http.StatusUnauthorized, "invalid authorization header")
 	}
 

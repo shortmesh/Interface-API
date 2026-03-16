@@ -14,7 +14,9 @@ import (
 var logLevel string
 
 func init() {
-	godotenv.Load()
+	if os.Getenv("APP_MODE") != "production" {
+		godotenv.Load("default.env", ".env")
+	}
 
 	log.SetFlags(log.Ldate | log.Ltime)
 	log.SetOutput(os.Stdout)

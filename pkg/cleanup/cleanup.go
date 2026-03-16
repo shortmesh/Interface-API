@@ -18,18 +18,10 @@ type CleanupWorker struct {
 	cancel              context.CancelFunc
 	wg                  sync.WaitGroup
 	db                  database.Service
-	otpInterval         time.Duration
 	matrixTokenInterval time.Duration
 }
 
 func New() *CleanupWorker {
-	otpIntervalMinutes := 15
-	if interval := os.Getenv("OTP_CLEANUP_INTERVAL_MINUTES"); interval != "" {
-		if n, err := strconv.Atoi(interval); err == nil && n > 0 {
-			otpIntervalMinutes = n
-		}
-	}
-
 	matrixTokenIntervalMinutes := 60
 	if interval := os.Getenv("MATRIX_TOKEN_CLEANUP_INTERVAL_MINUTES"); interval != "" {
 		if n, err := strconv.Atoi(interval); err == nil && n > 0 {
@@ -44,7 +36,6 @@ func New() *CleanupWorker {
 		ctx:                 ctx,
 		cancel:              cancel,
 		db:                  db,
-		otpInterval:         time.Duration(otpIntervalMinutes) * time.Minute,
 		matrixTokenInterval: time.Duration(matrixTokenIntervalMinutes) * time.Minute,
 	}
 }
@@ -54,13 +45,9 @@ func IsEnabled() bool {
 }
 
 func (cw *CleanupWorker) Start() {
-	logger.Info(fmt.Sprintf("Starting cleanup worker - OTP interval: %v, Matrix token interval: %v", cw.otpInterval, cw.matrixTokenInterval))
+	logger.Info(fmt.Sprintf("Starting cleanup worker - Matrix token interval: %v", cw.matrixTokenInterval))
 
-	cw.wg.Add(2)
-	go func() {
-		defer cw.wg.Done()
-		cw.runOTPCleanup()
-	}()
+	cw.wg.Add(1)
 	go func() {
 		defer cw.wg.Done()
 		cw.runMatrixTokenCleanup()
@@ -72,22 +59,6 @@ func (cw *CleanupWorker) Stop() {
 	cw.cancel()
 	cw.wg.Wait()
 	logger.Info("Cleanup worker stopped")
-}
-
-func (cw *CleanupWorker) runOTPCleanup() {
-	ticker := time.NewTicker(cw.otpInterval)
-	defer ticker.Stop()
-
-	cw.cleanupOTPs()
-
-	for {
-		select {
-		case <-cw.ctx.Done():
-			return
-		case <-ticker.C:
-			cw.cleanupOTPs()
-		}
-	}
 }
 
 func (cw *CleanupWorker) runMatrixTokenCleanup() {
@@ -103,15 +74,6 @@ func (cw *CleanupWorker) runMatrixTokenCleanup() {
 		case <-ticker.C:
 			cw.cleanupMatrixTokens()
 		}
-	}
-}
-
-func (cw *CleanupWorker) cleanupOTPs() {
-	result := cw.db.DB().Where("expires_at <= ?", time.Now().UTC()).Delete(&models.OTP{})
-	if result.Error != nil {
-		logger.Error(fmt.Sprintf("Failed to cleanup expired OTPs: %v", result.Error))
-	} else if result.RowsAffected > 0 {
-		logger.Info(fmt.Sprintf("Cleaned up %d expired OTP(s)", result.RowsAffected))
 	}
 }
 

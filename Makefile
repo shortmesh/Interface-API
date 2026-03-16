@@ -3,8 +3,8 @@ all: build test
 setup:
 	@echo "Setting up development environment..."
 	@if [ ! -f .env ]; then \
-		echo "Creating .env from .env.example..."; \
-		cp .env.example .env; \
+		echo "Creating .env from example.env..."; \
+		cp example.env .env; \
 	fi
 	@if ! grep -q "^HASH_KEY=[A-Za-z0-9+/=]\{40,\}" .env 2>/dev/null; then \
 		echo "Generating HASH_KEY..."; \
@@ -20,6 +20,20 @@ setup:
 	else \
 		echo "DB_ENCRYPTION_KEY already set"; \
 	fi
+	@if ! grep -q "^CLIENT_ID=[A-Za-z0-9]\{20,\}" .env 2>/dev/null; then \
+		echo "Generating CLIENT_ID..."; \
+		CLIENT_ID=$$(openssl rand -hex 16); \
+		sed -i.bak "s|^CLIENT_ID=.*|CLIENT_ID=$$CLIENT_ID|" .env && rm -f .env.bak; \
+	else \
+		echo "CLIENT_ID already set"; \
+	fi
+	@if ! grep -q "^CLIENT_SECRET=[A-Za-z0-9]\{40,\}" .env 2>/dev/null; then \
+		echo "Generating CLIENT_SECRET..."; \
+		CLIENT_SECRET=$$(openssl rand -hex 32); \
+		sed -i.bak "s|^CLIENT_SECRET=.*|CLIENT_SECRET=$$CLIENT_SECRET|" .env && rm -f .env.bak; \
+	else \
+		echo "CLIENT_SECRET already set"; \
+	fi
 	@echo "Setup complete! Run 'make migrate-up && make run' to start."
 
 build: docs
@@ -28,14 +42,12 @@ build: docs
 		echo "  - With SQLCipher encryption"; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/api cmd/api/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/migrate cmd/migrate/main.go; \
-		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/admin cmd/admin/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/qr-worker cmd/qr-worker/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags sqlcipher -o bin/worker cmd/worker/main.go; \
 	else \
 		echo "  - With standard SQLite (unencrypted)"; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/api cmd/api/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/migrate cmd/migrate/main.go; \
-		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/admin cmd/admin/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/qr-worker cmd/qr-worker/main.go; \
 		CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/worker cmd/worker/main.go; \
 	fi
@@ -110,8 +122,8 @@ setup-systemd:
 	@echo "Creating application directory..."
 	@mkdir -p /opt/interface-api
 	@if [ ! -f /opt/interface-api/.env ]; then \
-		echo "Creating .env file from .env.example..."; \
-		cp .env.example /opt/interface-api/.env; \
+		echo "Creating .env file from example.env..."; \
+		cp example.env /opt/interface-api/.env; \
 		echo "Setting production values..."; \
 		sed -i "s|^APP_MODE=.*|APP_MODE=production|" /opt/interface-api/.env; \
 		sed -i "s|^ALLOW_INSECURE_SERVER=.*|ALLOW_INSECURE_SERVER=true|" /opt/interface-api/.env; \
@@ -133,8 +145,8 @@ setup-systemd:
 	else \
 		echo ".env file already exists at /opt/interface-api/.env"; \
 	fi
-	@echo "Copying .env.default..."
-	@cp .env.default /opt/interface-api/.env.default
+	@echo "Copying default.env..."
+	@cp default.env /opt/interface-api/default.env
 	@echo "Creating data directory..."
 	@mkdir -p /opt/interface-api/data
 	@echo "Creating cache directories..."
@@ -149,4 +161,4 @@ setup-systemd:
 	@systemctl enable interface-api
 	@echo "Setup complete! Use 'systemctl start interface-api' to start the service."
 
-.PHONY: all setup build run worker test clean itest migrate-up migrate-down migrate-fresh migrate-status docs setup-systemd
+.PHONY: all setup build run worker test clean itest migrate-up migrate-down migrate-status docs setup-systemd

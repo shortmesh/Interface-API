@@ -42,12 +42,12 @@ sudo apt-get install -y libsqlite3-dev libsqlcipher-dev
 
 > [!NOTE]
 >
-> `.env.default` contains operational default values. Only modify if you know what you're doing.
+> `default.env` contains operational default values. Only modify if you know what you're doing.
 
-Copy `.env.example` to `.env` and configure as needed:
+Copy `example.env` to `.env` and configure as needed:
 
 ```bash
-cp .env.example .env
+cp example.env .env
 # Or use: make setup (auto-generates keys)
 ```
 
@@ -97,7 +97,7 @@ The following environment variables **must** be set for the application to funct
 - `ADMIN_CLIENT_SECRET` - Admin client secret for MAS
 - `MATRIX_CLIENT_URL` - Matrix client URL
 
-See `.env.example` for all options.
+See `example.env` for all options.
 
 ## Development
 
@@ -113,7 +113,7 @@ make docs              # Generate Swagger docs
 ```
 
 > [!NOTE]
-> `make run`, `make worker`, and `make build` automatically detect the `DISABLE_DB_ENCRYPTION` setting in `.env` and use the appropriate SQLite driver (SQLCipher or standard SQLite).
+> `make run`, `make worker`, and `make build` automatically detect the `DISABLE_DB_ENCRYPTION` setting in your `.env` and use the appropriate SQLite driver (SQLCipher or standard SQLite).
 
 ### Migrations
 
@@ -133,9 +133,9 @@ Regenerate: `make docs`
 
 ## Resources
 
+- [API Usage Guide](docs/USAGE.md)
 - [Security & Environment Configuration](docs/SECURITY.md)
 - [Migration Guide](docs/MIGRATIONS.md)
-- [Admin CLI Documentation](docs/ADMIN.md)
 - [Throttler Documentation](docs/THROTTLER.md)
 - [QR Worker Documentation](docs/QR_WORKER.md)
 - [Architecture Documentation](docs/architecture/)

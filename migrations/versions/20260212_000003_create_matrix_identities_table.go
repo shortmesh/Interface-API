@@ -21,6 +21,7 @@ func (m Migration20260212_000003) Up(db *gorm.DB) error {
 			matrix_username TEXT NOT NULL,
 			matrix_device_id TEXT NOT NULL,
 			token_hash BLOB NOT NULL UNIQUE,
+			is_admin INTEGER DEFAULT 0,
 			expires_at DATETIME,
 			last_used_at DATETIME,
 			created_at DATETIME NOT NULL,

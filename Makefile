@@ -137,6 +137,12 @@ setup-systemd:
 		echo "Generating DB_ENCRYPTION_KEY..."; \
 		DB_ENCRYPTION_KEY=$$(openssl rand -hex 32); \
 		sed -i "s|^DB_ENCRYPTION_KEY=.*|DB_ENCRYPTION_KEY=$$DB_ENCRYPTION_KEY|" /opt/interface-api/.env; \
+		echo "Generating CLIENT_ID..."; \
+		CLIENT_ID=$$(openssl rand -hex 16); \
+		sed -i "s|^CLIENT_ID=.*|CLIENT_ID=$$CLIENT_ID|" /opt/interface-api/.env; \
+		echo "Generating CLIENT_SECRET..."; \
+		CLIENT_SECRET=$$(openssl rand -hex 32); \
+		sed -i "s|^CLIENT_SECRET=.*|CLIENT_SECRET=$$CLIENT_SECRET|" /opt/interface-api/.env; \
 		echo "WARNING: Review and update /opt/interface-api/.env with:"; \
 		echo "  - TLS_CERT_FILE and TLS_KEY_FILE"; \
 		echo "  - MAS_URL, MAS_ADMIN_URL, and credentials"; \

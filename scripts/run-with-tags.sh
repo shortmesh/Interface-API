@@ -11,4 +11,8 @@ else
 fi
 
 # Execute go run with the provided arguments
-exec go run "$BUILD_TAGS" "$@"
+if [ -n "$BUILD_TAGS" ]; then
+  exec go run "$BUILD_TAGS" "$@"
+else
+  exec go run "$@"
+fi

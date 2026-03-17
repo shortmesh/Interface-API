@@ -44,11 +44,4 @@ clean:
 setup-systemd:
 	@./scripts/setup-systemd.sh
 
-update-env:
-	@./scripts/update-env.sh
-
-update-env-prod:
-	@echo "Updating production .env file..."
-	@sudo ./scripts/update-env.sh --production
-
-.PHONY: all setup build run worker test clean itest migrate-up migrate-down migrate-status docs setup-systemd update-env update-env-prod
+.PHONY: all setup build run worker test clean itest migrate-up migrate-down migrate-status docs setup-systemd

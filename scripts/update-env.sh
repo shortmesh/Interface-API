@@ -7,7 +7,7 @@ set -e
 if [ "$1" = "--production" ] || [ "$1" = "-p" ]; then
   PRODUCTION=true
   shift
-  EXAMPLE_FILE="${1:-/opt/interface-api/default.env}"
+  EXAMPLE_FILE="${1:-/opt/interface-api/example.env}"
   ENV_FILE="${2:-/opt/interface-api/.env}"
 else
   PRODUCTION=false
@@ -52,10 +52,10 @@ while IFS='=' read -r key value; do
 done <"$ENV_FILE"
 
 # Process example.env line by line
-while IFS= read -r line; do
-  # If it's a comment or empty line, keep it
+while IFS= read -r line || [ -n "$line" ]; do
+  # If it's a comment or empty line, keep it exactly as is
   if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
-    echo "$line" >>"$TEMP_FILE"
+    printf '%s\n' "$line" >>"$TEMP_FILE"
     continue
   fi
 
@@ -64,27 +64,32 @@ while IFS= read -r line; do
     key="${BASH_REMATCH[1]}"
     key=$(echo "$key" | xargs)
 
-    # If key exists in current .env, use its value
+    # If key exists in current .env, use its value but preserve any inline comments
     if [[ -n "${current_vars[$key]+isset}" ]]; then
-      echo "${key}=${current_vars[$key]}" >>"$TEMP_FILE"
+      # Check if there's an inline comment in the original line
+      inline_comment=""
+      if [[ "$line" =~ (#.*$) ]]; then
+        inline_comment=" ${BASH_REMATCH[1]}"
+      fi
+      printf '%s=%s%s\n' "$key" "${current_vars[$key]}" "$inline_comment" >>"$TEMP_FILE"
       unset 'current_vars[$key]'
     else
       # New key, use default from example
-      echo "$line" >>"$TEMP_FILE"
+      printf '%s\n' "$line" >>"$TEMP_FILE"
       echo "  + Added new field: $key"
     fi
   else
     # Malformed line, keep as is
-    echo "$line" >>"$TEMP_FILE"
+    printf '%s\n' "$line" >>"$TEMP_FILE"
   fi
 done <"$EXAMPLE_FILE"
 
 # Append any keys that were in old .env but not in example.env
 if [ ${#current_vars[@]} -gt 0 ]; then
-  echo "" >>"$TEMP_FILE"
-  echo "# Legacy fields (not in ${EXAMPLE_FILE})" >>"$TEMP_FILE"
+  printf '\n' >>"$TEMP_FILE"
+  printf '# Legacy fields (not in %s)\n' "${EXAMPLE_FILE}" >>"$TEMP_FILE"
   for key in "${!current_vars[@]}"; do
-    echo "${key}=${current_vars[$key]}" >>"$TEMP_FILE"
+    printf '%s=%s\n' "$key" "${current_vars[$key]}" >>"$TEMP_FILE"
     echo "  ! Kept legacy field: $key"
   done
 fi

@@ -13,6 +13,8 @@ CLIENT_ID=$(grep '^CLIENT_ID=' .env | cut -d'=' -f2)
 CLIENT_SECRET=$(grep '^CLIENT_SECRET=' .env | cut -d'=' -f2)
 ```
 
+See [SECURITY.md](./SECURITY.md) for production configuration.
+
 ## Authentication
 
 - **Token Creation** - Basic Auth with `CLIENT_ID:CLIENT_SECRET`

@@ -17,10 +17,10 @@ fi
 # Build binaries
 mkdir -p bin
 if [ -n "$BUILD_TAGS" ]; then
-  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build "$BUILD_TAGS" -o bin/api cmd/api/main.go
-  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build "$BUILD_TAGS" -o bin/migrate cmd/migrate/main.go
-  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build "$BUILD_TAGS" -o bin/qr-worker cmd/qr-worker/main.go
-  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build "$BUILD_TAGS" -o bin/worker cmd/worker/main.go
+  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build $BUILD_TAGS -o bin/api cmd/api/main.go
+  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build $BUILD_TAGS -o bin/migrate cmd/migrate/main.go
+  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build $BUILD_TAGS -o bin/qr-worker cmd/qr-worker/main.go
+  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build $BUILD_TAGS -o bin/worker cmd/worker/main.go
 else
   CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/api cmd/api/main.go
   CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/migrate cmd/migrate/main.go

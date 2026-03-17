@@ -14,6 +14,7 @@ type MatrixIdentity struct {
 	MatrixUsername string
 	MatrixDeviceID string
 	TokenHash      []byte
+	IsAdmin        bool
 	ExpiresAt      *time.Time
 	LastUsedAt     *time.Time
 	CreatedAt      time.Time
@@ -42,7 +43,7 @@ func FindMatrixIdentityByToken(db *gorm.DB, token string) (*MatrixIdentity, erro
 	return &identity, err
 }
 
-func CreateMatrixIdentity(db *gorm.DB, matrixUsername, matrixDeviceID string, expiresAt *time.Time) (string, *MatrixIdentity, error) {
+func CreateMatrixIdentity(db *gorm.DB, matrixUsername, matrixDeviceID string, isAdmin bool, expiresAt *time.Time) (string, *MatrixIdentity, error) {
 	tokenPrefix := os.Getenv("MATRIX_TOKEN_PREFIX")
 	if tokenPrefix == "" {
 		tokenPrefix = "mt_"
@@ -64,6 +65,7 @@ func CreateMatrixIdentity(db *gorm.DB, matrixUsername, matrixDeviceID string, ex
 		MatrixUsername: matrixUsername,
 		MatrixDeviceID: matrixDeviceID,
 		TokenHash:      hash,
+		IsAdmin:        isAdmin,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -77,4 +79,10 @@ func CreateMatrixIdentity(db *gorm.DB, matrixUsername, matrixDeviceID string, ex
 	}
 
 	return tokenPrefix + token, identity, nil
+}
+
+func FindAdminMatrixIdentity(db *gorm.DB) (*MatrixIdentity, error) {
+	var identity MatrixIdentity
+	err := db.Where("is_admin = ?", true).First(&identity).Error
+	return &identity, err
 }

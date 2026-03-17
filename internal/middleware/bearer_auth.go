@@ -3,8 +3,8 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"runtime/debug"
-	"slices"
 	"strings"
 
 	"interface-api/internal/database"
@@ -16,22 +16,22 @@ import (
 )
 
 type BearerAuthMiddleware struct {
-	validator *TokenValidator
-	config    *TokenConfig
+	db           *gorm.DB
+	matrixPrefix string
 }
 
 func NewBearerAuth(db database.Service) *BearerAuthMiddleware {
+	matrixPrefix := os.Getenv("MATRIX_TOKEN_PREFIX")
+	if matrixPrefix == "" {
+		matrixPrefix = "mt_"
+	}
 	return &BearerAuthMiddleware{
-		validator: NewTokenValidator(db.DB()),
-		config:    NewTokenConfig(),
+		db:           db.DB(),
+		matrixPrefix: matrixPrefix,
 	}
 }
 
-func (m *BearerAuthMiddleware) Authenticate(methods ...AuthMethod) echo.MiddlewareFunc {
-	if len(methods) == 0 {
-		methods = []AuthMethod{AuthMethodSession}
-	}
-
+func (m *BearerAuthMiddleware) Authenticate() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
@@ -54,69 +54,28 @@ func (m *BearerAuthMiddleware) Authenticate(methods ...AuthMethod) echo.Middlewa
 				return echo.NewHTTPError(http.StatusUnauthorized, "unsupported authorization scheme")
 			}
 
-			var session *models.Session
-			var matrixIdentity *models.MatrixIdentity
-			var user *models.User
-			var err error
-			var isMatrixToken bool
-
-			if strings.HasPrefix(token, m.config.SessionPrefix) {
-				if !isMethodAllowed(methods, AuthMethodSession) {
-					logger.Error("Session authentication not allowed for this endpoint")
-					return echo.NewHTTPError(http.StatusUnauthorized, "session authentication not allowed")
-				}
-				session, err = m.validator.ValidateSessionToken(strings.TrimPrefix(token, m.config.SessionPrefix))
-				if err == nil {
-					user = &session.User
-				}
-			} else if strings.HasPrefix(token, m.config.MatrixPrefix) {
-				if !isMethodAllowed(methods, AuthMethodMatrixToken) {
-					logger.Error("Matrix token authentication not allowed for this endpoint")
-					return echo.NewHTTPError(http.StatusUnauthorized, "matrix token authentication not allowed")
-				}
-				isMatrixToken = true
-				matrixIdentity, err = m.validator.ValidateMatrixToken(strings.TrimPrefix(token, m.config.MatrixPrefix))
-			} else {
-				logger.Error(fmt.Sprintf(
-					"Invalid token format: %s. Expected '%s...' or '%s...'",
-					token, m.config.SessionPrefix, m.config.MatrixPrefix,
-				))
+			if !strings.HasPrefix(token, m.matrixPrefix) {
+				logger.Error(fmt.Sprintf("Invalid token format: %s. Expected '%s...'", token, m.matrixPrefix))
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid token format")
 			}
 
+			matrixIdentity, err := m.validateMatrixToken(strings.TrimPrefix(token, m.matrixPrefix))
 			if err != nil {
 				if err == gorm.ErrRecordNotFound {
-					if isMatrixToken {
-						logger.Error("Invalid or expired matrix token")
-						return echo.NewHTTPError(http.StatusForbidden, "invalid or expired token")
-					}
-					logger.Error("Invalid or expired token")
-					return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")
+					logger.Error("Invalid or expired matrix token")
+					return echo.NewHTTPError(http.StatusForbidden, "invalid or expired token")
 				}
 				logger.Error(fmt.Sprintf("Failed to authenticate:\n%v\n\n%s", err, debug.Stack()))
 				return echo.NewHTTPError(http.StatusInternalServerError, "authentication failed")
 			}
 
-			if user != nil {
-				c.Set("user", user)
-			}
-			if session != nil {
-				c.Set("session", session)
-			}
-			if matrixIdentity != nil {
-				c.Set("matrix_identity", matrixIdentity)
-			}
-
+			c.Set("matrix_identity", matrixIdentity)
 			return next(c)
 		}
 	}
 }
 
-func (m *BearerAuthMiddleware) AuthenticateWebSocket(methods ...AuthMethod) echo.MiddlewareFunc {
-	if len(methods) == 0 {
-		methods = []AuthMethod{AuthMethodSession}
-	}
-
+func (m *BearerAuthMiddleware) AuthenticateWebSocket() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			token := c.QueryParam("token")
@@ -125,64 +84,36 @@ func (m *BearerAuthMiddleware) AuthenticateWebSocket(methods ...AuthMethod) echo
 				return echo.NewHTTPError(http.StatusUnauthorized, "missing token query parameter")
 			}
 
-			var session *models.Session
-			var matrixIdentity *models.MatrixIdentity
-			var user *models.User
-			var err error
-			var isMatrixToken bool
-
-			if strings.HasPrefix(token, m.config.SessionPrefix) {
-				if !isMethodAllowed(methods, AuthMethodSession) {
-					logger.Error("Session authentication not allowed for this endpoint")
-					return echo.NewHTTPError(http.StatusUnauthorized, "session authentication not allowed")
-				}
-				session, err = m.validator.ValidateSessionToken(strings.TrimPrefix(token, m.config.SessionPrefix))
-				if err == nil {
-					user = &session.User
-				}
-			} else if strings.HasPrefix(token, m.config.MatrixPrefix) {
-				if !isMethodAllowed(methods, AuthMethodMatrixToken) {
-					logger.Error("Matrix token authentication not allowed for this endpoint")
-					return echo.NewHTTPError(http.StatusUnauthorized, "matrix token authentication not allowed")
-				}
-				isMatrixToken = true
-				matrixIdentity, err = m.validator.ValidateMatrixToken(strings.TrimPrefix(token, m.config.MatrixPrefix))
-			} else {
-				logger.Error(fmt.Sprintf(
-					"Invalid token format: %s. Expected '%s...' or '%s...'",
-					token, m.config.SessionPrefix, m.config.MatrixPrefix,
-				))
+			if !strings.HasPrefix(token, m.matrixPrefix) {
+				logger.Error(fmt.Sprintf("Invalid token format: %s. Expected '%s...'", token, m.matrixPrefix))
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid token format")
 			}
 
+			matrixIdentity, err := m.validateMatrixToken(strings.TrimPrefix(token, m.matrixPrefix))
 			if err != nil {
 				if err == gorm.ErrRecordNotFound {
-					if isMatrixToken {
-						logger.Error("Invalid or expired matrix token")
-						return echo.NewHTTPError(http.StatusForbidden, "invalid or expired token")
-					}
-					logger.Error("Invalid or expired token")
-					return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")
+					logger.Error("Invalid or expired matrix token")
+					return echo.NewHTTPError(http.StatusForbidden, "invalid or expired token")
 				}
 				logger.Error(fmt.Sprintf("Failed to authenticate:\n%v\n\n%s", err, debug.Stack()))
 				return echo.NewHTTPError(http.StatusInternalServerError, "authentication failed")
 			}
 
-			if user != nil {
-				c.Set("user", user)
-			}
-			if session != nil {
-				c.Set("session", session)
-			}
-			if matrixIdentity != nil {
-				c.Set("matrix_identity", matrixIdentity)
-			}
-
+			c.Set("matrix_identity", matrixIdentity)
 			return next(c)
 		}
 	}
 }
 
-func isMethodAllowed(allowedMethods []AuthMethod, method AuthMethod) bool {
-	return slices.Contains(allowedMethods, method)
+func (m *BearerAuthMiddleware) validateMatrixToken(token string) (*models.MatrixIdentity, error) {
+	matrixIdentity, err := models.FindMatrixIdentityByToken(m.db, token)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := matrixIdentity.UpdateLastUsed(m.db); err != nil {
+		logger.Error(fmt.Sprintf("Failed to update last used timestamp: %v", err))
+	}
+
+	return matrixIdentity, nil
 }

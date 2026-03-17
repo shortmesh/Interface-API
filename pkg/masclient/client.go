@@ -14,12 +14,11 @@ import (
 )
 
 type Client struct {
-	baseURL       string
-	adminBaseURL  string
-	clientID      string
-	clientSecret  string
-	tokenLifetime int
-	httpClient    *http.Client
+	baseURL      string
+	adminBaseURL string
+	clientID     string
+	clientSecret string
+	httpClient   *http.Client
 }
 
 func New() (*Client, error) {
@@ -51,14 +50,11 @@ func New() (*Client, error) {
 		return nil, fmt.Errorf("ADMIN_CLIENT_SECRET environment variable is not set")
 	}
 
-	tokenLifetime := 15552000 // 6 months in seconds (180 days)
-
 	return &Client{
-		baseURL:       baseURL,
-		adminBaseURL:  adminBaseURL,
-		clientID:      clientID,
-		clientSecret:  clientSecret,
-		tokenLifetime: tokenLifetime,
+		baseURL:      baseURL,
+		adminBaseURL: adminBaseURL,
+		clientID:     clientID,
+		clientSecret: clientSecret,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second,
 		},
@@ -141,19 +137,18 @@ func (c *Client) CreateUser(adminToken, username string) (*CreateUserResponse, e
 func (c *Client) CreatePersonalSession(adminToken, userID, deviceID string, expiresAt *time.Time) (*CreatePersonalSessionResponse, error) {
 	scope := fmt.Sprintf("openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:%s", deviceID)
 
-	expiresIn := c.tokenLifetime
-	if expiresAt != nil {
-		expiresIn = int(time.Until(*expiresAt).Seconds())
-		if expiresIn <= 0 {
-			return nil, fmt.Errorf("expiresAt must be in the future")
-		}
-	}
-
 	reqBody := map[string]any{
 		"actor_user_id": userID,
 		"human_name":    fmt.Sprintf("App session (%s)", deviceID),
 		"scope":         scope,
-		"expires_in":    expiresIn,
+	}
+
+	if expiresAt != nil {
+		expiresIn := int(time.Until(*expiresAt).Seconds())
+		if expiresIn <= 0 {
+			return nil, fmt.Errorf("expiresAt must be in the future")
+		}
+		reqBody["expires_in"] = expiresIn
 	}
 
 	body, err := json.Marshal(reqBody)

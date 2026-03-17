@@ -13,7 +13,7 @@ ExecStart=/opt/interface-api/bin/api
 Restart=on-failure
 RestartSec=5
 
-EnvironmentFile=/opt/interface-api/.env.default
+EnvironmentFile=/opt/interface-api/default.env
 EnvironmentFile=/opt/interface-api/.env
 Environment="XDG_CACHE_HOME=/opt/interface-api/.cache"
 Environment="GOCACHE=/opt/interface-api/.cache/go-build"

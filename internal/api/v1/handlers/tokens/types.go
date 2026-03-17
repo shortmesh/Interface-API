@@ -11,6 +11,7 @@ func NewTokenHandler(db database.Service) *TokenHandler {
 }
 
 type CreateRequest struct {
+	UseHost   bool    `json:"use_host" example:"false"`
 	ExpiresAt *string `json:"expires_at,omitempty" example:"2026-12-31T23:59:59Z"`
 }
 

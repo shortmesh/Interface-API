@@ -350,13 +350,6 @@ const docTemplate = `{
                 "summary": "Create a Matrix token",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Basic auth with CLIENT_ID:CLIENT_SECRET",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
                         "description": "Token creation options",
                         "name": "request",
                         "in": "body",

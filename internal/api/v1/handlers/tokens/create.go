@@ -26,7 +26,6 @@ import (
 //	@Tags			tokens
 //	@Accept			json
 //	@Produce		json
-//	@Param			Authorization	header	string	true	"Basic auth with CLIENT_ID:CLIENT_SECRET"
 //	@Security		BasicAuth
 //	@Param			request	body		CreateRequest	false	"Token creation options"
 //	@Success		201		{object}	CreateResponse	"Matrix token created successfully"

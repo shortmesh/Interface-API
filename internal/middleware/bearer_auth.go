@@ -106,5 +106,14 @@ func (m *BearerAuthMiddleware) AuthenticateWebSocket() echo.MiddlewareFunc {
 }
 
 func (m *BearerAuthMiddleware) validateMatrixToken(token string) (*models.MatrixIdentity, error) {
-	return models.FindMatrixIdentityByToken(m.db, token)
+	matrixIdentity, err := models.FindMatrixIdentityByToken(m.db, token)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := matrixIdentity.UpdateLastUsed(m.db); err != nil {
+		logger.Error(fmt.Sprintf("Failed to update last used timestamp: %v", err))
+	}
+
+	return matrixIdentity, nil
 }

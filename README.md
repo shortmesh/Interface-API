@@ -90,6 +90,11 @@ The following environment variables **must** be set for the application to funct
 - `HASH_KEY` - HMAC key for tokens (generate: `openssl rand -base64 32`)
 - `DB_ENCRYPTION_KEY` - SQLCipher key (generate: `openssl rand -hex 32`, required if encryption enabled)
 
+#### API Authentication
+
+- `CLIENT_ID` - Client ID for API access (generate: `openssl rand -hex 16`)
+- `CLIENT_SECRET` - Client secret for API access (generate: `openssl rand -hex 32`)
+
 #### Matrix Services
 
 - `MAS_ADMIN_URL` - MAS admin API URL

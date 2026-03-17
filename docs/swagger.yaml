@@ -308,11 +308,6 @@ paths:
       description: Create a Matrix identity and get a token for Matrix operations.
         Use use_host=true to reuse admin credentials, or false to create new credentials.
       parameters:
-      - description: Basic auth with CLIENT_ID:CLIENT_SECRET
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: Token creation options
         in: body
         name: request

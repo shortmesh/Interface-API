@@ -3,12 +3,18 @@
 
 set -e
 
-# Detect if we should use production paths
+# Parse arguments
 if [ "$1" = "--production" ] || [ "$1" = "-p" ]; then
   PRODUCTION=true
   shift
-  EXAMPLE_FILE="${1:-/opt/interface-api/example.env}"
-  ENV_FILE="${2:-/opt/interface-api/.env}"
+  EXAMPLE_FILE="${1}"
+  ENV_FILE="${2}"
+
+  if [ -z "$EXAMPLE_FILE" ] || [ -z "$ENV_FILE" ]; then
+    echo "Error: -p requires two arguments: <example.env path> <.env path>"
+    echo "Usage: $0 [-p] <example.env> <.env>"
+    exit 1
+  fi
 else
   PRODUCTION=false
   EXAMPLE_FILE="${1:-example.env}"

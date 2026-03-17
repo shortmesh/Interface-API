@@ -30,6 +30,7 @@ func (m *BasicAuthMiddleware) Authenticate() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
+				logger.Error("Missing authorization header")
 				return echo.NewHTTPError(http.StatusUnauthorized, "missing authorization header")
 			}
 
@@ -41,11 +42,13 @@ func (m *BasicAuthMiddleware) Authenticate() echo.MiddlewareFunc {
 
 			decoded, err := base64.StdEncoding.DecodeString(parts[1])
 			if err != nil {
+				logger.Error("Failed to decode authorization header")
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 			}
 
 			credParts := strings.SplitN(string(decoded), ":", 2)
 			if len(credParts) != 2 {
+				logger.Error("Invalid credentials format")
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 			}
 
@@ -54,6 +57,7 @@ func (m *BasicAuthMiddleware) Authenticate() echo.MiddlewareFunc {
 
 			if subtle.ConstantTimeCompare([]byte(clientID), []byte(m.clientID)) != 1 ||
 				subtle.ConstantTimeCompare([]byte(clientSecret), []byte(m.clientSecret)) != 1 {
+				logger.Error("Invalid client credentials")
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 			}
 

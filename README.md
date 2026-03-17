@@ -2,9 +2,14 @@
 
 The primary interface for user interaction.
 
+## Products
+
+- [Authy-API](https://github.com/shortmesh/Authy-API) - Authentication API service
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [API Usage](#api-usage)
 - [Requirements](#requirements)
 - [Configuration](#configuration)
 - [Development](#development)
@@ -22,6 +27,10 @@ make run
 ```
 
 Server: `http://localhost:8080`
+
+## API Usage
+
+For detailed information on using the API, see the [API Usage Guide](docs/USAGE.md).
 
 ## Requirements
 

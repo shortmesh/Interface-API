@@ -12,7 +12,7 @@ fi
 
 # Execute go run with the provided arguments
 if [ -n "$BUILD_TAGS" ]; then
-  exec go run "$BUILD_TAGS" "$@"
+  exec go run $BUILD_TAGS "$@"
 else
   exec go run "$@"
 fi

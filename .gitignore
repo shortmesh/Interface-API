@@ -34,3 +34,5 @@ go.work.sum
 
 # Data files
 data/*.db
+*.swp
+*.swa

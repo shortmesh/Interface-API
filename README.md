@@ -26,7 +26,7 @@ make migrate-up
 make run
 ```
 
-Server: `http://localhost:8080`
+Server: `[http://localhost:8080/docs/index.html](http://localhost:8080/docs/index.html)`
 
 ## API Usage
 

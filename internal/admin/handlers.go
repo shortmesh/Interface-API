@@ -3,8 +3,10 @@ package admin
 import (
 	"crypto/rand"
 	"crypto/subtle"
+	"embed"
 	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"sync"
@@ -18,6 +20,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
+
+//go:embed web/*
+var webFS embed.FS
 
 type AdminHandler struct {
 	db            database.Service
@@ -292,32 +297,67 @@ func (h *AdminHandler) requireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (h *AdminHandler) Index(c echo.Context) error {
-	return c.File("internal/admin/web/index.html")
+	data, err := fs.ReadFile(webFS, "web/index.html")
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "index.html not found"})
+	}
+	return c.HTML(http.StatusOK, string(data))
 }
 
 func (h *AdminHandler) TokensPage(c echo.Context) error {
-	return c.File("internal/admin/web/tokens.html")
+	data, err := fs.ReadFile(webFS, "web/tokens.html")
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "tokens.html not found"})
+	}
+	return c.HTML(http.StatusOK, string(data))
 }
 
 func (h *AdminHandler) DevicesPage(c echo.Context) error {
-	return c.File("internal/admin/web/devices.html")
+	data, err := fs.ReadFile(webFS, "web/devices.html")
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "devices.html not found"})
+	}
+	return c.HTML(http.StatusOK, string(data))
 }
 
 func (h *AdminHandler) LoginPageStatic(c echo.Context) error {
-	return c.File("internal/admin/web/login.html")
+	data, err := fs.ReadFile(webFS, "web/login.html")
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "login.html not found"})
+	}
+	return c.HTML(http.StatusOK, string(data))
 }
 
 func (h *AdminHandler) StaticFile(c echo.Context) error {
 	file := c.Param("file")
 
+	// Public files that don't require authentication
 	if file == "styles.css" || file == "favicon.ico" {
-		return c.File("internal/admin/web/" + file)
+		data, err := fs.ReadFile(webFS, "web/"+file)
+		if err != nil {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "file not found"})
+		}
+		if file == "styles.css" {
+			return c.Blob(http.StatusOK, "text/css", data)
+		}
+		return c.Blob(http.StatusOK, "image/x-icon", data)
 	}
 
 	if !h.checkAuth(c) {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Not authenticated"})
 	}
-	return c.File("internal/admin/web/" + file)
+
+	data, err := fs.ReadFile(webFS, "web/"+file)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "file not found"})
+	}
+
+	// Determine content type for JS files
+	if file == "index.js" {
+		return c.Blob(http.StatusOK, "application/javascript", data)
+	}
+
+	return c.Blob(http.StatusOK, "application/octet-stream", data)
 }
 
 func (h *AdminHandler) RegisterRoutes(e *echo.Echo) {

@@ -76,6 +76,17 @@ func (s *Server) RegisterRoutes() http.Handler {
 		MaxAge:           300,
 	}))
 
+	e.GET("/docs/swagger.json", func(c echo.Context) error {
+		docs.SwaggerInfo.Host = c.Request().Host
+		scheme := "http"
+		if c.Request().TLS != nil || c.Request().Header.Get("X-Forwarded-Proto") == "https" {
+			scheme = "https"
+		}
+		docs.SwaggerInfo.Schemes = []string{scheme}
+		c.Response().Header().Set("Content-Type", "application/json")
+		return c.String(200, docs.SwaggerInfo.ReadDoc())
+	})
+
 	e.GET("/docs/*", func(c echo.Context) error {
 		docs.SwaggerInfo.Host = c.Request().Host
 		scheme := "http"

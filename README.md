@@ -26,7 +26,9 @@ make migrate-up
 make run
 ```
 
-Server: `http://localhost:8080`
+- **Server**: [http://localhost:8080](http://localhost:8080)
+- **Swagger Docs**: [http://localhost:8080/docs/index.html](http://localhost:8080/docs/index.html)
+- **Admin Dashboard**: [http://localhost:8080/admin](http://localhost:8080/admin)
 
 ## API Usage
 
@@ -141,9 +143,8 @@ See [Migration Guide](docs/MIGRATIONS.md) for details.
 
 ## API Documentation
 
-Swagger UI: `http://localhost:8080/docs/index.html`
-
-Regenerate: `make docs`
+- **Swagger UI**: [http://localhost:8080/docs/index.html](http://localhost:8080/docs/index.html)
+- **Regenerate**: `make docs`
 
 ## Resources
 

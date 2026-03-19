@@ -1,0 +1,221 @@
+<div>
+  <div class="content-header">
+    <div
+      style="display: flex; justify-content: space-between; align-items: center"
+    >
+      <div>
+        <h2>Devices</h2>
+        <p>View and manage all devices connected to your Matrix identity.</p>
+      </div>
+      <button class="btn btn-primary" onclick="showAddDeviceModal()">
+        + Add Device
+      </button>
+    </div>
+  </div>
+
+  <div id="devicesList">Loading...</div>
+</div>
+
+<div
+  class="modal fade"
+  id="addDeviceModal"
+  tabindex="-1"
+  aria-labelledby="addDeviceLabel"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
+>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content add-device-modal">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addDeviceLabel">Add New Device</h5>
+        <button
+          type="button"
+          class="btn-close"
+          id="closeAddDeviceBtn"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+          <div id="platformSelectionStep">
+            <p class="text-muted mb-4">
+              Select the platform for your new device
+            </p>
+            <div class="platform-buttons">
+              <button class="platform-btn" id="platformBtn" onclick="selectPlatform('wa')">
+                <img
+                  src="/admin/whatsapp.png"
+                  alt="WhatsApp"
+                  class="platform-icon"
+                />
+                <span class="platform-name">WhatsApp</span>
+              </button>
+            </div>
+            <div id="platformLoadingIndicator" style="display: none; text-align: center; margin-top: 20px;">
+              <div class="status-indicator loading" style="display: inline-block; margin-right: 8px;"></div>
+              <span class="text-muted">Setting up device...</span>
+            </div>
+          </div>
+
+          <div id="qrCodeStep" style="display: none">
+            <div class="qr-code-container">
+              <div class="qr-code-header">
+                <h6>Scan QR Code</h6>
+                <p class="text-muted small">
+                  Use your device to scan this QR code
+                </p>
+              </div>
+              <div class="qr-code-box">
+                <div id="qrCanvas" class="qr-canvas">
+                  <div class="qr-loading-spinner"></div>
+                </div>
+              </div>
+              <div id="connectionStatus" class="connection-status">
+                <div class="status-indicator loading"></div>
+                <span id="statusText">Waiting for device...</span>
+              </div>
+              <div
+                id="successMessage"
+                class="success-message"
+                style="display: none"
+              >
+                <div class="status-indicator connected"></div>
+                <span>Device connected successfully!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  id="setMatrixTokenModal"
+  tabindex="-1"
+  aria-labelledby="setMatrixTokenLabel"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="setMatrixTokenLabel">Set Matrix Token</h5>
+      </div>
+      <div class="modal-body">
+        <p>
+          To access the devices section, you need to set a Matrix token for this
+          session.
+        </p>
+        <div class="mb-3">
+          <label for="matrixTokenInput" class="form-label">Matrix Token:</label>
+          <input
+            type="password"
+            class="form-control"
+            id="matrixTokenInput"
+            placeholder="mt_xxxxxxxxxxxxx"
+            required
+          />
+          <div
+            id="matrixTokenError"
+            class="text-danger small mt-2"
+            style="display: none"
+          ></div>
+          <small class="text-muted d-block mt-2"
+            >Your token will only be stored for this session and will be cleared
+            when you logout.</small
+          >
+          <small class="text-muted d-block mt-1">
+            Don't have a token?
+            <a
+              href="#"
+              onclick="
+                skipMatrixTokenModal();
+                loadPage('tokens');
+                return false;
+              "
+            >
+              Create one here
+            </a>
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="skipMatrixTokenModal()"
+        >
+          Skip for now
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="setMatrixTokenBtn"
+          onclick="setMatrixToken()"
+        >
+          Set Token
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  id="sendMessageModal"
+  tabindex="-1"
+  aria-labelledby="sendMessageLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sendMessageLabel">Send Message</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="messageContact" class="form-label">Contact Number:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="messageContact"
+            placeholder="e.g., 1234567890"
+          />
+          <small class="text-muted">Phone number to send the message to</small>
+        </div>
+        <div class="mb-3">
+          <label for="messageText" class="form-label">Message:</label>
+          <textarea
+            class="form-control"
+            id="messageText"
+            rows="4"
+            placeholder="Enter your message"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="sendMessageBtn"
+          onclick="sendMessage()"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -2,6 +2,7 @@ package models
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"interface-api/pkg/crypto"
@@ -10,15 +11,15 @@ import (
 )
 
 type MatrixIdentity struct {
-	ID             uint
-	MatrixUsername string
-	MatrixDeviceID string
-	TokenHash      []byte
-	IsAdmin        bool
-	ExpiresAt      *time.Time
-	LastUsedAt     *time.Time
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID             uint       `json:"id"`
+	MatrixUsername string     `json:"matrix_username"`
+	MatrixDeviceID string     `json:"matrix_device_id"`
+	TokenHash      []byte     `json:"token_hash"`
+	IsAdmin        bool       `json:"is_admin"`
+	ExpiresAt      *time.Time `json:"expires_at"`
+	LastUsedAt     *time.Time `json:"last_used_at"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 func (MatrixIdentity) TableName() string {
@@ -32,6 +33,15 @@ func (m *MatrixIdentity) UpdateLastUsed(db *gorm.DB) error {
 }
 
 func FindMatrixIdentityByToken(db *gorm.DB, token string) (*MatrixIdentity, error) {
+	tokenPrefix := os.Getenv("MATRIX_TOKEN_PREFIX")
+	if tokenPrefix == "" {
+		tokenPrefix = "mt_"
+	}
+
+	if after, ok := strings.CutPrefix(token, tokenPrefix); ok {
+		token = after
+	}
+
 	hash, err := crypto.Hash(token)
 	if err != nil {
 		return nil, err

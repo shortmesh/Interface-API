@@ -1,0 +1,199 @@
+<div>
+  <div class="content-header">
+    <h2>Matrix Tokens</h2>
+    <p>Manage Matrix identity tokens for device linking and messaging.</p>
+  </div>
+
+  <div class="mb-4">
+    <button class="btn btn-primary" onclick="showCreateTokenModal()">
+      <i class="bi bi-plus-lg"></i> Create New Token
+    </button>
+  </div>
+
+  <table class="table" id="tokensTable">
+    <thead>
+      <tr>
+        <th style="width: 20%">Username</th>
+        <th style="width: 20%">Device ID</th>
+        <th style="width: 10%">Admin</th>
+        <th style="width: 15%">Expires</th>
+        <th style="width: 15%">Last Used</th>
+        <th style="width: 15%">Created</th>
+        <th style="width: 5%">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tokensBody">
+      <tr>
+        <td
+          colspan="7"
+          class="text-center"
+          style="color: var(--color-text-secondary)"
+        >
+          Loading...
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div
+    class="modal fade"
+    id="createTokenModal"
+    tabindex="-1"
+    aria-labelledby="createTokenLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createTokenLabel">Create New Token</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <form id="createTokenForm">
+            <div class="mb-3">
+              <label class="form-label">Use Host Credentials</label>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="useHost" />
+                <label class="form-check-label" for="useHost">
+                  Use admin credentials
+                </label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Expiry Date (Optional)</label>
+              <div class="form-check mb-2">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="setExpiry"
+                  onchange="toggleExpiryDateInput()"
+                />
+                <label class="form-check-label" for="setExpiry">
+                  Set an expiry date
+                </label>
+              </div>
+              <input
+                type="datetime-local"
+                class="form-control"
+                id="expiryDate"
+                disabled
+                style="display: none"
+              />
+              <small>If not set, token will never expire</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Session Attachment (Optional)</label>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="attachToSession"
+                />
+                <label class="form-check-label" for="attachToSession">
+                  Attach to current session for device management
+                </label>
+              </div>
+              <small class="text-muted"
+                >This token will be available for device operations during your
+                session and will be cleared on logout.</small
+              >
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="createTokenBtn"
+            onclick="createToken()"
+          >
+            Create Token
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="modal fade"
+    id="tokenDisplayModal"
+    tabindex="-1"
+    aria-labelledby="tokenDisplayLabel"
+    aria-hidden="true"
+    data-bs-backdrop="static"
+    data-bs-keyboard="false"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="tokenDisplayLabel">Save Your Token</h5>
+        </div>
+        <div class="modal-body">
+          <p style="color: #dc2626; font-weight: 500; margin-bottom: 16px">
+            This is the only time your token will be displayed. Copy it now!
+          </p>
+          <div class="mb-3">
+            <label for="displayToken" class="form-label">Your Token:</label>
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                id="displayToken"
+                readonly
+              />
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                onclick="copyFromElement('displayToken')"
+              >
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+          </div>
+          <div id="attachToSessionSection" style="display: none">
+            <div class="alert alert-info">
+              <p class="mb-0"><strong>Attach to Session?</strong></p>
+              <p class="mb-2">
+                This token will be automatically attached to your current
+                session, allowing you to use it for device operations without
+                needing to paste it each time.
+              </p>
+            </div>
+            <div class="form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="attachToSessionCheckbox"
+                checked
+              />
+              <label class="form-check-label" for="attachToSessionCheckbox">
+                Yes, attach this token to my session
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="closeTokenDisplayModal()"
+          >
+            I've saved my token
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

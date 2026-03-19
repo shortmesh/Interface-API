@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"interface-api/docs"
+	"interface-api/internal/admin"
 	v1 "interface-api/internal/api/v1"
 
 	"github.com/labstack/echo/v4"
@@ -87,6 +88,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	apiV1 := e.Group("/api/v1")
 	v1.RegisterRoutes(apiV1, s.db)
+
+	adminHandler := admin.NewAdminHandler(s.db)
+	adminHandler.RegisterRoutes(e)
 
 	return e
 }

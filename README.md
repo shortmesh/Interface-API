@@ -8,13 +8,30 @@ The primary interface for user interaction.
 
 ## Table of Contents
 
+- [Requirements](#requirements)
 - [Quick Start](#quick-start)
 - [API Usage](#api-usage)
-- [Requirements](#requirements)
 - [Configuration](#configuration)
 - [Development](#development)
 - [API Documentation](#api-documentation)
 - [Resources](#resources)
+
+## Requirements
+
+- Go 1.24.0+
+- SQLite (SQLCipher optional, see [Security](docs/SECURITY.md))
+- RabbitMQ (for worker service)
+- Matrix Authentication Service (MAS) - See [Matrix Client setup](https://github.com/shortmesh/Client#mas) for configuration details
+- Matrix Client - See [Matrix Client repository](https://github.com/shortmesh/Client#requirements) for setup instructions
+
+### Ubuntu/Debian Dependencies
+
+For SQLCipher support (encrypted database):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libsqlite3-dev libsqlcipher-dev
+```
 
 ## Quick Start
 
@@ -33,21 +50,6 @@ make run
 ## API Usage
 
 For detailed information on using the API, see the [API Usage Guide](docs/USAGE.md).
-
-## Requirements
-
-- Go 1.24.0+
-- SQLite (SQLCipher optional, see [Security](docs/SECURITY.md))
-- RabbitMQ (for worker service)
-
-### Ubuntu/Debian Dependencies
-
-For SQLCipher support (encrypted database):
-
-```bash
-sudo apt-get update
-sudo apt-get install -y libsqlite3-dev libsqlcipher-dev
-```
 
 ## Configuration
 
@@ -107,6 +109,9 @@ The following environment variables **must** be set for the application to funct
 - `CLIENT_SECRET` - Client secret for API access (generate: `openssl rand -hex 32`)
 
 #### Matrix Services
+
+> [!IMPORTANT]
+> These services must be set up and running before starting the Interface API. See [Matrix Client repository](https://github.com/shortmesh/Client) for setup instructions for both MAS and the Matrix Client.
 
 - `MAS_ADMIN_URL` - MAS admin API URL
 - `ADMIN_CLIENT_ID` - Admin client ID for MAS

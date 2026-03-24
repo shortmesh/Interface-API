@@ -11,6 +11,7 @@ The primary interface for user interaction.
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
 - [API Usage](#api-usage)
+- [Admin UI Management](#admin-ui-management)
 - [Configuration](#configuration)
 - [Development](#development)
 - [API Documentation](#api-documentation)
@@ -50,6 +51,12 @@ make run
 ## API Usage
 
 For detailed information on using the API, see the [API Usage Guide](docs/USAGE.md).
+
+## Admin UI Management
+
+Access the web-based admin dashboard at `http://localhost:8080/admin` to manage Matrix tokens and devices through a graphical interface.
+
+For detailed information on using the Admin UI, see the [Admin UI Management Guide](docs/ADMIN_UI.md).
 
 ## Configuration
 
@@ -154,6 +161,7 @@ See [Migration Guide](docs/MIGRATIONS.md) for details.
 ## Resources
 
 - [API Usage Guide](docs/USAGE.md)
+- [Admin UI Management](docs/ADMIN_UI.md)
 - [Security & Environment Configuration](docs/SECURITY.md)
 - [Migration Guide](docs/MIGRATIONS.md)
 - [Throttler Documentation](docs/THROTTLER.md)

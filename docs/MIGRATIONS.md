@@ -4,6 +4,9 @@ Database migration guide.
 
 ## Usage
 
+> [!NOTE]
+> If `AUTO_MIGRATE=false` in your configuration, you'll need to manually run migrations. By default, `AUTO_MIGRATE=true` in development mode.
+
 ```bash
 make migrate-up          # Run pending migrations
 make migrate-status      # Show status

@@ -10,6 +10,7 @@ The primary interface for user interaction.
 
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
+- [Docker Setup](#docker-setup)
 - [API Usage](#api-usage)
 - [Admin UI Management](#admin-ui-management)
 - [Configuration](#configuration)
@@ -47,6 +48,85 @@ make run
 - **Server**: [http://localhost:8080](http://localhost:8080)
 - **Swagger Docs**: [http://localhost:8080/docs/index.html](http://localhost:8080/docs/index.html)
 - **Admin Dashboard**: [http://localhost:8080/admin](http://localhost:8080/admin)
+
+## Docker Setup
+
+### Build and Run
+
+```bash
+# Build
+docker build -t interface-api .
+
+# Run
+docker run -d --name interface-api -p 8080:8080 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/.env:/app/.env \
+  interface-api
+
+# View logs
+docker logs -f interface-api
+```
+
+**If AUTO_MIGRATE is disabled**, run migrations first:
+
+```bash
+docker run --rm -v $(pwd)/data:/app/data -v $(pwd)/.env:/app/.env interface-api ./migrate -action=up
+```
+
+**For database encryption**, add build arg and configure `.env`:
+
+```bash
+docker build --build-arg ENABLE_DB_ENCRYPTION=true -t interface-api .
+```
+
+Set `DISABLE_DB_ENCRYPTION=false` and `DB_ENCRYPTION_KEY` in your `.env`.
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  migrate:
+    build: .
+    command: ./migrate -action=up
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    depends_on:
+      - rabbitmq
+
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
+      - migrate
+```
+
+```bash
+docker-compose up -d
+
+# View logs
+docker-compose logs -f api
+```
 
 ## API Usage
 

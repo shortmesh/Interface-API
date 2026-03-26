@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+.github
+
+# Environment files (should be mounted or passed as env vars)
+.env
+*.env
+!default.env
+!example.env
+
+# Build artifacts
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+testdata/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data directory (should be mounted as volume)
+data/
+
+# Service files
+*.service
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

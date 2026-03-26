@@ -635,10 +635,10 @@ code {
 
 .platform-buttons {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
-  max-width: 300px;
+  max-width: 600px;
   margin-left: auto;
   margin-right: auto;
 }

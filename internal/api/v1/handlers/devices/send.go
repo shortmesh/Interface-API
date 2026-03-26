@@ -54,15 +54,6 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		})
 	}
 
-	for _, ch := range deviceID {
-		if ch < '0' || ch > '9' {
-			logger.Info("Message send failed: device_id must be numeric")
-			return c.JSON(http.StatusBadRequest, ErrorResponse{
-				Error: "device_id must contain only numbers",
-			})
-		}
-	}
-
 	var req SendMessageRequest
 	if err := c.Bind(&req); err != nil {
 		logger.Info(fmt.Sprintf("Message send failed: invalid request body - %v", err))

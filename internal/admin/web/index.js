@@ -21,15 +21,39 @@ const UI = {
   },
 };
 
-async function apiCall(url, options = {}) {
-  const response = await fetch(url, options);
-
-  if (response.status === 401) {
-    window.location.href = "/admin/login";
-    return null;
+async function safeJsonParse(response) {
+  try {
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to parse JSON response:", error);
+    return { error: "Invalid server response" };
   }
+}
 
-  return response;
+async function apiCall(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+
+    if (response.status === 401) {
+      window.location.href = "/admin/login";
+      return null;
+    }
+
+    if (!response.ok && response.status >= 500) {
+      console.error(`HTTP ${response.status} error for ${url}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+      });
+    }
+
+    return response;
+  } catch (error) {
+    console.error(`Network error for ${url}:`, error);
+    throw new Error(
+      "Unable to connect to the server. Please check your connection.",
+    );
+  }
 }
 
 function showToast(message, type = "success") {
@@ -115,7 +139,11 @@ function loadPage(page) {
         loadDevices();
       }
     })
-    .catch((e) => console.error(e));
+    .catch((e) => {
+      console.error("Error loading page:", e);
+      document.getElementById("content").innerHTML =
+        '<div class="content-main"><div class="alert alert-danger">Unable to load page. Please try refreshing.</div></div>';
+    });
 }
 
 function formatDate(dateString) {
@@ -200,7 +228,7 @@ async function loadTokens() {
   try {
     const response = await apiCall("/api/v1/admin/tokens");
     if (!response) return;
-    const tokens = await response.json();
+    const tokens = await safeJsonParse(response);
     const tbody = document.getElementById("tokensBody");
     if (!tbody) return;
 
@@ -242,7 +270,7 @@ async function loadTokens() {
     const tbody = document.getElementById("tokensBody");
     if (tbody)
       tbody.innerHTML =
-        '<tr><td colspan="7" class="table-empty-state text-danger">Error loading tokens</td></tr>';
+        '<tr><td colspan="7" class="table-empty-state text-danger">Unable to load tokens. Please try refreshing the page.</td></tr>';
   }
 }
 
@@ -272,7 +300,7 @@ async function createToken() {
     if (!response) return;
 
     if (response.ok) {
-      const data = await response.json();
+      const data = await safeJsonParse(response);
       const attachToSession =
         document.getElementById("attachToSession").checked;
       UI.getModal("createTokenModal").hide();
@@ -287,16 +315,23 @@ async function createToken() {
         .getElementById("tokenDisplayModal")
         .addEventListener("hidden.bs.modal", loadTokens, { once: true });
     } else {
-      const error = await response.json();
+      const error = await safeJsonParse(response);
+      console.error("Failed to create token:", {
+        status: response.status,
+        error,
+      });
       showAlert(
         "Error",
-        `Error creating token: ${error.error || "Unknown error"}`,
+        error.error || "Unable to create token. Please try again later.",
       );
       UI.setButtonState(btn, false, originalText);
     }
   } catch (error) {
     console.error("Error creating token:", error);
-    showAlert("Error", "Error creating token");
+    showAlert(
+      "Error",
+      "Unable to create token. Please check your connection and try again.",
+    );
     UI.setButtonState(
       document.getElementById("createTokenBtn"),
       false,
@@ -331,15 +366,22 @@ async function setMatrixTokenFromDisplay(token) {
     if (response.ok) {
       showToast("Token attached to session", "success");
     } else {
-      const error = await response.json();
+      const error = await safeJsonParse(response);
+      console.error("Failed to attach token:", {
+        status: response.status,
+        error,
+      });
       showAlert(
         "Error",
-        `Failed to attach token: ${error.error || "Unknown error"}`,
+        error.error || "Failed to attach token. Please try again.",
       );
     }
   } catch (error) {
     console.error("Error attaching token:", error);
-    showAlert("Error", "Error attaching token to session");
+    showAlert(
+      "Error",
+      "Unable to attach token. Please check your connection and try again.",
+    );
   }
 }
 
@@ -372,15 +414,22 @@ async function deleteToken(id) {
           loadTokens();
           showToast("Token deleted successfully", "success");
         } else {
-          const error = await response.json();
+          const error = await safeJsonParse(response);
+          console.error("Failed to delete token:", {
+            status: response.status,
+            error,
+          });
           showAlert(
             "Error",
-            `Error deleting token: ${error.error || "Unknown error"}`,
+            error.error || "Unable to delete token. Please try again.",
           );
         }
       } catch (error) {
         console.error("Error deleting token:", error);
-        showAlert("Error", "Error deleting token");
+        showAlert(
+          "Error",
+          "Unable to delete token. Please check your connection and try again.",
+        );
       }
     },
   );
@@ -390,7 +439,7 @@ async function loadDevices() {
   try {
     const hasTokenResponse = await apiCall("/api/v1/admin/matrix-token-status");
     if (!hasTokenResponse) return;
-    const hasTokenData = await hasTokenResponse.json();
+    const hasTokenData = await safeJsonParse(hasTokenResponse);
 
     if (!hasTokenData.has_matrix_token) {
       const modal = new bootstrap.Modal(
@@ -405,7 +454,7 @@ async function loadDevices() {
     const response = await apiCall("/api/v1/admin/devices");
     if (!response) return;
 
-    const devices = await response.json();
+    const devices = await safeJsonParse(response);
     const devicesList = document.getElementById("devicesList");
 
     if (!devicesList) return;
@@ -450,9 +499,7 @@ async function loadDevices() {
     const devicesList = document.getElementById("devicesList");
     if (devicesList) {
       devicesList.innerHTML =
-        '<table class="table"><tbody><tr><td class="table-empty-state text-danger" colspan="3">Error: ' +
-        error.message +
-        "</td></tr></tbody></table>";
+        '<table class="table"><tbody><tr><td class="table-empty-state text-danger" colspan="3">Unable to load devices. Please try refreshing the page.</td></tr></tbody></table>';
     }
   }
 }
@@ -490,14 +537,23 @@ async function setMatrixToken() {
       showToast("Matrix token set successfully", "success");
       loadDevices();
     } else {
-      const error = await response.json();
-      UI.showError(errorDiv, input, error.error || "Unknown error");
+      const error = await safeJsonParse(response);
+      console.error("Failed to set Matrix token:", {
+        status: response.status,
+        error,
+      });
+      UI.showError(errorDiv, input, error.error || "Failed to set token");
       UI.setButtonState(btn, false, "Set Token");
     }
   } catch (error) {
+    console.error("Error setting Matrix token:", error);
     const errorDiv = document.getElementById("matrixTokenError");
     const input = document.getElementById("matrixTokenInput");
-    UI.showError(errorDiv, input, `Error: ${error.message}`);
+    UI.showError(
+      errorDiv,
+      input,
+      "Unable to connect. Please check your connection and try again.",
+    );
     UI.setButtonState(
       document.getElementById("setMatrixTokenBtn"),
       false,
@@ -535,15 +591,22 @@ async function deleteDevice(deviceId, platform) {
           loadDevices();
           showToast("Device deleted successfully", "success");
         } else {
-          const error = await response.json();
+          const error = await safeJsonParse(response);
+          console.error("Failed to delete device:", {
+            status: response.status,
+            error,
+          });
           showAlert(
             "Error",
-            `Error deleting device: ${error.error || "Unknown error"}`,
+            error.error || "Unable to delete device. Please try again.",
           );
         }
       } catch (error) {
         console.error("Error deleting device:", error);
-        showAlert("Error", `Error: ${error.message}`);
+        showAlert(
+          "Error",
+          "Unable to delete device. Please check your connection and try again.",
+        );
       }
     },
   );
@@ -591,17 +654,21 @@ async function selectPlatform(platform) {
     if (!response) return;
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await safeJsonParse(response);
+      console.error("Failed to add device:", {
+        status: response.status,
+        error,
+      });
       showAlert(
         "Error",
-        `Failed to add device: ${error.error || "Unknown error"}`,
+        error.error || "Unable to add device. Please try again.",
       );
       platformBtn.disabled = false;
       loadingIndicator.style.display = "none";
       return;
     }
 
-    const data = await response.json();
+    const data = await safeJsonParse(response);
     document.getElementById("platformSelectionStep").style.display = "none";
     document.getElementById("qrCanvas").innerHTML =
       '<div class="qr-loading-spinner"></div>';
@@ -624,7 +691,10 @@ async function selectPlatform(platform) {
     connectWebSocket(qrCodeUrl);
   } catch (error) {
     console.error("Error creating device:", error);
-    showAlert("Error", `Error creating device: ${error.message}`);
+    showAlert(
+      "Error",
+      "Unable to add device. Please check your connection and try again.",
+    );
     platformBtn.disabled = false;
     loadingIndicator.style.display = "none";
     resetAddDeviceModal();
@@ -761,16 +831,23 @@ async function sendMessage() {
       UI.getModal("sendMessageModal").hide();
       showToast("Message queued successfully", "success");
     } else {
-      const error = await response.json();
+      const error = await safeJsonParse(response);
+      console.error("Failed to send message:", {
+        status: response.status,
+        error,
+      });
       showAlert(
         "Error",
-        `Failed to send message: ${error.error || "Unknown error"}`,
+        error.error || "Unable to send message. Please try again.",
       );
       UI.setButtonState(btn, false, "Send");
     }
   } catch (error) {
     console.error("Error sending message:", error);
-    showAlert("Error", `Error sending message: ${error.message}`);
+    showAlert(
+      "Error",
+      "Unable to send message. Please check your connection and try again.",
+    );
     UI.setButtonState(btn, false, "Send");
   }
 }

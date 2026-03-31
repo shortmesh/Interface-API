@@ -332,7 +332,7 @@ func (h *AdminHandler) StaticFile(c echo.Context) error {
 	file := c.Param("file")
 
 	// Public files that don't require authentication
-	if file == "styles.css" || file == "favicon.ico" {
+	if file == "styles.css" || file == "favicon.ico" || file == "whatsapp.png" || file == "signal.png" || file == "telegram.png" {
 		data, err := fs.ReadFile(webFS, "web/"+file)
 		if err != nil {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "file not found"})
@@ -340,7 +340,12 @@ func (h *AdminHandler) StaticFile(c echo.Context) error {
 		if file == "styles.css" {
 			return c.Blob(http.StatusOK, "text/css", data)
 		}
-		return c.Blob(http.StatusOK, "image/x-icon", data)
+		if file == "favicon.ico" {
+			return c.Blob(http.StatusOK, "image/x-icon", data)
+		}
+		if file == "whatsapp.png" || file == "signal.png" || file == "telegram.png" {
+			return c.Blob(http.StatusOK, "image/png", data)
+		}
 	}
 
 	if !h.checkAuth(c) {

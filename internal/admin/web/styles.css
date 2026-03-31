@@ -766,6 +766,50 @@ code {
   color: var(--color-warning);
 }
 
+.qr-retry-box {
+  width: 300px;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border: 2px dashed #adb5bd;
+  border-radius: 8px;
+  transition: var(--transition);
+}
+
+.qr-retry-box:hover {
+  background: #e9ecef;
+  border-color: #495057;
+  border-style: solid;
+}
+
+.retry-icon {
+  font-size: 80px;
+  color: #495057;
+  line-height: 1;
+  margin-bottom: var(--spacing-md);
+  transition: var(--transition);
+  font-weight: bold;
+}
+
+.qr-retry-box:hover .retry-icon {
+  color: #212529;
+  transform: rotate(180deg);
+}
+
+.retry-text {
+  font-size: var(--size-lg);
+  color: #495057;
+  font-weight: var(--weight-semibold);
+  transition: var(--transition);
+}
+
+.qr-retry-box:hover .retry-text {
+  color: #212529;
+}
+
 .success-message {
   display: flex;
   align-items: center;

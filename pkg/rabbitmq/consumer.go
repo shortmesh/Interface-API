@@ -78,6 +78,10 @@ func (c *Consumer) DoesQueueExist(queueName string) (bool, error) {
 	return c.queueExists(queueName)
 }
 
+func (c *Consumer) GetQueueMessageCount(queueName string) (int, error) {
+	return c.getQueueMessageCount(queueName)
+}
+
 func (c *Consumer) Close() error {
 	return c.close()
 }

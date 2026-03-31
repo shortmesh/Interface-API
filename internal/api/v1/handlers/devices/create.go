@@ -70,9 +70,8 @@ func (h *DeviceHandler) Create(c echo.Context) error {
 	}
 	defer consumer.Close()
 
-	queueExists, _ := consumer.DoesQueueExist(matrixUsername)
-
-	if queueExists {
+	messageCount, err := consumer.GetQueueMessageCount(matrixUsername)
+	if err == nil && messageCount > 0 {
 		return c.JSON(http.StatusCreated, DeviceResponse{
 			Message:   "Scan the QR code to link your device",
 			QrCodeURL: qrCodeURL,

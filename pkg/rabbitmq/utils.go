@@ -100,6 +100,14 @@ func (c *Client) queueExists(queueName string) (bool, error) {
 	return true, nil
 }
 
+func (c *Client) getQueueMessageCount(queueName string) (int, error) {
+	queue, err := c.channel.QueueInspect(queueName)
+	if err != nil {
+		return 0, err
+	}
+	return queue.Messages, nil
+}
+
 func (c *Client) setQos(prefetchCount, prefetchSize int, global bool) error {
 	return c.channel.Qos(prefetchCount, prefetchSize, global)
 }

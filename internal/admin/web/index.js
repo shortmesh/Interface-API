@@ -635,6 +635,11 @@ function retryQRConnection() {
   if (window.currentQRCodeUrl) {
     document.getElementById("qrCanvas").innerHTML =
       '<div class="qr-loading-spinner"></div>';
+    document.getElementById("statusText").textContent = "Reconnecting...";
+    if (window.currentWebSocket) {
+      window.currentWebSocket.close();
+      window.currentWebSocket = null;
+    }
     connectWebSocket(window.currentQRCodeUrl);
   }
 }
@@ -646,6 +651,7 @@ function connectWebSocket(qrCodeUrl) {
 
     window.currentWebSocket = new WebSocket(qrCodeUrl);
     window.currentWebSocket.receivedData = false;
+    window.currentWebSocket.hasError = false;
 
     window.currentWebSocket.onopen = () => {
       document.getElementById("statusText").textContent =
@@ -654,16 +660,30 @@ function connectWebSocket(qrCodeUrl) {
 
     window.currentWebSocket.onmessage = (event) => {
       window.currentWebSocket.receivedData = true;
-      generateQRCode(event.data);
+      if (event.data.startsWith("Error:")) {
+        window.currentWebSocket.hasError = true;
+        document.getElementById("statusText").innerHTML =
+          `${event.data} <button class="btn-retry" onclick="retryQRConnection()">Try again</button>`;
+        document.getElementById("qrCanvas").innerHTML =
+          '<div class="qr-retry-box" onclick="retryQRConnection()" style="cursor: pointer;"><div class="retry-icon">↻</div><div class="retry-text">Retry</div></div>';
+      } else {
+        generateQRCode(event.data);
+      }
     };
 
     window.currentWebSocket.onerror = () => {
       document.getElementById("statusText").innerHTML =
         'Connection error. <button class="btn-retry" onclick="retryQRConnection()">Try again</button>';
+      document.getElementById("qrCanvas").innerHTML =
+        '<div class="qr-retry-box" onclick="retryQRConnection()" style="cursor: pointer;"><div class="retry-icon">↻</div><div class="retry-text">Retry</div></div>';
     };
 
     window.currentWebSocket.onclose = () => {
-      if (window.currentWebSocket && window.currentWebSocket.receivedData)
+      if (
+        window.currentWebSocket &&
+        window.currentWebSocket.receivedData &&
+        !window.currentWebSocket.hasError
+      )
         showDeviceConnected();
     };
   } catch (error) {

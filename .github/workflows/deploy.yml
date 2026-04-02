@@ -18,9 +18,11 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
+          envs: PATH
           script: |
-            export PATH=$PATH:$(go env GOPATH)/bin
+            set -e
+            export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
             cd /opt/shortmesh/Interface-API
             git pull
             make build
-            sudo -n systemctl restart interface-api
+            sudo systemctl restart interface-api.service

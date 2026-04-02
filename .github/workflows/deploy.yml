@@ -19,7 +19,8 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            export PATH=$PATH:$(go env GOPATH)/bin
             cd /opt/shortmesh/Interface-API
             git pull
             make build
-            sudo systemctl restart interface-api
+            sudo -n systemctl restart interface-api

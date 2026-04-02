@@ -6,74 +6,20 @@ on:
       - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     environment:
       name: production
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-
-      - name: Setup Go
-        uses: actions/setup-go@v6.3.0
-        with:
-          go-version: "1.24"
-
-      - name: Install SQLCipher dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsqlite3-dev libsqlcipher-dev
-
-      - name: Install swag
-        run: go install github.com/swaggo/swag/cmd/swag@latest
-
-      - name: Configure for production build
-        run: |
-          echo "DISABLE_DB_ENCRYPTION=false" > .env
-
-      - name: Build binary
-        run: |
-          make build
-
-      - name: Stop service
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            systemctl stop interface-api
-
-      - name: Upload binary via SSH
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "bin"
-          target: "/opt/interface-api/"
-          overwrite: true
-
-      - name: Clone/Update code
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            if [ -d ~/projects/Interface-API ]; then
-              cd ~/projects/Interface-API && git pull
-            else
-              git clone https://github.com/${{ github.repository }}.git ~/projects/Interface-API
-            fi
-
-      - name: Start service
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            systemctl start interface-api
-            systemctl is-active interface-api
+            cd /opt/shortmesh/Interface-API
+            git pull
+            make build
+            sudo systemctl restart interface-api

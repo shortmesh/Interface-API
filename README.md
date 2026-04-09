@@ -176,7 +176,7 @@ In production mode (`APP_MODE=prod`), the server requires HTTPS unless explicitl
 
 - `ALLOW_INSECURE_SERVER=true` - Allow HTTP in production (use behind reverse proxy with TLS termination)
 - `ALLOW_INSECURE_EXTERNAL=true` - Allow HTTP/WS for external services in production
-- `DISABLE_DB_ENCRYPTION=false` - Enable SQLCipher AES-256 encryption (see [Security](docs/SECURITY.md))
+- `DISABLE_DB_ENCRYPTION=true` - Disable SQLCipher encryption (use standard SQLite for development)
 
 ### Required Environment Variables
 

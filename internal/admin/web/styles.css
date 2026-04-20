@@ -320,6 +320,33 @@ button:disabled {
   background-size: contain;
 }
 
+/* Custom switch toggle styling */
+.form-check.form-switch .form-check-input {
+  width: 2.5em;
+  height: 1.25em;
+  background-color: #6c757d;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-size: contain;
+  border: none;
+  transition:
+    background-color 0.15s ease-in-out,
+    background-position 0.15s ease-in-out;
+  margin-top: 0.25em;
+}
+
+.form-check.form-switch .form-check-input:checked {
+  background-color: #0d6efd;
+  background-position: right center;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+}
+
+.form-check.form-switch .form-check-input:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  border: none;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
 .form-check-label {
   color: var(--color-text-primary);
   font-size: var(--size-sm);

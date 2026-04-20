@@ -61,3 +61,12 @@ type SendMessageResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 }
+
+type DeleteTokenRequest struct {
+	Username string `json:"username"`
+}
+
+type DeleteTokenResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}

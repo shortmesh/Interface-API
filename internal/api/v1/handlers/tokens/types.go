@@ -20,6 +20,10 @@ type CreateResponse struct {
 	Token   string `json:"token" example:"mt_xxxxx"`
 }
 
+type DeleteResponse struct {
+	Message string `json:"message"`
+}
+
 type ErrorResponse struct {
 	Error string `json:"error"`
 }

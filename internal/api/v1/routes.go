@@ -19,6 +19,7 @@ func RegisterRoutes(g *echo.Group, db database.Service) {
 
 	// Token routes
 	g.POST("/tokens", tokenHandler.Create, basicAuth.Authenticate())
+	g.DELETE("/tokens/:id", tokenHandler.Delete, basicAuth.Authenticate())
 
 	// Device routes
 	g.POST("/devices", deviceWsHandler.Create, bearerAuth.Authenticate())

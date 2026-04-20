@@ -39,6 +39,7 @@ type IncomingMessage struct {
 	Type      string `json:"Type"`
 	From      string `json:"From"`
 	To        string `json:"To"`
+	Message   string `json:"Message"`
 	Media     Media  `json:"Media"`
 }
 
@@ -54,6 +55,7 @@ type WebhookWorker struct {
 	rabbitURL          string
 	exchangeName       string
 	bindingKey         string
+	queueSuffix        string
 	db                 database.Service
 	userConsumers      map[string]*userConsumer
 	userConsumersMutex sync.RWMutex
@@ -80,6 +82,11 @@ func New(db database.Service) *WebhookWorker {
 		bindingKey = "contacts.topic.incoming_messages"
 	}
 
+	queueSuffix := os.Getenv("WEBHOOK_INCOMING_QUEUE_SUFFIX")
+	if queueSuffix == "" {
+		queueSuffix = "_incoming_messages"
+	}
+
 	refreshInterval := 30 * time.Second
 	if interval := os.Getenv("WEBHOOK_REFRESH_INTERVAL_SECONDS"); interval != "" {
 		if seconds, err := strconv.Atoi(interval); err == nil && seconds > 0 {
@@ -95,6 +102,7 @@ func New(db database.Service) *WebhookWorker {
 		rabbitURL:       rabbitURL,
 		exchangeName:    exchangeName,
 		bindingKey:      bindingKey,
+		queueSuffix:     queueSuffix,
 		db:              db,
 		userConsumers:   make(map[string]*userConsumer),
 		refreshInterval: refreshInterval,
@@ -173,7 +181,7 @@ func (w *WebhookWorker) syncConsumers() {
 		if _, exists := w.userConsumers[username]; !exists {
 			logger.Info("Starting consumer for new user")
 			ctx, cancel := context.WithCancel(w.ctx)
-			queueName := fmt.Sprintf("%s_incoming_messages", username)
+			queueName := username + w.queueSuffix
 
 			w.userConsumers[username] = &userConsumer{
 				matrixUsername: username,

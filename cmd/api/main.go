@@ -25,7 +25,7 @@ import (
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
-//	@description				Bearer token authentication (use "Bearer sk_xxxxx" or "Bearer mt_xxxxx")
+//	@description				Bearer token authentication (use Bearer mt_xxxxx")
 
 //	@securityDefinitions.basic	BasicAuth
 

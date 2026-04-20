@@ -85,6 +85,11 @@ definitions:
         example: mt_xxxxx
         type: string
     type: object
+  tokens.DeleteResponse:
+    properties:
+      message:
+        type: string
+    type: object
   tokens.ErrorResponse:
     properties:
       error:
@@ -368,6 +373,41 @@ paths:
       summary: Create a Matrix token
       tags:
       - tokens
+  /api/v1/tokens/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a Matrix token
+      parameters:
+      - description: Token ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token deleted successfully
+          schema:
+            $ref: '#/definitions/tokens.DeleteResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+        "404":
+          description: Token not found
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a Matrix token
+      tags:
+      - tokens
   /api/v1/webhooks:
     get:
       description: Get a list of all webhooks for the authenticated user
@@ -522,7 +562,7 @@ securityDefinitions:
   BasicAuth:
     type: basic
   BearerAuth:
-    description: Bearer token authentication (use "Bearer sk_xxxxx" or "Bearer mt_xxxxx")
+    description: Bearer token authentication (use Bearer mt_xxxxx")
     in: header
     name: Authorization
     type: apiKey

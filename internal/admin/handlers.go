@@ -188,21 +188,6 @@ func (h *AdminHandler) listTokens(c echo.Context) error {
 	return c.JSON(http.StatusOK, tokens)
 }
 
-func (h *AdminHandler) deleteToken(c echo.Context) error {
-	id := c.Param("id")
-	if id == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID is required"})
-	}
-
-	if err := h.db.DB().Delete(&models.MatrixIdentity{}, id).Error; err != nil {
-		logger.Error(fmt.Sprintf("Failed to delete token: %v", err))
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
-
-	logger.Info(fmt.Sprintf("Token deleted: %s", id))
-	return c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
-}
-
 func (h *AdminHandler) setSessionMatrixToken(c echo.Context) error {
 	cookie, err := c.Cookie("shortmesh_admin_token")
 	if err != nil {
@@ -379,7 +364,7 @@ func (h *AdminHandler) RegisterRoutes(e *echo.Echo) {
 	adminAPI := e.Group("/api/v1/admin")
 	adminAPI.GET("/tokens", h.listTokens, h.requireAuth)
 	adminAPI.POST("/tokens", h.tokenHandler.Create, h.requireAuth)
-	adminAPI.DELETE("/tokens/:id", h.deleteToken, h.requireAuth)
+	adminAPI.DELETE("/tokens/:id", h.tokenHandler.Delete, h.requireAuth)
 
 	// Matrix token session management
 	adminAPI.POST("/matrix-token", h.setSessionMatrixToken, h.requireAuth)

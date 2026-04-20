@@ -380,6 +380,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/tokens/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Delete a Matrix token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens"
+                ],
+                "summary": "Delete a Matrix token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.DeleteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/webhooks": {
             "get": {
                 "security": [
@@ -738,6 +793,14 @@ const docTemplate = `{
                 }
             }
         },
+        "tokens.DeleteResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "tokens.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -807,7 +870,7 @@ const docTemplate = `{
             "type": "basic"
         },
         "BearerAuth": {
-            "description": "Bearer token authentication (use \"Bearer sk_xxxxx\" or \"Bearer mt_xxxxx\")",
+            "description": "Bearer token authentication (use Bearer mt_xxxxx\")",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

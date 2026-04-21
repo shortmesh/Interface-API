@@ -85,9 +85,49 @@ definitions:
         example: mt_xxxxx
         type: string
     type: object
+  tokens.DeleteResponse:
+    properties:
+      message:
+        type: string
+    type: object
   tokens.ErrorResponse:
     properties:
       error:
+        type: string
+    type: object
+  webhooks.AddWebhookRequest:
+    properties:
+      url:
+        type: string
+    type: object
+  webhooks.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  webhooks.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  webhooks.UpdateWebhookRequest:
+    properties:
+      active:
+        type: boolean
+      url:
+        type: string
+    type: object
+  webhooks.WebhookResponse:
+    properties:
+      active:
+        type: boolean
+      created_at:
+        type: string
+      id:
+        type: integer
+      updated_at:
+        type: string
+      url:
         type: string
     type: object
 info:
@@ -333,11 +373,196 @@ paths:
       summary: Create a Matrix token
       tags:
       - tokens
+  /api/v1/tokens/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a Matrix token
+      parameters:
+      - description: Token ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token deleted successfully
+          schema:
+            $ref: '#/definitions/tokens.DeleteResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+        "404":
+          description: Token not found
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a Matrix token
+      tags:
+      - tokens
+  /api/v1/webhooks:
+    get:
+      description: Get a list of all webhooks for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of webhooks
+          schema:
+            items:
+              $ref: '#/definitions/webhooks.WebhookResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all webhooks
+      tags:
+      - webhooks
+    post:
+      consumes:
+      - application/json
+      description: Register a new webhook URL to receive message notifications for
+        the authenticated user
+      parameters:
+      - description: Webhook URL
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/webhooks.AddWebhookRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Webhook added successfully
+          schema:
+            $ref: '#/definitions/webhooks.WebhookResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "409":
+          description: Webhook already exists
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a webhook URL
+      tags:
+      - webhooks
+  /api/v1/webhooks/{id}:
+    delete:
+      description: Remove a webhook for the authenticated user
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Webhook deleted successfully
+          schema:
+            $ref: '#/definitions/webhooks.MessageResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "404":
+          description: Webhook not found
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a webhook
+      tags:
+      - webhooks
+    put:
+      consumes:
+      - application/json
+      description: Update webhook URL and/or active status for the authenticated user
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Webhook update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/webhooks.UpdateWebhookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Webhook updated successfully
+          schema:
+            $ref: '#/definitions/webhooks.WebhookResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "404":
+          description: Webhook not found
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "409":
+          description: Webhook URL already exists
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/webhooks.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a webhook
+      tags:
+      - webhooks
 securityDefinitions:
   BasicAuth:
     type: basic
   BearerAuth:
-    description: Bearer token authentication (use "Bearer sk_xxxxx" or "Bearer mt_xxxxx")
+    description: Bearer token authentication (use Bearer mt_xxxxx")
     in: header
     name: Authorization
     type: apiKey

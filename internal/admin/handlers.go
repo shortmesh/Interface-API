@@ -14,6 +14,7 @@ import (
 
 	"interface-api/internal/api/v1/handlers/devices"
 	"interface-api/internal/api/v1/handlers/tokens"
+	"interface-api/internal/api/v1/handlers/webhooks"
 	"interface-api/internal/database"
 	"interface-api/internal/database/models"
 	"interface-api/pkg/logger"
@@ -25,11 +26,12 @@ import (
 var webFS embed.FS
 
 type AdminHandler struct {
-	db            database.Service
-	tokenHandler  *tokens.TokenHandler
-	deviceHandler *devices.DeviceHandler
-	sessions      map[string]*AdminSession
-	sessionMutex  sync.RWMutex
+	db             database.Service
+	tokenHandler   *tokens.TokenHandler
+	deviceHandler  *devices.DeviceHandler
+	webhookHandler *webhooks.WebhookHandler
+	sessions       map[string]*AdminSession
+	sessionMutex   sync.RWMutex
 }
 
 type AdminSession struct {
@@ -39,10 +41,11 @@ type AdminSession struct {
 
 func NewAdminHandler(dbService database.Service) *AdminHandler {
 	h := &AdminHandler{
-		db:            dbService,
-		tokenHandler:  tokens.NewTokenHandler(dbService),
-		deviceHandler: devices.NewDeviceWebsocketHandler(dbService),
-		sessions:      make(map[string]*AdminSession),
+		db:             dbService,
+		tokenHandler:   tokens.NewTokenHandler(dbService),
+		deviceHandler:  devices.NewDeviceWebsocketHandler(dbService),
+		webhookHandler: webhooks.NewWebhookHandler(dbService),
+		sessions:       make(map[string]*AdminSession),
 	}
 	go h.cleanupExpiredSessions()
 	return h
@@ -188,21 +191,6 @@ func (h *AdminHandler) listTokens(c echo.Context) error {
 	return c.JSON(http.StatusOK, tokens)
 }
 
-func (h *AdminHandler) deleteToken(c echo.Context) error {
-	id := c.Param("id")
-	if id == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID is required"})
-	}
-
-	if err := h.db.DB().Delete(&models.MatrixIdentity{}, id).Error; err != nil {
-		logger.Error(fmt.Sprintf("Failed to delete token: %v", err))
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
-
-	logger.Info(fmt.Sprintf("Token deleted: %s", id))
-	return c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
-}
-
 func (h *AdminHandler) setSessionMatrixToken(c echo.Context) error {
 	cookie, err := c.Cookie("shortmesh_admin_token")
 	if err != nil {
@@ -320,6 +308,14 @@ func (h *AdminHandler) DevicesPage(c echo.Context) error {
 	return c.HTML(http.StatusOK, string(data))
 }
 
+func (h *AdminHandler) WebhooksPage(c echo.Context) error {
+	data, err := fs.ReadFile(webFS, "web/webhooks.html")
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "webhooks.html not found"})
+	}
+	return c.HTML(http.StatusOK, string(data))
+}
+
 func (h *AdminHandler) LoginPageStatic(c echo.Context) error {
 	data, err := fs.ReadFile(webFS, "web/login.html")
 	if err != nil {
@@ -374,12 +370,13 @@ func (h *AdminHandler) RegisterRoutes(e *echo.Echo) {
 	admin.GET("", h.Index, h.requireAuth)
 	admin.GET("/tokens", h.TokensPage, h.requireAuth)
 	admin.GET("/devices", h.DevicesPage, h.requireAuth)
+	admin.GET("/webhooks", h.WebhooksPage, h.requireAuth)
 	admin.GET("/:file", h.StaticFile)
 
 	adminAPI := e.Group("/api/v1/admin")
 	adminAPI.GET("/tokens", h.listTokens, h.requireAuth)
 	adminAPI.POST("/tokens", h.tokenHandler.Create, h.requireAuth)
-	adminAPI.DELETE("/tokens/:id", h.deleteToken, h.requireAuth)
+	adminAPI.DELETE("/tokens/:id", h.tokenHandler.Delete, h.requireAuth)
 
 	// Matrix token session management
 	adminAPI.POST("/matrix-token", h.setSessionMatrixToken, h.requireAuth)
@@ -391,4 +388,10 @@ func (h *AdminHandler) RegisterRoutes(e *echo.Echo) {
 	adminAPI.DELETE("/devices", h.deviceWithMatrixToken(h.deviceHandler.Delete), h.requireAuth)
 	adminAPI.POST("/devices/:device_id/message", h.deviceWithMatrixToken(h.deviceHandler.SendMessage), h.requireAuth)
 	adminAPI.GET("/devices/qr-code", h.deviceWithMatrixToken(h.deviceHandler.QRCode), h.requireAuth)
+
+	// Webhook endpoints (protected by session cookie and matrix token)
+	adminAPI.GET("/webhooks", h.deviceWithMatrixToken(h.webhookHandler.List), h.requireAuth)
+	adminAPI.POST("/webhooks", h.deviceWithMatrixToken(h.webhookHandler.Add), h.requireAuth)
+	adminAPI.PUT("/webhooks/:id", h.deviceWithMatrixToken(h.webhookHandler.Update), h.requireAuth)
+	adminAPI.DELETE("/webhooks/:id", h.deviceWithMatrixToken(h.webhookHandler.Delete), h.requireAuth)
 }

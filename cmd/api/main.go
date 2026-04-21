@@ -9,10 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"interface-api/internal/database"
 	"interface-api/internal/server"
 	"interface-api/pkg/cleanup"
 	"interface-api/pkg/config"
 	"interface-api/pkg/logger"
+	"interface-api/pkg/webhookworker"
 	"interface-api/pkg/worker"
 )
 
@@ -23,11 +25,11 @@ import (
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
-//	@description				Bearer token authentication (use "Bearer sk_xxxxx" or "Bearer mt_xxxxx")
+//	@description				Bearer token authentication (use Bearer mt_xxxxx")
 
 //	@securityDefinitions.basic	BasicAuth
 
-func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.CleanupWorker, done chan bool) {
+func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.CleanupWorker, ww *webhookworker.WebhookWorker, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -44,6 +46,10 @@ func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.Clea
 		cw.Stop()
 	}
 
+	if ww != nil {
+		ww.Stop()
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := apiServer.Shutdown(ctx); err != nil {
@@ -56,6 +62,8 @@ func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.Clea
 }
 
 func main() {
+	db := database.New()
+
 	var w *worker.Worker
 	if worker.IsEnabled() {
 		w = worker.New()
@@ -72,11 +80,19 @@ func main() {
 		logger.Info("Cleanup worker disabled via CLEANUP_ENABLED=false")
 	}
 
+	var ww *webhookworker.WebhookWorker
+	if webhookworker.IsEnabled() {
+		ww = webhookworker.New(db)
+		ww.Start()
+	} else {
+		logger.Info("Webhook worker disabled via WEBHOOK_WORKER_ENABLED=false")
+	}
+
 	srv := server.NewServer()
 
 	done := make(chan bool, 1)
 
-	go gracefulShutdown(srv, w, cw, done)
+	go gracefulShutdown(srv, w, cw, ww, done)
 
 	var err error
 	if config.RequiresHTTPS() {

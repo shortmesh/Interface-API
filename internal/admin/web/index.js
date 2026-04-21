@@ -137,6 +137,8 @@ function loadPage(page) {
         loadTokens();
       } else if (page === "devices") {
         loadDevices();
+      } else if (page === "webhooks") {
+        loadWebhooks();
       }
     })
     .catch((e) => {
@@ -435,27 +437,54 @@ async function deleteToken(id) {
   );
 }
 
+function focusMatrixTokenInput() {
+  const modalElement = document.getElementById("setMatrixTokenModal");
+  let modal = bootstrap.Modal.getInstance(modalElement);
+
+  if (!modal || !modalElement.classList.contains("show")) {
+    modal = new bootstrap.Modal(modalElement);
+    modal.show();
+  }
+
+  setTimeout(() => {
+    const input = document.getElementById("matrixTokenInput");
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, 500);
+}
+
 async function loadDevices() {
   try {
     const hasTokenResponse = await apiCall("/api/v1/admin/matrix-token-status");
     if (!hasTokenResponse) return;
     const hasTokenData = await safeJsonParse(hasTokenResponse);
 
+    const addBtn = document.getElementById("addDeviceHeaderBtn");
+    const devicesList = document.getElementById("devicesList");
+
     if (!hasTokenData.has_matrix_token) {
+      if (addBtn) addBtn.disabled = true;
       const modal = new bootstrap.Modal(
         document.getElementById("setMatrixTokenModal"),
       );
       modal.show();
-      document.getElementById("devicesList").innerHTML =
-        '<div class="alert alert-info">Please set your Matrix token to continue.</div>';
+      if (devicesList) {
+        devicesList.innerHTML = `<div class="alert alert-info">
+          Please set your Matrix token to continue. 
+          <a href="#" onclick="focusMatrixTokenInput(); return false;" style="text-decoration: underline; cursor: pointer;">Click here to set token</a>
+        </div>`;
+      }
       return;
     }
+
+    if (addBtn) addBtn.disabled = false;
 
     const response = await apiCall("/api/v1/admin/devices");
     if (!response) return;
 
     const devices = await safeJsonParse(response);
-    const devicesList = document.getElementById("devicesList");
 
     if (!devicesList) return;
 
@@ -479,10 +508,10 @@ async function loadDevices() {
 <td>
   <div style="display: flex; gap: 6px; align-items: center;">
     <button class="btn btn-sm btn-outline-primary" onclick="showSendMessageModal('${d.device_id}', '${d.platform}')" title="Send message">
-      Send Message
+      <i class="bi bi-chat-dots"></i>
     </button>
     <button class="btn btn-sm btn-outline-danger" onclick="deleteDevice('${d.device_id}', '${d.platform}')" title="Delete device">
-      Delete
+      <i class="bi bi-trash"></i>
     </button>
   </div>
 </td>
@@ -535,7 +564,11 @@ async function setMatrixToken() {
       UI.getModal("setMatrixTokenModal").hide();
       UI.resetInput(input, errorDiv);
       showToast("Matrix token set successfully", "success");
-      loadDevices();
+      if (currentPage === "devices") {
+        loadDevices();
+      } else if (currentPage === "webhooks") {
+        loadWebhooks();
+      }
     } else {
       const error = await safeJsonParse(response);
       console.error("Failed to set Matrix token:", {
@@ -613,8 +646,23 @@ async function deleteDevice(deviceId, platform) {
 }
 
 function showAddDeviceModal() {
-  new bootstrap.Modal(document.getElementById("addDeviceModal")).show();
-  resetAddDeviceModal();
+  const hasTokenResponse = apiCall("/api/v1/admin/matrix-token-status");
+  hasTokenResponse
+    .then((response) => {
+      if (!response) return;
+      return safeJsonParse(response);
+    })
+    .then((hasTokenData) => {
+      if (hasTokenData && !hasTokenData.has_matrix_token) {
+        const modal = new bootstrap.Modal(
+          document.getElementById("setMatrixTokenModal"),
+        );
+        modal.show();
+        return;
+      }
+      new bootstrap.Modal(document.getElementById("addDeviceModal")).show();
+      resetAddDeviceModal();
+    });
 }
 
 function resetAddDeviceModal() {
@@ -850,6 +898,234 @@ async function sendMessage() {
     );
     UI.setButtonState(btn, false, "Send");
   }
+}
+
+async function loadWebhooks() {
+  try {
+    const hasTokenResponse = await apiCall("/api/v1/admin/matrix-token-status");
+    if (!hasTokenResponse) return;
+    const hasTokenData = await safeJsonParse(hasTokenResponse);
+
+    const addBtn = document.getElementById("addWebhookHeaderBtn");
+    const webhooksList = document.getElementById("webhooksList");
+
+    if (!hasTokenData.has_matrix_token) {
+      if (addBtn) addBtn.disabled = true;
+      const modal = new bootstrap.Modal(
+        document.getElementById("setMatrixTokenModal"),
+      );
+      modal.show();
+      if (webhooksList) {
+        webhooksList.innerHTML = `<div class="alert alert-info">
+          Please set your Matrix token to continue. 
+          <a href="#" onclick="focusMatrixTokenInput(); return false;" style="text-decoration: underline; cursor: pointer;">Click here to set token</a>
+        </div>`;
+      }
+      return;
+    }
+
+    if (addBtn) addBtn.disabled = false;
+    if (webhooksList) {
+      webhooksList.innerHTML =
+        '<table class="table"><tbody><tr><td class="table-empty-state" colspan="5">Loading...</td></tr></tbody></table>';
+    }
+
+    const response = await apiCall("/api/v1/admin/webhooks");
+    if (!response) return;
+
+    const webhooks = await safeJsonParse(response);
+
+    if (!response.ok) {
+      if (webhooksList) {
+        webhooksList.innerHTML = `<table class="table"><tbody><tr><td class="table-empty-state text-danger" colspan="5">Failed to load webhooks: ${webhooks.error || "Unknown error"}</td></tr></tbody></table>`;
+      }
+      return;
+    }
+
+    if (!webhooks || webhooks.length === 0) {
+      if (webhooksList) {
+        webhooksList.innerHTML =
+          '<table class="table"><tbody><tr><td class="table-empty-state" colspan="5">No webhooks found</td></tr></tbody></table>';
+      }
+      return;
+    }
+
+    const webhookRows = webhooks
+      .map(
+        (webhook) => `
+      <tr>
+        <td>${webhook.url}</td>
+        <td>
+          <span class="badge ${webhook.active ? "bg-success" : "bg-secondary"}">
+            ${webhook.active ? "Active" : "Inactive"}
+          </span>
+        </td>
+        <td>${formatDate(webhook.created_at)}</td>
+        <td>${formatDate(webhook.updated_at)}</td>
+        <td>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button class="btn btn-sm btn-outline-primary" onclick="showEditWebhookModal(${webhook.id}, '${webhook.url.replace(/'/g, "\\'")}', ${webhook.active})" title="Edit webhook">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteWebhook(${webhook.id})" title="Delete webhook">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `,
+      )
+      .join("");
+
+    if (webhooksList) {
+      webhooksList.innerHTML =
+        '<table class="table">' +
+        '<thead><tr><th style="width: 40%">URL</th><th style="width: 10%">Status</th><th style="width: 20%">Created</th><th style="width: 20%">Updated</th><th style="width: 10%">Actions</th></tr></thead>' +
+        `<tbody>${webhookRows}</tbody></table>`;
+    }
+  } catch (error) {
+    console.error("Error loading webhooks:", error);
+    const webhooksList = document.getElementById("webhooksList");
+    if (webhooksList) {
+      webhooksList.innerHTML =
+        '<table class="table"><tbody><tr><td class="table-empty-state text-danger" colspan="5">Unable to load webhooks. Please try refreshing the page.</td></tr></tbody></table>';
+    }
+  }
+}
+
+function showAddWebhookModal() {
+  const hasTokenResponse = apiCall("/api/v1/admin/matrix-token-status");
+  hasTokenResponse
+    .then((response) => {
+      if (!response) return;
+      return safeJsonParse(response);
+    })
+    .then((hasTokenData) => {
+      if (hasTokenData && !hasTokenData.has_matrix_token) {
+        const modal = new bootstrap.Modal(
+          document.getElementById("setMatrixTokenModal"),
+        );
+        modal.show();
+        return;
+      }
+      document.getElementById("addWebhookForm").reset();
+      const modal = new bootstrap.Modal(
+        document.getElementById("addWebhookModal"),
+      );
+      modal.show();
+    });
+}
+
+async function addWebhook() {
+  const btn = document.getElementById("addWebhookBtn");
+  const urlInput = document.getElementById("webhookUrl");
+  const url = urlInput.value.trim();
+
+  if (!url) {
+    showToast("Please enter a webhook URL", "error");
+    return;
+  }
+
+  UI.setButtonState(btn, true, "Adding...");
+
+  const response = await apiCall("/api/v1/admin/webhooks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!response) {
+    UI.setButtonState(btn, false, "Add Webhook");
+    return;
+  }
+
+  const result = await safeJsonParse(response);
+
+  if (response.ok) {
+    showToast("Webhook added successfully");
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById("addWebhookModal"),
+    );
+    modal.hide();
+    loadWebhooks();
+  } else {
+    showToast(result.error || "Failed to add webhook", "error");
+  }
+
+  UI.setButtonState(btn, false, "Add Webhook");
+}
+
+function showEditWebhookModal(id, url, active) {
+  document.getElementById("editWebhookId").value = id;
+  document.getElementById("editWebhookUrl").value = url;
+  document.getElementById("editWebhookActive").checked = active;
+  const modal = new bootstrap.Modal(
+    document.getElementById("editWebhookModal"),
+  );
+  modal.show();
+}
+
+async function updateWebhook() {
+  const btn = document.getElementById("editWebhookBtn");
+  const id = document.getElementById("editWebhookId").value;
+  const url = document.getElementById("editWebhookUrl").value.trim();
+  const active = document.getElementById("editWebhookActive").checked;
+
+  if (!url) {
+    showToast("Please enter a webhook URL", "error");
+    return;
+  }
+
+  UI.setButtonState(btn, true, "Saving...");
+
+  const response = await apiCall(`/api/v1/admin/webhooks/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, active }),
+  });
+
+  if (!response) {
+    UI.setButtonState(btn, false, "Save Changes");
+    return;
+  }
+
+  const result = await safeJsonParse(response);
+
+  if (response.ok) {
+    showToast("Webhook updated successfully");
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById("editWebhookModal"),
+    );
+    modal.hide();
+    loadWebhooks();
+  } else {
+    showToast(result.error || "Failed to update webhook", "error");
+  }
+
+  UI.setButtonState(btn, false, "Save Changes");
+}
+
+async function deleteWebhook(id) {
+  showConfirm(
+    "Delete Webhook",
+    "Are you sure you want to delete this webhook?",
+    async () => {
+      const response = await apiCall(`/api/v1/admin/webhooks/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response) return;
+
+      const result = await safeJsonParse(response);
+
+      if (response.ok) {
+        showToast("Webhook deleted successfully");
+        loadWebhooks();
+      } else {
+        showToast(result.error || "Failed to delete webhook", "error");
+      }
+    },
+  );
 }
 
 document.addEventListener("DOMContentLoaded", () => {

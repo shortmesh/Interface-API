@@ -280,3 +280,43 @@ func (c *Client) SendMessage(deviceID string, req *SendMessageRequest) (*SendMes
 
 	return &sendResp, nil
 }
+
+func (c *Client) DeleteToken(req *DeleteTokenRequest) (*DeleteTokenResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	path := "/api/v1/users"
+	httpReq, err := http.NewRequest("DELETE", fmt.Sprintf("%s%s", c.baseURL, path), bytes.NewBuffer(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	if err := c.addAuthHeaders(httpReq, string(body)); err != nil {
+		return nil, fmt.Errorf("failed to add auth headers: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var deleteResp DeleteTokenResponse
+	if err := json.Unmarshal(respBody, &deleteResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &deleteResp, nil
+}

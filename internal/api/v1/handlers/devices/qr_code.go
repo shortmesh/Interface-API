@@ -3,6 +3,7 @@ package devices
 import (
 	"context"
 	"fmt"
+	"os"
 	"runtime/debug"
 
 	"interface-api/internal/database/models"
@@ -36,7 +37,11 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 
 	matrixUsername := matrixIdentity.MatrixUsername
 
-	queueName := matrixUsername
+	queueSuffix := os.Getenv("ADD_DEVICE_QUEUE_SUFFIX")
+	if queueSuffix == "" {
+		queueSuffix = "_add_new_device"
+	}
+	queueName := matrixUsername + queueSuffix
 
 	ws, err := h.upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
@@ -75,7 +80,22 @@ func (h *DeviceHandler) QRCode(c echo.Context) error {
 		}
 	}
 
-	err = consumer.Consume(ctx, queueName, messageHandler, cancel, rabbitmq.DefaultConsumeOptions())
+	exchangeName := os.Getenv("ADD_DEVICE_EXCHANGE")
+	if exchangeName == "" {
+		exchangeName = "bridges.topic"
+	}
+
+	bindingKey := os.Getenv("ADD_DEVICE_BINDING_KEY")
+	if bindingKey == "" {
+		bindingKey = "bridges.topic.add_new_device"
+	}
+
+	consumeOpts := rabbitmq.DefaultConsumeOptions()
+	consumeOpts.BindExchange = exchangeName
+	consumeOpts.BindingKey = bindingKey
+	consumeOpts.ExchangeType = "topic"
+
+	err = consumer.Consume(ctx, queueName, messageHandler, cancel, consumeOpts)
 	if err != nil {
 		logger.Error(fmt.Sprintf("QR code queue consumption failed: %v\n%s", err, debug.Stack()))
 		ws.WriteMessage(

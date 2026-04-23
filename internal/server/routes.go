@@ -100,8 +100,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	apiV1 := e.Group("/api/v1")
 	v1.RegisterRoutes(apiV1, s.db)
 
-	adminWebHandler := adminweb.NewWebHandler(s.db)
-	adminWebHandler.RegisterRoutes(e)
+	adminweb.RegisterRoutes(e)
 
 	return e
 }

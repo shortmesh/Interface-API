@@ -51,6 +51,8 @@ var roleScopes = map[CredentialRole]Scopes{
 	RoleUser: {
 		"tokens:write:create",
 		"tokens:read:*",
+		"devices:*",
+		"webhooks:*",
 	},
 }
 

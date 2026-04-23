@@ -4,13 +4,15 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
+	"interface-api/internal/database/models"
 	"interface-api/internal/middleware"
+	"interface-api/pkg/crypto"
 	"interface-api/pkg/logger"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 // Login godoc
@@ -31,15 +33,32 @@ func (h *AdminSessionHandler) Login(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	clientID := os.Getenv("CLIENT_ID")
-	clientSecret := os.Getenv("CLIENT_SECRET")
-
-	if clientID == "" || clientSecret == "" {
-		return c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Admin credentials not configured"})
+	if username == "" || password == "" {
+		return c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Username and password required"})
 	}
 
-	if subtle.ConstantTimeCompare([]byte(username), []byte(clientID)) != 1 ||
-		subtle.ConstantTimeCompare([]byte(password), []byte(clientSecret)) != 1 {
+	credential, err := models.FindCredentialByClientID(h.db.DB(), username)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("Invalid login credentials")
+			return c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid credentials"})
+		}
+		logger.Error(fmt.Sprintf("Failed to find credential: %v", err))
+		return echo.ErrInternalServerError
+	}
+
+	secretHash, err := crypto.Hash(password)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to hash password: %v", err))
+		return echo.ErrInternalServerError
+	}
+
+	if subtle.ConstantTimeCompare(secretHash, credential.ClientSecret) != 1 {
+		logger.Error("Invalid login credentials")
+		return c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid credentials"})
+	}
+
+	if !credential.Active {
 		return c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid credentials"})
 	}
 
@@ -50,7 +69,7 @@ func (h *AdminSessionHandler) Login(c echo.Context) error {
 	}
 
 	expiration := time.Now().Add(2 * time.Hour)
-	middleware.StoreSession(sessionToken, expiration)
+	middleware.StoreSession(sessionToken, expiration, &credential.ID)
 
 	cookie := &http.Cookie{
 		Name:     "shortmesh_admin_token",
@@ -62,5 +81,8 @@ func (h *AdminSessionHandler) Login(c echo.Context) error {
 	}
 	c.SetCookie(cookie)
 
-	return c.JSON(http.StatusOK, LoginResponse{Status: "ok"})
+	return c.JSON(http.StatusOK, LoginResponse{
+		Status: "ok",
+		Scopes: credential.Scopes,
+	})
 }

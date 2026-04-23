@@ -7,6 +7,13 @@ definitions:
     type: object
   adminsession.LoginResponse:
     properties:
+      scopes:
+        example:
+        - tokens:write:create
+        - tokens:read:*
+        items:
+          type: string
+        type: array
       status:
         example: ok
         type: string
@@ -30,6 +37,71 @@ definitions:
         type: string
       status:
         example: ok
+        type: string
+    type: object
+  credentials.CreateRequest:
+    properties:
+      client_id:
+        type: string
+      description:
+        type: string
+    required:
+    - client_id
+    type: object
+  credentials.CreateResponse:
+    properties:
+      client_secret:
+        type: string
+      credential:
+        $ref: '#/definitions/credentials.CredentialResponse'
+      message:
+        type: string
+    type: object
+  credentials.CredentialResponse:
+    properties:
+      active:
+        type: boolean
+      client_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      role:
+        $ref: '#/definitions/models.CredentialRole'
+      scopes:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+    type: object
+  credentials.DeleteResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  credentials.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  credentials.UpdateRequest:
+    properties:
+      deactivate:
+        type: boolean
+      description:
+        type: string
+      regenerate_secret:
+        type: boolean
+    type: object
+  credentials.UpdateResponse:
+    properties:
+      client_secret:
+        type: string
+      credential:
+        $ref: '#/definitions/credentials.CredentialResponse'
+      message:
         type: string
     type: object
   devices.CreateDeviceRequest:
@@ -101,6 +173,14 @@ definitions:
         example: Message queued successfully
         type: string
     type: object
+  models.CredentialRole:
+    enum:
+    - super_admin
+    - user
+    type: string
+    x-enum-varnames:
+    - RoleSuperAdmin
+    - RoleUser
   models.MatrixIdentity:
     properties:
       created_at:
@@ -192,6 +272,144 @@ info:
   title: Shortmesh - Interface API
   version: "1.0"
 paths:
+  /api/v1/admin/credentials:
+    get:
+      description: Get all active credentials
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of credentials
+          schema:
+            items:
+              $ref: '#/definitions/credentials.CredentialResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: List credentials
+      tags:
+      - credentials
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a new API credential with client_id and auto-generated client_secret
+      parameters:
+      - description: Credential details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/credentials.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Credential created successfully
+          schema:
+            $ref: '#/definitions/credentials.CreateResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "409":
+          description: Credential already exists
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Create a credential
+      tags:
+      - credentials
+      - admin
+  /api/v1/admin/credentials/{client_id}:
+    delete:
+      description: Permanently delete a credential by client_id
+      parameters:
+      - description: Client ID
+        in: path
+        name: client_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential deleted successfully
+          schema:
+            $ref: '#/definitions/credentials.DeleteResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "404":
+          description: Credential not found
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Delete a credential
+      tags:
+      - credentials
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update credential properties (regenerate secret, deactivate, or
+        update description)
+      parameters:
+      - description: Client ID
+        in: path
+        name: client_id
+        required: true
+        type: string
+      - description: Update options
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/credentials.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential updated successfully
+          schema:
+            $ref: '#/definitions/credentials.UpdateResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "404":
+          description: Credential not found
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Update a credential
+      tags:
+      - credentials
+      - admin
   /api/v1/admin/login:
     post:
       consumes:
@@ -239,7 +457,7 @@ paths:
         "302":
           description: Redirect to login page
       security:
-      - AdminSession: []
+      - CookieAuth: []
       summary: Admin logout
       tags:
       - admin
@@ -276,7 +494,7 @@ paths:
           schema:
             $ref: '#/definitions/adminsession.ErrorResponse'
       security:
-      - AdminSession: []
+      - CookieAuth: []
       summary: Set matrix token for admin session
       tags:
       - admin
@@ -295,30 +513,242 @@ paths:
           schema:
             $ref: '#/definitions/adminsession.ErrorResponse'
       security:
-      - AdminSession: []
+      - CookieAuth: []
       summary: Check matrix token status
       tags:
       - admin
   /api/v1/admin/tokens:
     get:
-      description: Get all matrix identity tokens (requires admin session)
+      consumes:
+      - application/json
+      description: List all Matrix tokens
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: List of tokens
           schema:
             items:
               $ref: '#/definitions/models.MatrixIdentity'
             type: array
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
-            $ref: '#/definitions/adminsession.ErrorResponse'
+            $ref: '#/definitions/tokens.ErrorResponse'
       security:
-      - AdminSession: []
-      summary: List matrix tokens
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: List Matrix tokens
       tags:
+      - tokens
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a Matrix identity and get a token for Matrix operations.
+        Use use_host=true to reuse admin credentials, or false to create new credentials.
+      parameters:
+      - description: Token creation options
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/tokens.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Matrix token created successfully
+          schema:
+            $ref: '#/definitions/tokens.CreateResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Create a Matrix token
+      tags:
+      - tokens
+      - admin
+  /api/v1/admin/tokens/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a Matrix token
+      parameters:
+      - description: Token ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token deleted successfully
+          schema:
+            $ref: '#/definitions/tokens.DeleteResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+        "404":
+          description: Token not found
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Delete a Matrix token
+      tags:
+      - tokens
+      - admin
+  /api/v1/credentials:
+    get:
+      description: Get all active credentials
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of credentials
+          schema:
+            items:
+              $ref: '#/definitions/credentials.CredentialResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: List credentials
+      tags:
+      - credentials
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a new API credential with client_id and auto-generated client_secret
+      parameters:
+      - description: Credential details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/credentials.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Credential created successfully
+          schema:
+            $ref: '#/definitions/credentials.CreateResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "409":
+          description: Credential already exists
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Create a credential
+      tags:
+      - credentials
+      - admin
+  /api/v1/credentials/{client_id}:
+    delete:
+      description: Permanently delete a credential by client_id
+      parameters:
+      - description: Client ID
+        in: path
+        name: client_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential deleted successfully
+          schema:
+            $ref: '#/definitions/credentials.DeleteResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "404":
+          description: Credential not found
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Delete a credential
+      tags:
+      - credentials
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update credential properties (regenerate secret, deactivate, or
+        update description)
+      parameters:
+      - description: Client ID
+        in: path
+        name: client_id
+        required: true
+        type: string
+      - description: Update options
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/credentials.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential updated successfully
+          schema:
+            $ref: '#/definitions/credentials.UpdateResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "404":
+          description: Credential not found
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: Update a credential
+      tags:
+      - credentials
       - admin
   /api/v1/devices:
     delete:
@@ -526,6 +956,30 @@ paths:
       tags:
       - devices
   /api/v1/tokens:
+    get:
+      consumes:
+      - application/json
+      description: List all Matrix tokens
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of tokens
+          schema:
+            items:
+              $ref: '#/definitions/models.MatrixIdentity'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tokens.ErrorResponse'
+      security:
+      - BasicAuth: []
+      - CookieAuth: []
+      summary: List Matrix tokens
+      tags:
+      - tokens
+      - admin
     post:
       consumes:
       - application/json
@@ -554,9 +1008,11 @@ paths:
             $ref: '#/definitions/tokens.ErrorResponse'
       security:
       - BasicAuth: []
+      - CookieAuth: []
       summary: Create a Matrix token
       tags:
       - tokens
+      - admin
   /api/v1/tokens/{id}:
     delete:
       consumes:
@@ -589,9 +1045,11 @@ paths:
             $ref: '#/definitions/tokens.ErrorResponse'
       security:
       - BasicAuth: []
+      - CookieAuth: []
       summary: Delete a Matrix token
       tags:
       - tokens
+      - admin
   /api/v1/webhooks:
     get:
       description: Get a list of all webhooks for the authenticated user
@@ -743,16 +1201,16 @@ paths:
       tags:
       - webhooks
 securityDefinitions:
-  AdminSession:
-    description: Admin session cookie authentication
-    in: cookie
-    name: shortmesh_admin_token
-    type: apiKey
   BasicAuth:
     type: basic
   BearerAuth:
     description: Bearer token authentication (use Bearer mt_xxxxx")
     in: header
     name: Authorization
+    type: apiKey
+  CookieAuth:
+    description: Admin session cookie authentication
+    in: cookie
+    name: shortmesh_admin_token
     type: apiKey
 swagger: "2.0"

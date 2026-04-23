@@ -14,7 +14,7 @@ import (
 //	@Description	Check if the current admin session has a matrix token attached
 //	@Tags			admin
 //	@Produce		json
-//	@Security		AdminSession
+//	@Security		CookieAuth
 //	@Success		200	{object}	MatrixTokenStatusResponse
 //	@Failure		401	{object}	ErrorResponse
 //	@Router			/api/v1/admin/matrix-token-status [get]

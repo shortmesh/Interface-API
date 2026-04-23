@@ -29,7 +29,7 @@ import (
 
 //	@securityDefinitions.basic	BasicAuth
 
-//	@securityDefinitions.apikey	AdminSession
+//	@securityDefinitions.apikey	CookieAuth
 //	@in							cookie
 //	@name						shortmesh_admin_token
 //	@description				Admin session cookie authentication
@@ -68,6 +68,11 @@ func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.Clea
 
 func main() {
 	db := database.New()
+
+	if err := database.InitializeSuperAdminCredentials(db.DB()); err != nil {
+		logger.Error(fmt.Sprintf("Credential initialization failed: %v", err))
+		os.Exit(1)
+	}
 
 	var w *worker.Worker
 	if worker.IsEnabled() {

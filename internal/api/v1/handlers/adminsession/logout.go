@@ -14,7 +14,7 @@ import (
 //	@Description	Clear admin session and redirect to login
 //	@Tags			admin
 //	@Produce		json
-//	@Security		AdminSession
+//	@Security		CookieAuth
 //	@Success		302	"Redirect to login page"
 //	@Router			/api/v1/admin/logout [get]
 func (h *AdminSessionHandler) Logout(c echo.Context) error {

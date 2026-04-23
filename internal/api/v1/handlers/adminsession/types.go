@@ -18,7 +18,8 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Status string `json:"status" example:"ok"`
+	Status string   `json:"status" example:"ok"`
+	Scopes []string `json:"scopes" example:"tokens:write:create,tokens:read:*"`
 }
 
 type LogoutResponse struct {

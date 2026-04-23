@@ -18,7 +18,7 @@ import (
 //	@Tags			admin
 //	@Accept			json
 //	@Produce		json
-//	@Security		AdminSession
+//	@Security		CookieAuth
 //	@Param			request	body		SetMatrixTokenRequest	true	"Matrix token"
 //	@Success		200		{object}	SetMatrixTokenResponse
 //	@Failure		400		{object}	ErrorResponse

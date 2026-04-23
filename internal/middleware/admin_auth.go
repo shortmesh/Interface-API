@@ -17,8 +17,9 @@ import (
 )
 
 type AdminSession struct {
-	ExpiresAt   time.Time
-	MatrixToken string
+	ExpiresAt    time.Time
+	MatrixToken  string
+	CredentialID *uint
 }
 
 var (
@@ -54,12 +55,13 @@ func GenerateSessionToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func StoreSession(token string, expiration time.Time) {
+func StoreSession(token string, expiration time.Time, credentialID *uint) {
 	adminSessionMutex.Lock()
 	defer adminSessionMutex.Unlock()
 	adminSessions[token] = &AdminSession{
-		ExpiresAt:   expiration,
-		MatrixToken: "",
+		ExpiresAt:    expiration,
+		MatrixToken:  "",
+		CredentialID: credentialID,
 	}
 }
 
@@ -147,6 +149,42 @@ func (a *AdminAuth) InjectMatrixToken() echo.MiddlewareFunc {
 
 			c.Set("matrix_identity", matrixIdentity)
 			c.Request().Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+			return next(c)
+		}
+	}
+}
+
+func (a *AdminAuth) InjectCredential() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			cookie, err := c.Cookie("shortmesh_admin_token")
+			if err != nil {
+				return c.Redirect(http.StatusFound, "/admin/login")
+			}
+
+			adminSessionMutex.RLock()
+			session, exists := adminSessions[cookie.Value]
+			adminSessionMutex.RUnlock()
+
+			if !exists {
+				return c.Redirect(http.StatusFound, "/admin/login")
+			}
+
+			if session.CredentialID == nil {
+				return c.JSON(http.StatusForbidden, map[string]string{
+					"error": "no credential associated with session",
+				})
+			}
+
+			var credential models.Credential
+			if err := a.db.First(&credential, *session.CredentialID).Error; err != nil {
+				logger.Error("Failed to load credential for admin session")
+				return c.JSON(http.StatusUnauthorized, map[string]string{
+					"error": "invalid session credential",
+				})
+			}
+
+			c.Set("credential", &credential)
 			return next(c)
 		}
 	}

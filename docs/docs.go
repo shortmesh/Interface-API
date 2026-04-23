@@ -15,6 +15,225 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/admin/credentials": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Get all active credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "List credentials",
+                "responses": {
+                    "200": {
+                        "description": "List of credentials",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/credentials.CredentialResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Create a new API credential with client_id and auto-generated client_secret",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Create a credential",
+                "parameters": [
+                    {
+                        "description": "Credential details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Credential created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Credential already exists",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/credentials/{client_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Update credential properties (regenerate secret, deactivate, or update description)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Update a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update options",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Permanently delete a credential by client_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Delete a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.DeleteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/login": {
             "post": {
                 "description": "Authenticate admin user and create session",
@@ -76,7 +295,7 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "AdminSession": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Clear admin session and redirect to login",
@@ -98,7 +317,7 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "AdminSession": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Attach a matrix token to the current admin session for device/webhook operations",
@@ -155,7 +374,7 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "AdminSession": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Check if the current admin session has a matrix token attached",
@@ -186,20 +405,27 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "AdminSession": []
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
                     }
                 ],
-                "description": "Get all matrix identity tokens (requires admin session)",
+                "description": "List all Matrix tokens",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
+                    "tokens",
                     "admin"
                 ],
-                "summary": "List matrix tokens",
+                "summary": "List Matrix tokens",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "List of tokens",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -208,9 +434,339 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Create a Matrix identity and get a token for Matrix operations. Use use_host=true to reuse admin credentials, or false to create new credentials.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens",
+                    "admin"
+                ],
+                "summary": "Create a Matrix token",
+                "parameters": [
+                    {
+                        "description": "Token creation options",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Matrix token created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.CreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/tokens/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Delete a Matrix token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens",
+                    "admin"
+                ],
+                "summary": "Delete a Matrix token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.DeleteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/credentials": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Get all active credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "List credentials",
+                "responses": {
+                    "200": {
+                        "description": "List of credentials",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/credentials.CredentialResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Create a new API credential with client_id and auto-generated client_secret",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Create a credential",
+                "parameters": [
+                    {
+                        "description": "Credential details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Credential created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Credential already exists",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/credentials/{client_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Update credential properties (regenerate secret, deactivate, or update description)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Update a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update options",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Permanently delete a credential by client_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Delete a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.DeleteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     }
                 }
@@ -532,10 +1088,52 @@ const docTemplate = `{
             }
         },
         "/api/v1/tokens": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "List all Matrix tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens",
+                    "admin"
+                ],
+                "summary": "List Matrix tokens",
+                "responses": {
+                    "200": {
+                        "description": "List of tokens",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.MatrixIdentity"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
                         "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Create a Matrix identity and get a token for Matrix operations. Use use_host=true to reuse admin credentials, or false to create new credentials.",
@@ -546,7 +1144,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tokens"
+                    "tokens",
+                    "admin"
                 ],
                 "summary": "Create a Matrix token",
                 "parameters": [
@@ -586,6 +1185,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Delete a Matrix token",
@@ -596,7 +1198,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tokens"
+                    "tokens",
+                    "admin"
                 ],
                 "summary": "Delete a Matrix token",
                 "parameters": [
@@ -883,6 +1486,16 @@ const docTemplate = `{
         "adminsession.LoginResponse": {
             "type": "object",
             "properties": {
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "tokens:write:create",
+                        "tokens:read:*"
+                    ]
+                },
                 "status": {
                     "type": "string",
                     "example": "ok"
@@ -917,6 +1530,107 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "credentials.CreateRequest": {
+            "type": "object",
+            "required": [
+                "client_id"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.CreateResponse": {
+            "type": "object",
+            "properties": {
+                "client_secret": {
+                    "type": "string"
+                },
+                "credential": {
+                    "$ref": "#/definitions/credentials.CredentialResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.CredentialResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/models.CredentialRole"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.DeleteResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "deactivate": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "regenerate_secret": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "credentials.UpdateResponse": {
+            "type": "object",
+            "properties": {
+                "client_secret": {
+                    "type": "string"
+                },
+                "credential": {
+                    "$ref": "#/definitions/credentials.CredentialResponse"
+                },
+                "message": {
+                    "type": "string"
                 }
             }
         },
@@ -1017,6 +1731,17 @@ const docTemplate = `{
                     "example": "Message queued successfully"
                 }
             }
+        },
+        "models.CredentialRole": {
+            "type": "string",
+            "enum": [
+                "super_admin",
+                "user"
+            ],
+            "x-enum-varnames": [
+                "RoleSuperAdmin",
+                "RoleUser"
+            ]
         },
         "models.MatrixIdentity": {
             "type": "object",
@@ -1151,12 +1876,6 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "AdminSession": {
-            "description": "Admin session cookie authentication",
-            "type": "apiKey",
-            "name": "shortmesh_admin_token",
-            "in": "cookie"
-        },
         "BasicAuth": {
             "type": "basic"
         },
@@ -1165,6 +1884,12 @@ const docTemplate = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "CookieAuth": {
+            "description": "Admin session cookie authentication",
+            "type": "apiKey",
+            "name": "shortmesh_admin_token",
+            "in": "cookie"
         }
     }
 }`

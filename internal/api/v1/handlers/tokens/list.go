@@ -1,4 +1,4 @@
-package adminsession
+package tokens
 
 import (
 	"fmt"
@@ -10,17 +10,20 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ListTokens godoc
+// List godoc
 //
-//	@Summary		List matrix tokens
-//	@Description	Get all matrix identity tokens (requires admin session)
-//	@Tags			admin
+//	@Summary		List Matrix tokens
+//	@Description	List all Matrix tokens
+//	@Tags			tokens,admin
+//	@Accept			json
 //	@Produce		json
-//	@Security		AdminSession
-//	@Success		200	{array}		models.MatrixIdentity
-//	@Failure		500	{object}	ErrorResponse
+//	@Security		BasicAuth
+//	@Security		CookieAuth
+//	@Success		200	{array}		models.MatrixIdentity	"List of tokens"
+//	@Failure		500	{object}	ErrorResponse			"Internal server error"
+//	@Router			/api/v1/tokens [get]
 //	@Router			/api/v1/admin/tokens [get]
-func (h *AdminSessionHandler) ListTokens(c echo.Context) error {
+func (h *TokenHandler) List(c echo.Context) error {
 	var tokens []models.MatrixIdentity
 	if err := h.db.DB().Find(&tokens).Error; err != nil {
 		logger.Error(fmt.Sprintf("Failed to list tokens: %v", err))

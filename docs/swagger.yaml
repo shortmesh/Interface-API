@@ -1,4 +1,37 @@
 definitions:
+  adminsession.ErrorResponse:
+    properties:
+      error:
+        example: Invalid credentials
+        type: string
+    type: object
+  adminsession.LoginResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  adminsession.MatrixTokenStatusResponse:
+    properties:
+      has_matrix_token:
+        example: true
+        type: boolean
+    type: object
+  adminsession.SetMatrixTokenRequest:
+    properties:
+      token:
+        example: mt_xxxxx
+        type: string
+    type: object
+  adminsession.SetMatrixTokenResponse:
+    properties:
+      message:
+        example: Matrix token attached to session
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
   devices.CreateDeviceRequest:
     properties:
       platform:
@@ -66,6 +99,29 @@ definitions:
     properties:
       message:
         example: Message queued successfully
+        type: string
+    type: object
+  models.MatrixIdentity:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: integer
+      is_admin:
+        type: boolean
+      last_used_at:
+        type: string
+      matrix_device_id:
+        type: string
+      matrix_username:
+        type: string
+      token_hash:
+        items:
+          type: integer
+        type: array
+      updated_at:
         type: string
     type: object
   tokens.CreateRequest:
@@ -136,6 +192,134 @@ info:
   title: Shortmesh - Interface API
   version: "1.0"
 paths:
+  /api/v1/admin/login:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Authenticate admin user and create session
+      parameters:
+      - description: Admin username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Admin password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/adminsession.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+      summary: Admin login
+      tags:
+      - admin
+  /api/v1/admin/logout:
+    get:
+      description: Clear admin session and redirect to login
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Redirect to login page
+      security:
+      - AdminSession: []
+      summary: Admin logout
+      tags:
+      - admin
+  /api/v1/admin/matrix-token:
+    post:
+      consumes:
+      - application/json
+      description: Attach a matrix token to the current admin session for device/webhook
+        operations
+      parameters:
+      - description: Matrix token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/adminsession.SetMatrixTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/adminsession.SetMatrixTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+      security:
+      - AdminSession: []
+      summary: Set matrix token for admin session
+      tags:
+      - admin
+  /api/v1/admin/matrix-token-status:
+    get:
+      description: Check if the current admin session has a matrix token attached
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/adminsession.MatrixTokenStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+      security:
+      - AdminSession: []
+      summary: Check matrix token status
+      tags:
+      - admin
+  /api/v1/admin/tokens:
+    get:
+      description: Get all matrix identity tokens (requires admin session)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.MatrixIdentity'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/adminsession.ErrorResponse'
+      security:
+      - AdminSession: []
+      summary: List matrix tokens
+      tags:
+      - admin
   /api/v1/devices:
     delete:
       consumes:
@@ -559,6 +743,11 @@ paths:
       tags:
       - webhooks
 securityDefinitions:
+  AdminSession:
+    description: Admin session cookie authentication
+    in: cookie
+    name: shortmesh_admin_token
+    type: apiKey
   BasicAuth:
     type: basic
   BearerAuth:

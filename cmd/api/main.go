@@ -29,6 +29,11 @@ import (
 
 //	@securityDefinitions.basic	BasicAuth
 
+//	@securityDefinitions.apikey	AdminSession
+//	@in							cookie
+//	@name						shortmesh_admin_token
+//	@description				Admin session cookie authentication
+
 func gracefulShutdown(apiServer *http.Server, w *worker.Worker, cw *cleanup.CleanupWorker, ww *webhookworker.WebhookWorker, done chan bool) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

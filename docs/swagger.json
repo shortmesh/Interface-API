@@ -7,6 +7,207 @@
         "version": "1.0"
     },
     "paths": {
+        "/api/v1/admin/login": {
+            "post": {
+                "description": "Authenticate admin user and create session",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Admin login",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Admin username",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Admin password",
+                        "name": "password",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/logout": {
+            "get": {
+                "security": [
+                    {
+                        "AdminSession": []
+                    }
+                ],
+                "description": "Clear admin session and redirect to login",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Admin logout",
+                "responses": {
+                    "302": {
+                        "description": "Redirect to login page"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/matrix-token": {
+            "post": {
+                "security": [
+                    {
+                        "AdminSession": []
+                    }
+                ],
+                "description": "Attach a matrix token to the current admin session for device/webhook operations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Set matrix token for admin session",
+                "parameters": [
+                    {
+                        "description": "Matrix token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.SetMatrixTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.SetMatrixTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/matrix-token-status": {
+            "get": {
+                "security": [
+                    {
+                        "AdminSession": []
+                    }
+                ],
+                "description": "Check if the current admin session has a matrix token attached",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Check matrix token status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.MatrixTokenStatusResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/tokens": {
+            "get": {
+                "security": [
+                    {
+                        "AdminSession": []
+                    }
+                ],
+                "description": "Get all matrix identity tokens (requires admin session)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List matrix tokens",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.MatrixIdentity"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/devices": {
             "get": {
                 "security": [
@@ -662,6 +863,55 @@
         }
     },
     "definitions": {
+        "adminsession.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid credentials"
+                }
+            }
+        },
+        "adminsession.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "adminsession.MatrixTokenStatusResponse": {
+            "type": "object",
+            "properties": {
+                "has_matrix_token": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "adminsession.SetMatrixTokenRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "mt_xxxxx"
+                }
+            }
+        },
+        "adminsession.SetMatrixTokenResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Matrix token attached to session"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "devices.CreateDeviceRequest": {
             "type": "object",
             "required": [
@@ -757,6 +1007,41 @@
                 "message": {
                     "type": "string",
                     "example": "Message queued successfully"
+                }
+            }
+        },
+        "models.MatrixIdentity": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "last_used_at": {
+                    "type": "string"
+                },
+                "matrix_device_id": {
+                    "type": "string"
+                },
+                "matrix_username": {
+                    "type": "string"
+                },
+                "token_hash": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -858,6 +1143,12 @@
         }
     },
     "securityDefinitions": {
+        "AdminSession": {
+            "description": "Admin session cookie authentication",
+            "type": "apiKey",
+            "name": "shortmesh_admin_token",
+            "in": "cookie"
+        },
         "BasicAuth": {
             "type": "basic"
         },

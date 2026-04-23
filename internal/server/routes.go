@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"interface-api/docs"
-	"interface-api/internal/admin"
 	v1 "interface-api/internal/api/v1"
+	"interface-api/pkg/adminweb"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -100,8 +100,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	apiV1 := e.Group("/api/v1")
 	v1.RegisterRoutes(apiV1, s.db)
 
-	adminHandler := admin.NewAdminHandler(s.db)
-	adminHandler.RegisterRoutes(e)
+	adminWebHandler := adminweb.NewWebHandler(s.db)
+	adminWebHandler.RegisterRoutes(e)
 
 	return e
 }

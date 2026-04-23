@@ -1,57 +1,17 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Admin Dashboard - ShortMesh</title>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/admin/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
-    />
-    <link rel="stylesheet" href="/admin/styles.css" />
+    <title>ShortMesh Admin</title>
   </head>
   <body>
-    <div class="container-fluid h-100">
-      <div class="row h-100">
-        <div class="col-md-2 sidebar">
-          <div class="sidebar-brand">
-            <h4>ShortMesh</h4>
-          </div>
-          <nav class="nav flex-column">
-            <a class="nav-link active" href="#" onclick="loadPage('tokens')">
-              <i class="bi bi-key"></i>
-              <span>Tokens</span>
-            </a>
-            <a class="nav-link" href="#" onclick="loadPage('devices')">
-              <i class="bi bi-phone"></i>
-              <span>Devices</span>
-            </a>
-            <a class="nav-link" href="#" onclick="loadPage('webhooks')">
-              <i class="bi bi-arrow-left-right"></i>
-              <span>Webhooks</span>
-            </a>
-          </nav>
-          <nav class="nav flex-column mt-auto">
-            <a class="nav-link" href="/api/v1/admin/logout">
-              <i class="bi bi-box-arrow-right"></i>
-              <span>Logout</span>
-            </a>
-          </nav>
-        </div>
-        <div class="col-md-10 content d-flex flex-column" id="content">
-          <div class="content-main">
-            <h2>Loading...</h2>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="/admin/index.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

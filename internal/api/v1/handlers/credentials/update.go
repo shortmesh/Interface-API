@@ -15,7 +15,7 @@ import (
 // Update godoc
 //
 //	@Summary		Update a credential
-//	@Description	Update credential properties (regenerate secret, deactivate, or update description)
+//	@Description	Update credential properties (regenerate secret, activate/deactivate, or update description)
 //	@Tags			credentials,admin
 //	@Accept			json
 //	@Produce		json
@@ -26,13 +26,14 @@ import (
 //	@Success		200			{object}	UpdateResponse	"Credential updated successfully"
 //	@Failure		400			{object}	ErrorResponse	"Invalid request"
 //	@Failure		404			{object}	ErrorResponse	"Credential not found"
-//	@Failure		403		{object}	ErrorResponse	"Insufficient permissions"
+//	@Failure		403			{object}	ErrorResponse	"Insufficient permissions"
 //	@Failure		500			{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/credentials/{client_id} [put]
 //	@Router			/api/v1/admin/credentials/{client_id} [put]
 func (h *CredentialHandler) Update(c echo.Context) error {
 	clientID := c.Param("client_id")
 	if clientID == "" {
+		logger.Info("Credential update failed: missing client_id")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "client_id is required",
 		})
@@ -40,6 +41,7 @@ func (h *CredentialHandler) Update(c echo.Context) error {
 
 	var req UpdateRequest
 	if err := c.Bind(&req); err != nil {
+		logger.Info(fmt.Sprintf("Credential update failed: invalid request body - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body",
 		})
@@ -48,6 +50,7 @@ func (h *CredentialHandler) Update(c echo.Context) error {
 	credential, err := models.FindCredentialByClientID(h.db.DB(), clientID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+			logger.Info(fmt.Sprintf("Credential update failed: client_id '%s' not found", clientID))
 			return c.JSON(http.StatusNotFound, ErrorResponse{
 				Error: "Credential not found",
 			})
@@ -58,11 +61,24 @@ func (h *CredentialHandler) Update(c echo.Context) error {
 
 	var newSecret *string
 
-	if req.Deactivate != nil && *req.Deactivate {
-		credential.Active = false
+	if req.Active != nil {
+		if credential.Role == models.RoleSuperAdmin && !*req.Active {
+			logger.Info(fmt.Sprintf("Credential update failed: cannot deactivate super admin '%s'", clientID))
+			return c.JSON(http.StatusForbidden, ErrorResponse{
+				Error: "Cannot deactivate super admin credentials",
+			})
+		}
+		credential.Active = *req.Active
 	}
 
 	if req.RegenerateSecret != nil && *req.RegenerateSecret {
+		if credential.Role == models.RoleSuperAdmin {
+			logger.Info(fmt.Sprintf("Credential update failed: cannot regenerate super admin secret '%s'", clientID))
+			return c.JSON(http.StatusForbidden, ErrorResponse{
+				Error: "Cannot regenerate secret for super admin credentials",
+			})
+		}
+
 		generatedSecret, err := crypto.GenerateSecureToken(32)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failed to generate secret: %v", err))

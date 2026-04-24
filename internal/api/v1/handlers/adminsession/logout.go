@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"interface-api/internal/middleware"
+	"interface-api/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 )
@@ -15,7 +16,7 @@ import (
 //	@Tags			admin
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Success		302	"Redirect to login page"
+//	Success		200	{object}	LogoutResponse
 //	@Router			/api/v1/admin/logout [get]
 func (h *AdminSessionHandler) Logout(c echo.Context) error {
 	cookie, err := c.Cookie("shortmesh_admin_token")
@@ -31,5 +32,10 @@ func (h *AdminSessionHandler) Logout(c echo.Context) error {
 		HttpOnly: true,
 	}
 	c.SetCookie(cookie)
-	return c.Redirect(http.StatusFound, "/admin/login")
+
+	logger.Info("Logged out successfully")
+
+	return c.JSON(http.StatusOK, LogoutResponse{
+		Message: "Logged out successfully",
+	})
 }

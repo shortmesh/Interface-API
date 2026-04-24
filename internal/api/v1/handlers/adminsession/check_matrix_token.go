@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"interface-api/internal/middleware"
+	"interface-api/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 )
@@ -21,6 +22,7 @@ import (
 func (h *AdminSessionHandler) CheckMatrixToken(c echo.Context) error {
 	cookie, err := c.Cookie("shortmesh_admin_token")
 	if err != nil {
+		logger.Info("Matrix token check failed: session not found")
 		return c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Session not found"})
 	}
 

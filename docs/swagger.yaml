@@ -274,7 +274,7 @@ info:
 paths:
   /api/v1/admin/credentials:
     get:
-      description: Get all active credentials
+      description: Get all credentials
       produces:
       - application/json
       responses:
@@ -284,6 +284,10 @@ paths:
             items:
               $ref: '#/definitions/credentials.CredentialResponse'
             type: array
+        "403":
+          description: Insufficient permissions
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -315,6 +319,10 @@ paths:
             $ref: '#/definitions/credentials.CreateResponse'
         "400":
           description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "403":
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "409":
@@ -350,6 +358,10 @@ paths:
             $ref: '#/definitions/credentials.DeleteResponse'
         "400":
           description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "403":
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "404":
@@ -393,6 +405,10 @@ paths:
             $ref: '#/definitions/credentials.UpdateResponse'
         "400":
           description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "403":
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "404":
@@ -453,9 +469,7 @@ paths:
       description: Clear admin session and redirect to login
       produces:
       - application/json
-      responses:
-        "302":
-          description: Redirect to login page
+      responses: {}
       security:
       - CookieAuth: []
       summary: Admin logout
@@ -614,7 +628,7 @@ paths:
       - admin
   /api/v1/credentials:
     get:
-      description: Get all active credentials
+      description: Get all credentials
       produces:
       - application/json
       responses:
@@ -624,6 +638,10 @@ paths:
             items:
               $ref: '#/definitions/credentials.CredentialResponse'
             type: array
+        "403":
+          description: Insufficient permissions
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -655,6 +673,10 @@ paths:
             $ref: '#/definitions/credentials.CreateResponse'
         "400":
           description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "403":
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "409":
@@ -690,6 +712,10 @@ paths:
             $ref: '#/definitions/credentials.DeleteResponse'
         "400":
           description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "403":
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "404":
@@ -733,6 +759,10 @@ paths:
             $ref: '#/definitions/credentials.UpdateResponse'
         "400":
           description: Invalid request
+          schema:
+            $ref: '#/definitions/credentials.ErrorResponse'
+        "403":
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "404":

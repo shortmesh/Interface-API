@@ -17,7 +17,7 @@
                         "CookieAuth": []
                     }
                 ],
-                "description": "Get all active credentials",
+                "description": "Get all credentials",
                 "produces": [
                     "application/json"
                 ],
@@ -34,6 +34,12 @@
                             "items": {
                                 "$ref": "#/definitions/credentials.CredentialResponse"
                             }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
                     "500": {
@@ -85,6 +91,12 @@
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
@@ -157,6 +169,12 @@
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Credential not found",
                         "schema": {
@@ -207,6 +225,12 @@
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
@@ -298,11 +322,7 @@
                     "admin"
                 ],
                 "summary": "Admin logout",
-                "responses": {
-                    "302": {
-                        "description": "Redirect to login page"
-                    }
-                }
+                "responses": {}
             }
         },
         "/api/v1/admin/matrix-token": {
@@ -555,7 +575,7 @@
                         "CookieAuth": []
                     }
                 ],
-                "description": "Get all active credentials",
+                "description": "Get all credentials",
                 "produces": [
                     "application/json"
                 ],
@@ -572,6 +592,12 @@
                             "items": {
                                 "$ref": "#/definitions/credentials.CredentialResponse"
                             }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
                     "500": {
@@ -623,6 +649,12 @@
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
@@ -695,6 +727,12 @@
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Credential not found",
                         "schema": {
@@ -745,6 +783,12 @@
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }

@@ -25,7 +25,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Get all active credentials",
+                "description": "Get all credentials",
                 "produces": [
                     "application/json"
                 ],
@@ -42,6 +42,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/credentials.CredentialResponse"
                             }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
                     "500": {
@@ -93,6 +99,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
@@ -165,6 +177,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Credential not found",
                         "schema": {
@@ -215,6 +233,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
@@ -306,11 +330,7 @@ const docTemplate = `{
                     "admin"
                 ],
                 "summary": "Admin logout",
-                "responses": {
-                    "302": {
-                        "description": "Redirect to login page"
-                    }
-                }
+                "responses": {}
             }
         },
         "/api/v1/admin/matrix-token": {
@@ -563,7 +583,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Get all active credentials",
+                "description": "Get all credentials",
                 "produces": [
                     "application/json"
                 ],
@@ -580,6 +600,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/credentials.CredentialResponse"
                             }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
                     "500": {
@@ -631,6 +657,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
@@ -703,6 +735,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Credential not found",
                         "schema": {
@@ -753,6 +791,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }

@@ -59,6 +59,7 @@ func (h *AdminSessionHandler) Login(c echo.Context) error {
 	}
 
 	if !credential.Active {
+		logger.Error("Attempt to log in with inactive credentials")
 		return c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid credentials"})
 	}
 
@@ -80,6 +81,8 @@ func (h *AdminSessionHandler) Login(c echo.Context) error {
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(cookie)
+
+	logger.Info("Logged in successfully")
 
 	return c.JSON(http.StatusOK, LoginResponse{
 		Status: "ok",

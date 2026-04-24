@@ -131,7 +131,7 @@ func (c *Credential) HasScope(scope string) bool {
 
 func FindCredentialByClientID(db *gorm.DB, clientID string) (*Credential, error) {
 	var credential Credential
-	err := db.Where("client_id = ? AND active = ?", clientID, true).First(&credential).Error
+	err := db.Where("client_id = ?", clientID).First(&credential).Error
 	return &credential, err
 }
 
@@ -156,21 +156,6 @@ func UpsertCredential(db *gorm.DB, clientID string, secretHash []byte, role Cred
 	return credential, err
 }
 
-func UpdateCredentialRole(db *gorm.DB, clientID string, newRole CredentialRole) (*Credential, error) {
-	var credential Credential
-	err := db.Where("client_id = ?", clientID).First(&credential).Error
-	if err != nil {
-		return nil, err
-	}
-
-	newScopes := GetDefaultScopesForRole(newRole)
-
-	credential.Role = newRole
-	credential.Scopes = newScopes
-	err = db.Save(&credential).Error
-	return &credential, err
-}
-
 func DeactivateCredential(db *gorm.DB, clientID string) error {
 	return db.Model(&Credential{}).
 		Where("client_id = ?", clientID).
@@ -180,5 +165,11 @@ func DeactivateCredential(db *gorm.DB, clientID string) error {
 func FindActiveCredentials(db *gorm.DB) ([]Credential, error) {
 	var credentials []Credential
 	err := db.Where("active = ?", true).Find(&credentials).Error
+	return credentials, err
+}
+
+func FindAllCredentials(db *gorm.DB) ([]Credential, error) {
+	var credentials []Credential
+	err := db.Find(&credentials).Error
 	return credentials, err
 }

@@ -40,7 +40,7 @@ type CredentialResponse struct {
 
 type UpdateRequest struct {
 	RegenerateSecret *bool   `json:"regenerate_secret,omitempty"`
-	Deactivate       *bool   `json:"deactivate,omitempty"`
+	Active           *bool   `json:"active,omitempty"`
 	Description      *string `json:"description,omitempty"`
 }
 

@@ -28,21 +28,24 @@ import (
 func (h *AdminSessionHandler) SetMatrixToken(c echo.Context) error {
 	cookie, err := c.Cookie("shortmesh_admin_token")
 	if err != nil {
+		logger.Info("Set matrix token failed: session not found")
 		return c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Session not found"})
 	}
 
 	var req SetMatrixTokenRequest
 	if err := c.Bind(&req); err != nil {
+		logger.Info("Set matrix token failed: invalid request body")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request body"})
 	}
 
 	if req.Token == "" {
+		logger.Info("Set matrix token failed: token is required")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Token is required"})
 	}
 
 	_, err = models.FindMatrixIdentityByToken(h.db.DB(), req.Token)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Invalid matrix token: %v", err))
+		logger.Info("Set matrix token failed: invalid token")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid matrix token"})
 	}
 

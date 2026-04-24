@@ -13,18 +13,18 @@ import (
 // List godoc
 //
 //	@Summary		List credentials
-//	@Description	Get all active credentials
+//	@Description	Get all credentials
 //	@Tags			credentials,admin
 //	@Produce		json
 //	@Security		BasicAuth
 //	@Security		CookieAuth
 //	@Success		200	{array}		CredentialResponse	"List of credentials"
-//	@Failure		403		{object}	ErrorResponse	"Insufficient permissions"
+//	@Failure		403	{object}	ErrorResponse		"Insufficient permissions"
 //	@Failure		500	{object}	ErrorResponse		"Internal server error"
 //	@Router			/api/v1/credentials [get]
 //	@Router			/api/v1/admin/credentials [get]
 func (h *CredentialHandler) List(c echo.Context) error {
-	credentials, err := models.FindActiveCredentials(h.db.DB())
+	credentials, err := models.FindAllCredentials(h.db.DB())
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to list credentials: %v", err))
 		return echo.ErrInternalServerError

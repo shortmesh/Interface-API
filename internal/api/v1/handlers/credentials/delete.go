@@ -23,13 +23,14 @@ import (
 //	@Success		200			{object}	DeleteResponse	"Credential deleted successfully"
 //	@Failure		400			{object}	ErrorResponse	"Invalid request"
 //	@Failure		404			{object}	ErrorResponse	"Credential not found"
-//	@Failure		403		{object}	ErrorResponse	"Insufficient permissions"
+//	@Failure		403			{object}	ErrorResponse	"Insufficient permissions"
 //	@Failure		500			{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/credentials/{client_id} [delete]
 //	@Router			/api/v1/admin/credentials/{client_id} [delete]
 func (h *CredentialHandler) Delete(c echo.Context) error {
 	clientID := c.Param("client_id")
 	if clientID == "" {
+		logger.Info("Credential deletion failed: missing client_id")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "client_id is required",
 		})
@@ -38,12 +39,20 @@ func (h *CredentialHandler) Delete(c echo.Context) error {
 	credential, err := models.FindCredentialByClientID(h.db.DB(), clientID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+			logger.Info(fmt.Sprintf("Credential deletion failed: client_id '%s' not found", clientID))
 			return c.JSON(http.StatusNotFound, ErrorResponse{
 				Error: "Credential not found",
 			})
 		}
 		logger.Error(fmt.Sprintf("Failed to find credential: %v", err))
 		return echo.ErrInternalServerError
+	}
+
+	if credential.Role == models.RoleSuperAdmin {
+		logger.Info(fmt.Sprintf("Credential deletion failed: cannot delete super admin '%s'", clientID))
+		return c.JSON(http.StatusForbidden, ErrorResponse{
+			Error: "Cannot delete super admin credentials",
+		})
 	}
 
 	if err := h.db.DB().Delete(credential).Error; err != nil {

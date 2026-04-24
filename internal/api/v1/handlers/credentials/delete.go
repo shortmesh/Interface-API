@@ -23,6 +23,7 @@ import (
 //	@Success		200			{object}	DeleteResponse	"Credential deleted successfully"
 //	@Failure		400			{object}	ErrorResponse	"Invalid request"
 //	@Failure		404			{object}	ErrorResponse	"Credential not found"
+//	@Failure		403		{object}	ErrorResponse	"Insufficient permissions"
 //	@Failure		500			{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/credentials/{client_id} [delete]
 //	@Router			/api/v1/admin/credentials/{client_id} [delete]

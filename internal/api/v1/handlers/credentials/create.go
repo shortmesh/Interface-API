@@ -25,25 +25,29 @@ import (
 //	@Success		201		{object}	CreateResponse	"Credential created successfully"
 //	@Failure		400		{object}	ErrorResponse	"Invalid request"
 //	@Failure		409		{object}	ErrorResponse	"Credential already exists"
+//	@Failure		403		{object}	ErrorResponse	"Insufficient permissions"
 //	@Failure		500		{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/credentials [post]
 //	@Router			/api/v1/admin/credentials [post]
 func (h *CredentialHandler) Create(c echo.Context) error {
 	var req CreateRequest
 	if err := c.Bind(&req); err != nil {
+		logger.Info(fmt.Sprintf("Credential creation failed: invalid request body - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error: "Invalid request body",
+			Error: "Invalid request body. Must be a JSON object.",
 		})
 	}
 
 	if req.ClientID == "" {
+		logger.Info("Credential creation failed: missing client_id")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error: "client_id is required",
+			Error: "missing required field: client_id",
 		})
 	}
 
 	_, err := models.FindCredentialByClientID(h.db.DB(), req.ClientID)
 	if err == nil {
+		logger.Info(fmt.Sprintf("Credential creation failed: client_id '%s' already exists", req.ClientID))
 		return c.JSON(http.StatusConflict, ErrorResponse{
 			Error: fmt.Sprintf("Credential with client_id '%s' already exists", req.ClientID),
 		})

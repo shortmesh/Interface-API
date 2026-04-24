@@ -19,6 +19,7 @@ import (
 //	@Security		BasicAuth
 //	@Security		CookieAuth
 //	@Success		200	{array}		CredentialResponse	"List of credentials"
+//	@Failure		403		{object}	ErrorResponse	"Insufficient permissions"
 //	@Failure		500	{object}	ErrorResponse		"Internal server error"
 //	@Router			/api/v1/credentials [get]
 //	@Router			/api/v1/admin/credentials [get]

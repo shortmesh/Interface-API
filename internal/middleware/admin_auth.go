@@ -121,7 +121,8 @@ func (a *AdminAuth) RequireAuth() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			cookie, err := c.Cookie("shortmesh_admin_token")
 			if err != nil || !IsSessionValid(cookie.Value) {
-				return c.Redirect(http.StatusFound, "/admin/login")
+				logger.Error("Invalid or missing admin session cookie")
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or missing session. Please log in."})
 			}
 			return next(c)
 		}
@@ -133,18 +134,20 @@ func (a *AdminAuth) InjectMatrixToken() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			cookie, err := c.Cookie("shortmesh_admin_token")
 			if err != nil {
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Session not found"})
+				logger.Error("Missing admin session cookie")
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or missing session. Please log in."})
 			}
 
 			token := GetMatrixToken(cookie.Value)
 			if token == "" {
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Matrix token not set for this session. Please set it first."})
+				logger.Error("Matrix token not set for session")
+				return c.JSON(http.StatusForbidden, map[string]string{"error": "Matrix token not set for this session. Please set it first."})
 			}
 
 			matrixIdentity, err := models.FindMatrixIdentityByToken(a.db, token)
 			if err != nil {
 				logger.Error("Invalid matrix token in session")
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid matrix token"})
+				return c.JSON(http.StatusForbidden, map[string]string{"error": "Invalid matrix token"})
 			}
 
 			c.Set("matrix_identity", matrixIdentity)
@@ -159,7 +162,8 @@ func (a *AdminAuth) InjectCredential() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			cookie, err := c.Cookie("shortmesh_admin_token")
 			if err != nil {
-				return c.Redirect(http.StatusFound, "/admin/login")
+				logger.Error("Missing admin session cookie")
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or missing session. Please log in."})
 			}
 
 			adminSessionMutex.RLock()
@@ -167,21 +171,19 @@ func (a *AdminAuth) InjectCredential() echo.MiddlewareFunc {
 			adminSessionMutex.RUnlock()
 
 			if !exists {
-				return c.Redirect(http.StatusFound, "/admin/login")
+				logger.Error("Admin session not found for token")
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or missing session. Please log in."})
 			}
 
 			if session.CredentialID == nil {
-				return c.JSON(http.StatusForbidden, map[string]string{
-					"error": "no credential associated with session",
-				})
+				logger.Error("No credential associated with admin session")
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or missing session. Please log in."})
 			}
 
 			var credential models.Credential
 			if err := a.db.First(&credential, *session.CredentialID).Error; err != nil {
-				logger.Error("Failed to load credential for admin session")
-				return c.JSON(http.StatusUnauthorized, map[string]string{
-					"error": "invalid session credential",
-				})
+				logger.Error(fmt.Sprintf("Failed to load credential for session: %v", err))
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or missing session. Please log in."})
 			}
 
 			c.Set("credential", &credential)

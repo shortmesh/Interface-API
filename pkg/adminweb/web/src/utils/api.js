@@ -1,6 +1,9 @@
 export const apiCall = async (url, options = {}) => {
   try {
-    const response = await fetch(url, options)
+    const response = await fetch(url, {
+      credentials: 'include',
+      ...options,
+    })
 
     if (response.status === 401) {
       window.location.href = '/admin/login'

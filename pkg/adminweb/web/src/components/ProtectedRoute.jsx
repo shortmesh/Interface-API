@@ -9,9 +9,11 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/v1/admin/matrix-token-status");
+        const response = await fetch("/api/v1/admin/devices", {
+          credentials: "include",
+        });
 
-        if (response.status === 401 || response.status === 302) {
+        if (response.status === 401 || response.url.includes("/login")) {
           setIsAuthenticated(false);
         } else {
           setIsAuthenticated(true);

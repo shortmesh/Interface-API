@@ -27,6 +27,7 @@ import {
   formatDate,
   copyToClipboard,
 } from "../utils/api";
+import { hasScope } from "../utils/scopes";
 
 export default function Tokens() {
   const [tokens, setTokens] = useState([]);
@@ -39,6 +40,7 @@ export default function Tokens() {
   const [attachToSession, setAttachToSession] = useState(false);
   const [displayToken, setDisplayToken] = useState("");
   const [revealedFields, setRevealedFields] = useState({});
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadTokens();
@@ -59,13 +61,14 @@ export default function Tokens() {
   };
 
   const handleCreateToken = async () => {
+    setCreating(true);
     try {
       const body = { use_host: useHost };
       if (setExpiry && expiryDate) {
         body.expires_at = expiryDate.toISOString();
       }
 
-      const response = await apiCall("/admin/api/tokens", {
+      const response = await apiCall("/api/v1/admin/tokens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -86,6 +89,8 @@ export default function Tokens() {
     } catch (error) {
       console.error("Error creating token:", error);
       message.error("Failed to create token");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -98,7 +103,7 @@ export default function Tokens() {
       cancelText: "Cancel",
       onOk: async () => {
         try {
-          const response = await apiCall(`/admin/api/tokens/${id}`, {
+          const response = await apiCall(`/api/v1/admin/tokens/${id}`, {
             method: "DELETE",
           });
 
@@ -257,14 +262,23 @@ export default function Tokens() {
       title: "Actions",
       key: "actions",
       align: "center",
-      render: (_, record) => (
-        <Button
-          type="text"
-          danger
-          icon={<Delete style={{ fontSize: 18 }} />}
-          onClick={() => handleDeleteToken(record.id)}
-        />
-      ),
+      render: (_, record) => {
+        // Check if user has permission to delete tokens
+        const canDelete = hasScope("tokens:write:delete");
+        
+        if (!canDelete) {
+          return <Typography variant="caption" color="text.secondary">-</Typography>;
+        }
+        
+        return (
+          <Button
+            type="text"
+            danger
+            icon={<Delete style={{ fontSize: 18 }} />}
+            onClick={() => handleDeleteToken(record.id)}
+          />
+        );
+      },
     },
   ];
 
@@ -286,15 +300,27 @@ export default function Tokens() {
             Manage Matrix identity tokens for device linking and messaging.
           </Typography>
         </Box>
-        <MuiButton
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleOpenCreateDialog}
-          sx={{ mb: 3 }}
-        >
-          Create New Token
-        </MuiButton>
+        {hasScope("tokens:write:create") && (
+          <MuiButton
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleOpenCreateDialog}
+            sx={{ mb: 3 }}
+          >
+            Create New Token
+          </MuiButton>
+        )}
       </Box>
+
+      {hasScope("tokens:read:*") && !hasScope("tokens:write:create") && (
+        <AntAlert
+          message="Read-only access"
+          description="You can view tokens but don't have permission to create or delete them."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       <Table
         columns={columns}
@@ -311,6 +337,7 @@ export default function Tokens() {
         onOk={handleCreateToken}
         onCancel={() => setCreateDialogOpen(false)}
         okText="Create Token"
+        confirmLoading={creating}
       >
         <div style={{ marginTop: 16 }}>
           <div style={{ marginBottom: 16 }}>
@@ -397,7 +424,7 @@ export default function Tokens() {
             onClick={handleCloseTokenDisplay}
             style={{ color: "#4357AD" }}
           >
-            Close
+            I have saved!
           </Button>,
         ]}
       >

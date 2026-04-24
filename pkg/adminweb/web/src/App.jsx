@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Tokens from './pages/Tokens'
 import Devices from './pages/Devices'
 import Webhooks from './pages/Webhooks'
+import Credentials from './pages/Credentials'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="tokens" element={<Tokens />} />
         <Route path="devices" element={<Devices />} />
         <Route path="webhooks" element={<Webhooks />} />
+        <Route path="credentials" element={<Credentials />} />
       </Route>
     </Routes>
   )

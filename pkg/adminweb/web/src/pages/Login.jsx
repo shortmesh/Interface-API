@@ -12,6 +12,7 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
+import { saveScopes } from "../utils/scopes";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -34,10 +35,18 @@ export default function Login() {
       const response = await fetch("/api/v1/admin/login", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
 
       if (response.ok) {
-        navigate("/");
+        const data = await response.json().catch(() => ({}));
+        // Save scopes from login response
+        if (data.scopes && Array.isArray(data.scopes)) {
+          saveScopes(data.scopes);
+        } else {
+          console.warn("[Login] No scopes in response or invalid format");
+        }
+        window.location.href = "/admin/";
       } else {
         const data = await response.json().catch(() => ({}));
         setError(data.error || "Invalid credentials");

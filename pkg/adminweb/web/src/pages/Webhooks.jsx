@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from 'react-router-dom'
 import { Box, Typography, Button as MuiButton } from "@mui/material";
+import '../modalShake.css'
 import { Add, Edit, Delete } from "@mui/icons-material";
 import { Table, Modal, Input, Switch, Tag, Space, message, Spin, Button } from 'antd';
 import { apiCall, safeJsonParse, formatDate } from "../utils/api";
@@ -17,6 +18,7 @@ export default function Webhooks() {
   const [editActive, setEditActive] = useState(true);
   const [matrixToken, setMatrixToken] = useState("");
   const [matrixTokenError, setMatrixTokenError] = useState("");
+  const [matrixTokenShake, setMatrixTokenShake] = useState(false);
 
   useEffect(() => {
     loadWebhooks();
@@ -343,8 +345,12 @@ export default function Webhooks() {
       <Modal
         title="Set Matrix Token"
         open={matrixTokenDialogOpen}
-        onCancel={() => setMatrixTokenDialogOpen(false)}
+        onCancel={() => {
+          setMatrixTokenShake(true)
+          setTimeout(() => setMatrixTokenShake(false), 500)
+        }}
         closable={false}
+        wrapClassName={matrixTokenShake ? 'modal-shake' : ''}
         footer={[
           <Button key="skip" type="text" onClick={() => setMatrixTokenDialogOpen(false)}>
             Skip

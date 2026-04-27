@@ -528,7 +528,7 @@ export default function Devices() {
         loading={loading}
         rowKey={(record) => `${record.platform}-${record.device_id}`}
         pagination={false}
-        locale={{ emptyText: "No devices found" }}
+        locale={{ emptyText: hasScope("devices:read:*") ? "No devices found" : "You do not have access to view devices. Contact admin." }}
       />
 
       <Modal

@@ -328,6 +328,7 @@ export default function Credentials() {
         loading={loading}
         pagination={{ pageSize: 10 }}
         scroll={{ x: true }}
+        locale={{ emptyText: hasScope('credentials:read:*') ? 'No credentials found' : 'You do not have access to view credentials. Contact admin.' }}
       />
 
       <Modal

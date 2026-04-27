@@ -22,16 +22,21 @@ import {
 } from "@mui/icons-material";
 import KeyOutlined from "@ant-design/icons/KeyOutlined";
 import User from "@ant-design/icons/UserOutlined";
-import { clearScopes, hasScope } from "../utils/scopes";
+import { clearScopes, getScopes } from "../utils/scopes";
 import { message } from "antd";
 
 const drawerWidth = 240;
 
+const hasResourceScope = (resource) => {
+  const userScopes = getScopes();
+  return userScopes.some((s) => s === "*" || s.startsWith(resource + ":"));
+};
+
 const menuItems = [
-  { text: "Tokens", path: "/tokens", icon: <KeyOutlined />, readScope: "tokens:read:*" },
-  { text: "Devices", path: "/devices", icon: <PhoneAndroid />, readScope: "devices:read:*" },
-  { text: "Webhooks", path: "/webhooks", icon: <Webhook />, readScope: "webhooks:read:*" },
-  { text: "Credentials", path: "/credentials", icon: <User />, readScope: "credentials:read:*" },
+  { text: "Tokens", path: "/tokens", icon: <KeyOutlined />, resource: "tokens" },
+  { text: "Devices", path: "/devices", icon: <PhoneAndroid />, resource: "devices" },
+  { text: "Webhooks", path: "/webhooks", icon: <Webhook />, resource: "webhooks" },
+  { text: "Credentials", path: "/credentials", icon: <User />, resource: "credentials" },
 ];
 
 export default function Layout() {
@@ -70,7 +75,7 @@ export default function Layout() {
       <Divider sx={{ mx: 2, mb: 1 }} />
       <List sx={{ flex: 1, px: 1 }}>
         {menuItems.map((item) => {
-          const accessible = hasScope(item.readScope);
+          const accessible = hasResourceScope(item.resource);
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton

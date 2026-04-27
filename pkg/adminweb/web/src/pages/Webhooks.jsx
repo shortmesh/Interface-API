@@ -261,7 +261,7 @@ export default function Webhooks() {
       key: 'active',
       width: '10%',
       render: (active) => (
-        <Tag color={active ? 'success' : 'default'}>
+        <Tag color={active ? 'success' : 'error'}>
           {active ? 'Active' : 'Inactive'}
         </Tag>
       ),
@@ -353,7 +353,7 @@ export default function Webhooks() {
         loading={loading}
         rowKey="id"
         pagination={{ pageSize: 10 }}
-        locale={{ emptyText: 'No webhooks found' }}
+        locale={{ emptyText: hasScope('webhooks:read:*') ? 'No webhooks found' : 'You do not have access to view webhooks. Contact admin.' }}
       />
 
       <Modal
@@ -369,9 +369,6 @@ export default function Webhooks() {
         ]}
       >
         <div style={{ marginTop: 16 }}>
-          {addWebhookError && (
-            <div style={{ marginBottom: 8, color: '#ff4d4f', fontSize: 13 }}>{addWebhookError}</div>
-          )}
           <Input
             placeholder="https://example.com/webhook"
             value={webhookUrl}
@@ -379,6 +376,9 @@ export default function Webhooks() {
             onPressEnter={handleAddWebhook}
             status={addWebhookError ? 'error' : ''}
           />
+          {addWebhookError && (
+            <div style={{ marginTop: 4, color: '#ff4d4f', fontSize: 12 }}>{addWebhookError}</div>
+          )}
           <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255, 255, 255, 0.6)' }}>
             Enter a valid URL to receive webhook notifications
           </div>
@@ -398,9 +398,6 @@ export default function Webhooks() {
         ]}
       >
         <div style={{ marginTop: 16 }}>
-          {editWebhookError && (
-            <div style={{ marginBottom: 8, color: '#ff4d4f', fontSize: 13 }}>{editWebhookError}</div>
-          )}
           <Input
             placeholder="Webhook URL"
             value={editUrl}
@@ -408,11 +405,21 @@ export default function Webhooks() {
             onPressEnter={handleUpdateWebhook}
             status={editWebhookError ? 'error' : ''}
           />
-          <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>Active:</span>
+          {editWebhookError && (
+            <div style={{ marginTop: 4, color: '#ff4d4f', fontSize: 12 }}>{editWebhookError}</div>
+          )}
+          <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 14 }}>{editActive ? 'Active' : 'Inactive'}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
+                {editActive ? 'Toggle off to deactivate webhook' : 'Toggle on to reactivate webhook'}
+              </div>
+            </div>
             <Switch
               checked={editActive}
               onChange={setEditActive}
+              checkedChildren="Active"
+              unCheckedChildren="Inactive"
             />
           </div>
         </div>

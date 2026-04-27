@@ -355,7 +355,7 @@ export default function Tokens() {
         loading={loading}
         rowKey="id"
         pagination={{ pageSize: 10 }}
-        locale={{ emptyText: "No tokens found" }}
+        locale={{ emptyText: hasScope("tokens:read:*") ? "No tokens found" : "You do not have access to view tokens. Contact admin." }}
       />
 
       <Modal
@@ -379,6 +379,7 @@ export default function Tokens() {
               style={{ marginBottom: 16 }}
             />
           )}
+          {hasScope("*") && (
           <div style={{ marginBottom: 16 }}>
             <Checkbox
               checked={useHost}
@@ -399,6 +400,7 @@ export default function Tokens() {
               </div>
             </Checkbox>
           </div>
+          )}
 
           <div style={{ marginBottom: 16 }}>
             <Checkbox

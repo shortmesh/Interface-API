@@ -4,6 +4,7 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"path"
 
 	"github.com/labstack/echo/v4"
 )
@@ -17,8 +18,30 @@ func RegisterRoutes(e *echo.Echo) error {
 		return err
 	}
 
-	e.GET("/admin", echo.WrapHandler(http.StripPrefix("/admin", http.FileServer(http.FS(distSubFS)))))
-	e.GET("/admin/*", echo.WrapHandler(http.StripPrefix("/admin", http.FileServer(http.FS(distSubFS)))))
+	e.GET("/admin", spaHandler(distSubFS))
+	e.GET("/admin/*", spaHandler(distSubFS))
 
 	return nil
+}
+
+func spaHandler(filesystem fs.FS) echo.HandlerFunc {
+	fileServer := http.FileServer(http.FS(filesystem))
+
+	return func(c echo.Context) error {
+		p := c.Request().URL.Path
+		if p == "/admin" {
+			p = "/"
+		} else {
+			p = p[len("/admin"):]
+		}
+
+		if _, err := fs.Stat(filesystem, path.Clean(p[1:])); err == nil {
+			http.StripPrefix("/admin", fileServer).ServeHTTP(c.Response(), c.Request())
+			return nil
+		}
+
+		c.Request().URL.Path = "/admin/"
+		http.StripPrefix("/admin", fileServer).ServeHTTP(c.Response(), c.Request())
+		return nil
+	}
 }

@@ -1062,7 +1062,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Queue a message to be sent via the specified device",
+                "description": "Queue a message to be sent via the specified device. Either text or file must be provided (or both).",
                 "consumes": [
                     "application/json",
                     "multipart/form-data"
@@ -1110,7 +1110,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Message text (multipart)",
+                        "description": "Message text (multipart, optional if file provided)",
                         "name": "text",
                         "in": "formData"
                     },
@@ -1772,8 +1772,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "contact",
-                "platform",
-                "text"
+                "platform"
             ],
             "properties": {
                 "contact": {
@@ -1781,7 +1780,6 @@ const docTemplate = `{
                     "example": "1234567890"
                 },
                 "platform": {
-                    "description": "Get the platform from ListDevices (GET /api/v1/devices) response",
                     "type": "string",
                     "example": "wa"
                 },

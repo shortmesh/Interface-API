@@ -1,6 +1,6 @@
 export const antdTheme = {
   token: {
-    colorPrimary: '#4357AD',
+    colorPrimary: '#8ED462',
     colorBgContainer: '#0f0f0f',
     colorBgElevated: '#1a1a1a',
     colorBorder: 'rgba(255, 255, 255, 0.08)',
@@ -22,8 +22,8 @@ export const antdTheme = {
       bodySortBg: '#0f0f0f',
     },
     Modal: {
-      contentBg: '#1f2028',
-      headerBg: '#1f2028',
+      contentBg: '#1f1f1f',
+      headerBg: '#1f1f1f',
     },
     Card: {
       colorBgContainer: '#0f0f0f',

@@ -1,19 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import '../modalShake.css'
 import { Box, Typography, Button as MuiButton } from '@mui/material'
-import { Add, Edit, Delete, Visibility, VisibilityOff, ContentCopy, Autorenew, Block } from '@mui/icons-material'
+import { Add, Edit, Delete, Visibility, VisibilityOff, ContentCopy, Autorenew, Close } from '@mui/icons-material'
 import {
   Table,
   Modal,
   Input,
   Tag,
   Space,
+  Switch,
   message,
   Button,
   Alert as AntAlert,
+  App,
 } from 'antd'
 import { apiCall, safeJsonParse, formatDate, maskString, copyToClipboard } from '../utils/api'
+import { hasScope } from '../utils/scopes'
 
 export default function Credentials() {
+  const { modal } = App.useApp()
+  const canWrite = hasScope('credentials:write:*')
   const [credentials, setCredentials] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -30,11 +36,25 @@ export default function Credentials() {
   const [editTarget, setEditTarget] = useState(null)
   const [editDescription, setEditDescription] = useState('')
   const [regenerateSecret, setRegenerateSecret] = useState(false)
-  const [deactivate, setDeactivate] = useState(false)
+  const [desiredActive, setDesiredActive] = useState(true)
   const [updating, setUpdating] = useState(false)
 
   const [confirmRegenerateOpen, setConfirmRegenerateOpen] = useState(false)
-  const [confirmDeactivateOpen, setConfirmDeactivateOpen] = useState(false)
+
+  const [createError, setCreateError] = useState('')
+  const [editError, setEditError] = useState('')
+
+  const [createShake, setCreateShake] = useState(false)
+  const [editShake, setEditShake] = useState(false)
+  const [regenerateShake, setRegenerateShake] = useState(false)
+  const [secretShake, setSecretShake] = useState(false)
+
+  const closeByXRef = useRef(false)
+
+  const triggerShake = (setter) => {
+    setter(true)
+    setTimeout(() => setter(false), 500)
+  }
 
   useEffect(() => {
     loadCredentials()
@@ -57,9 +77,10 @@ export default function Credentials() {
 
   const handleCreate = async () => {
     if (!newClientId.trim()) {
-      message.error('Client ID is required')
+      setCreateError('Client ID is required')
       return
     }
+    setCreateError('')
     setCreating(true)
     try {
       const response = await apiCall('/api/v1/admin/credentials', {
@@ -73,17 +94,18 @@ export default function Credentials() {
         setCreateOpen(false)
         setNewClientId('')
         setNewDescription('')
+        setCreateError('')
         setRevealedSecret(data.client_secret)
         setSecretVisible(false)
         setSecretModalOpen(true)
         loadCredentials()
       } else {
         const err = await safeJsonParse(response)
-        message.error(err.error || 'Failed to create credential')
+        setCreateError(err.error || 'Failed to create credential')
       }
     } catch (error) {
       console.error('Error creating credential:', error)
-      message.error('Failed to create credential')
+      setCreateError('Failed to create credential')
     } finally {
       setCreating(false)
     }
@@ -93,7 +115,8 @@ export default function Credentials() {
     setEditTarget(record)
     setEditDescription(record.description || '')
     setRegenerateSecret(false)
-    setDeactivate(false)
+    setDesiredActive(record.active)
+    setEditError('')
     setEditOpen(true)
   }
 
@@ -102,13 +125,9 @@ export default function Credentials() {
     setConfirmRegenerateOpen(false)
   }
 
-  const handleConfirmDeactivate = () => {
-    setDeactivate(true)
-    setConfirmDeactivateOpen(false)
-  }
-
   const handleUpdate = async () => {
     if (!editTarget) return
+    setEditError('')
     setUpdating(true)
     try {
       const body = {}
@@ -118,8 +137,8 @@ export default function Credentials() {
       if (regenerateSecret) {
         body.regenerate_secret = true
       }
-      if (deactivate) {
-        body.deactivate = true
+      if (desiredActive !== editTarget.active) {
+        body.active = desiredActive
       }
 
       const response = await apiCall(`/api/v1/admin/credentials/${editTarget.client_id}`, {
@@ -132,6 +151,7 @@ export default function Credentials() {
         const data = await safeJsonParse(response)
         setEditOpen(false)
         setEditTarget(null)
+        setEditError('')
         loadCredentials()
         message.success('Credential updated successfully')
         if (data.client_secret) {
@@ -141,18 +161,18 @@ export default function Credentials() {
         }
       } else {
         const err = await safeJsonParse(response)
-        message.error(err.error || 'Failed to update credential')
+        setEditError(err.error || 'Failed to update credential')
       }
     } catch (error) {
       console.error('Error updating credential:', error)
-      message.error('Failed to update credential')
+      setEditError('Failed to update credential')
     } finally {
       setUpdating(false)
     }
   }
 
   const handleDelete = (clientId) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Credential',
       content: `Are you sure you want to permanently delete "${clientId}"? This cannot be undone.`,
       okText: 'Delete',
@@ -253,13 +273,23 @@ export default function Credentials() {
           <Button
             type="text"
             icon={<Edit style={{ fontSize: 18 }} />}
-            onClick={() => handleOpenEdit(record)}
+            onClick={() =>
+              canWrite
+                ? handleOpenEdit(record)
+                : message.info("You do not have permission to edit credentials. Contact admin.")
+            }
+            style={{ opacity: canWrite ? 1 : 0.45 }}
           />
           <Button
             type="text"
-            danger
+            danger={canWrite}
             icon={<Delete style={{ fontSize: 18 }} />}
-            onClick={() => handleDelete(record.client_id)}
+            onClick={() =>
+              canWrite
+                ? handleDelete(record.client_id)
+                : message.info("You do not have permission to delete credentials. Contact admin.")
+            }
+            style={{ opacity: canWrite ? 1 : 0.45 }}
           />
         </Space>
       ),
@@ -270,7 +300,7 @@ export default function Credentials() {
     <Box>
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h6" gutterBottom>
             API Credentials
           </Typography>
           <Typography color="text.secondary" paragraph>
@@ -280,11 +310,12 @@ export default function Credentials() {
         <MuiButton
           variant="contained"
           startIcon={<Add />}
-          onClick={() => {
-            setNewClientId('')
-            setNewDescription('')
-            setCreateOpen(true)
-          }}
+          onClick={() =>
+            canWrite
+              ? (setNewClientId(''), setNewDescription(''), setCreateError(''), setCreateOpen(true))
+              : message.info("You do not have permission to create credentials. Contact admin.")
+          }
+          sx={{ opacity: canWrite ? 1 : 0.45 }}
         >
           New Credential
         </MuiButton>
@@ -302,13 +333,20 @@ export default function Credentials() {
       <Modal
         title="Create Credential"
         open={createOpen}
-        onCancel={() => setCreateOpen(false)}
-        onOk={handleCreate}
-        okText="Create"
-        confirmLoading={creating}
-        destroyOnClose
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setCreateOpen(false); } else { triggerShake(setCreateShake); } }}
+        maskClosable={true}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={createShake ? 'modal-shake' : ''}
+        destroyOnHidden
+        footer={[
+          <Button key="cancel" onClick={() => setCreateOpen(false)} disabled={creating}>Cancel</Button>,
+          <Button key="create" type="primary" onClick={handleCreate} loading={creating}>Create</Button>,
+        ]}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          {createError && (
+            <AntAlert type="error" showIcon message={createError} />
+          )}
           <Box>
             <Typography variant="body2" gutterBottom>
               Client ID <span style={{ color: 'red' }}>*</span>
@@ -316,7 +354,7 @@ export default function Credentials() {
             <Input
               placeholder="e.g. my-app"
               value={newClientId}
-              onChange={(e) => setNewClientId(e.target.value)}
+              onChange={(e) => { setNewClientId(e.target.value); setCreateError('') }}
               onPressEnter={handleCreate}
               autoFocus
             />
@@ -337,13 +375,20 @@ export default function Credentials() {
       <Modal
         title={`Edit — ${editTarget?.client_id}`}
         open={editOpen}
-        onCancel={() => setEditOpen(false)}
-        onOk={handleUpdate}
-        okText="Save"
-        confirmLoading={updating}
-        destroyOnClose
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setEditOpen(false); } else { triggerShake(setEditShake); } }}
+        maskClosable={true}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={editShake ? 'modal-shake' : ''}
+        destroyOnHidden
+        footer={[
+          <Button key="cancel" onClick={() => setEditOpen(false)} disabled={updating}>Cancel</Button>,
+          <Button key="save" type="primary" onClick={handleUpdate} loading={updating}>Save</Button>,
+        ]}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          {editError && (
+            <AntAlert type="error" showIcon message={editError} />
+          )}
           <Box>
             <Typography variant="body2" gutterBottom>
               Description
@@ -351,7 +396,7 @@ export default function Credentials() {
             <Input
               placeholder="Optional description"
               value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
+              onChange={(e) => { setEditDescription(e.target.value); setEditError('') }}
             />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -380,28 +425,19 @@ export default function Credentials() {
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography variant="body2">Deactivate credential</Typography>
+              <Typography variant="body2">
+                {desiredActive ? 'Active' : 'Inactive'}
+              </Typography>
               <Typography variant="caption" color="text.secondary">
-                Revoke API access immediately
+                {desiredActive ? 'Toggle off to deactivate and revoke API access' : 'Toggle on to reactivate and restore API access'}
               </Typography>
             </Box>
-            {deactivate ? (
-              <AntAlert
-                type="error"
-                showIcon
-                banner
-                message="Will deactivate on save"
-                style={{ padding: '2px 8px', fontSize: 12 }}
-              />
-            ) : (
-              <Button
-                danger
-                icon={<Block style={{ fontSize: 16 }} />}
-                onClick={() => setConfirmDeactivateOpen(true)}
-              >
-                Deactivate
-              </Button>
-            )}
+            <Switch
+              checked={desiredActive}
+              onChange={setDesiredActive}
+              checkedChildren="Active"
+              unCheckedChildren="Inactive"
+            />
           </Box>
         </Box>
       </Modal>
@@ -409,13 +445,16 @@ export default function Credentials() {
       <Modal
         title="Regenerate Client Secret?"
         open={confirmRegenerateOpen}
-        onCancel={() => setConfirmRegenerateOpen(false)}
-        onOk={handleConfirmRegenerate}
-        okText="Yes, regenerate"
-        okButtonProps={{ danger: true }}
-        cancelText="Cancel"
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setConfirmRegenerateOpen(false); } else { triggerShake(setRegenerateShake); } }}
+        maskClosable={true}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={regenerateShake ? 'modal-shake' : ''}
         zIndex={1100}
         width={420}
+        footer={[
+          <Button key="cancel" onClick={() => setConfirmRegenerateOpen(false)}>Cancel</Button>,
+          <Button key="regenerate" type="primary" danger onClick={handleConfirmRegenerate}>Yes, regenerate</Button>,
+        ]}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <AntAlert
@@ -428,36 +467,18 @@ export default function Credentials() {
       </Modal>
 
       <Modal
-        title="Deactivate Credential?"
-        open={confirmDeactivateOpen}
-        onCancel={() => setConfirmDeactivateOpen(false)}
-        onOk={handleConfirmDeactivate}
-        okText="Yes, deactivate"
-        okButtonProps={{ danger: true }}
-        cancelText="Cancel"
-        zIndex={1100}
-        width={420}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <AntAlert
-            type="error"
-            showIcon
-            message={`Deactivating "${editTarget?.client_id}" will immediately revoke all API access.`}
-            description="Any application or service using this credential will be denied access as soon as the change is saved. This action cannot be automatically reversed."
-          />
-        </Box>
-      </Modal>
-
-      <Modal
         title="Client Secret"
         open={secretModalOpen}
-        onCancel={() => setSecretModalOpen(false)}
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setSecretModalOpen(false); } else { triggerShake(setSecretShake); } }}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
         footer={[
           <Button key="close" type="primary" onClick={() => setSecretModalOpen(false)}>
-            Done
+            I have saved!
           </Button>,
         ]}
-        destroyOnClose
+        maskClosable={true}
+        wrapClassName={secretShake ? 'modal-shake' : ''}
+        destroyOnHidden
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
           <AntAlert
@@ -465,34 +486,48 @@ export default function Credentials() {
             showIcon
             message="Save this secret now — it will not be shown again."
           />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#1e1e1e',
+              border: '1px solid #333',
+              borderRadius: 1,
+              px: 1.5,
+              py: 0.75,
+              gap: 1,
+            }}
+          >
             <code
               style={{
                 flex: 1,
                 wordBreak: 'break-all',
                 fontFamily: '"Google Sans Mono", monospace',
                 fontSize: 13,
-                background: '#f5f5f5',
-                padding: '6px 10px',
-                borderRadius: 4,
+                color: '#e1e1e1',
+                background: 'transparent',
               }}
             >
               {secretVisible ? revealedSecret : maskString(revealedSecret)}
             </code>
             <Button
               type="text"
+              size="small"
+              style={{ color: '#aaa', flexShrink: 0 }}
               icon={
                 secretVisible ? (
-                  <VisibilityOff style={{ fontSize: 18 }} />
+                  <VisibilityOff style={{ fontSize: 16 }} />
                 ) : (
-                  <Visibility style={{ fontSize: 18 }} />
+                  <Visibility style={{ fontSize: 16 }} />
                 )
               }
               onClick={() => setSecretVisible((v) => !v)}
             />
             <Button
               type="text"
-              icon={<ContentCopy style={{ fontSize: 18 }} />}
+              size="small"
+              style={{ color: '#aaa', flexShrink: 0 }}
+              icon={<ContentCopy style={{ fontSize: 16 }} />}
               onClick={() => handleCopy(revealedSecret)}
             />
           </Box>

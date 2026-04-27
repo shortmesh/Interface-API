@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import "../modalShake.css";
 import { Box, Typography, Button as MuiButton } from "@mui/material";
 import {
   Add,
@@ -18,6 +19,7 @@ import {
   Alert as AntAlert,
   DatePicker,
   Button,
+  App,
 } from "antd";
 import dayjs from "dayjs";
 import {
@@ -27,9 +29,11 @@ import {
   formatDate,
   copyToClipboard,
 } from "../utils/api";
+import { CloseOutlined } from "@ant-design/icons";
 import { hasScope } from "../utils/scopes";
 
 export default function Tokens() {
+  const { modal } = App.useApp();
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -41,6 +45,18 @@ export default function Tokens() {
   const [displayToken, setDisplayToken] = useState("");
   const [revealedFields, setRevealedFields] = useState({});
   const [creating, setCreating] = useState(false);
+  const [createTokenError, setCreateTokenError] = useState("");
+
+  const [createShake, setCreateShake] = useState(false);
+  const [displayShake, setDisplayShake] = useState(false);
+  const [tokenVisible, setTokenVisible] = useState(false);
+
+  const closeByXRef = useRef(false);
+
+  const triggerShake = (setter) => {
+    setter(true);
+    setTimeout(() => setter(false), 500);
+  };
 
   useEffect(() => {
     loadTokens();
@@ -62,6 +78,7 @@ export default function Tokens() {
 
   const handleCreateToken = async () => {
     setCreating(true);
+    setCreateTokenError("");
     try {
       const body = { use_host: useHost };
       if (setExpiry && expiryDate) {
@@ -79,23 +96,24 @@ export default function Tokens() {
       if (response.ok) {
         const data = await safeJsonParse(response);
         setDisplayToken(data.token);
+        setTokenVisible(false);
         setCreateDialogOpen(false);
         setTokenDisplayDialogOpen(true);
         loadTokens();
       } else {
         const error = await safeJsonParse(response);
-        message.error(error.error || "Failed to create token");
+        setCreateTokenError(error.error || "Failed to create token");
       }
     } catch (error) {
       console.error("Error creating token:", error);
-      message.error("Failed to create token");
+      setCreateTokenError("Failed to create token");
     } finally {
       setCreating(false);
     }
   };
 
   const handleDeleteToken = async (id) => {
-    Modal.confirm({
+    modal.confirm({
       title: "Delete Token",
       content: "Are you sure you want to delete this token?",
       okText: "Delete",
@@ -142,6 +160,7 @@ export default function Tokens() {
     setSetExpiry(false);
     setExpiryDate(null);
     setAttachToSession(false);
+    setCreateTokenError("");
     setCreateDialogOpen(true);
   };
 
@@ -263,19 +282,18 @@ export default function Tokens() {
       key: "actions",
       align: "center",
       render: (_, record) => {
-        // Check if user has permission to delete tokens
         const canDelete = hasScope("tokens:write:delete");
-        
-        if (!canDelete) {
-          return <Typography variant="caption" color="text.secondary">-</Typography>;
-        }
-        
         return (
           <Button
             type="text"
             danger
             icon={<Delete style={{ fontSize: 18 }} />}
-            onClick={() => handleDeleteToken(record.id)}
+            onClick={() =>
+              canDelete
+                ? handleDeleteToken(record.id)
+                : message.info("You do not have permission to delete tokens. Contact admin.")
+            }
+            style={{ opacity: canDelete ? 1 : 0.45 }}
           />
         );
       },
@@ -293,19 +311,28 @@ export default function Tokens() {
         }}
       >
         <Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h6" gutterBottom>
             Matrix Tokens
           </Typography>
           <Typography color="text.secondary" paragraph>
             Manage Matrix identity tokens for device linking and messaging.
           </Typography>
         </Box>
-        {hasScope("tokens:write:create") && (
+        {hasScope("tokens:write:create") ? (
           <MuiButton
             variant="contained"
             startIcon={<Add />}
             onClick={handleOpenCreateDialog}
             sx={{ mb: 3 }}
+          >
+            Create New Token
+          </MuiButton>
+        ) : (
+          <MuiButton
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => message.info("You do not have permission to create tokens. Contact admin.")}
+            sx={{ mb: 3, opacity: 0.45 }}
           >
             Create New Token
           </MuiButton>
@@ -334,12 +361,24 @@ export default function Tokens() {
       <Modal
         title="Create New Token"
         open={createDialogOpen}
-        onOk={handleCreateToken}
-        onCancel={() => setCreateDialogOpen(false)}
-        okText="Create Token"
-        confirmLoading={creating}
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setCreateDialogOpen(false); } else { triggerShake(setCreateShake); } }}
+        maskClosable={true}
+        closeIcon={<CloseOutlined onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={createShake ? 'modal-shake' : ''}
+        footer={[
+          <Button key="cancel" onClick={() => setCreateDialogOpen(false)} disabled={creating}>Cancel</Button>,
+          <Button key="create" type="primary" onClick={handleCreateToken} loading={creating}>Create Token</Button>,
+        ]}
       >
         <div style={{ marginTop: 16 }}>
+          {createTokenError && (
+            <AntAlert
+              type="error"
+              showIcon
+              message={createTokenError}
+              style={{ marginBottom: 16 }}
+            />
+          )}
           <div style={{ marginBottom: 16 }}>
             <Checkbox
               checked={useHost}
@@ -408,16 +447,11 @@ export default function Tokens() {
       <Modal
         title="Token Created"
         open={tokenDisplayDialogOpen}
-        onCancel={handleCloseTokenDisplay}
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; handleCloseTokenDisplay(); } else { triggerShake(setDisplayShake); } }}
+        maskClosable={true}
+        closeIcon={<CloseOutlined onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={displayShake ? 'modal-shake' : ''}
         footer={[
-          <Button
-            key="copy"
-            type="text"
-            icon={<ContentCopy />}
-            onClick={() => handleCopy(displayToken)}
-          >
-            Copy
-          </Button>,
           <Button
             key="close"
             type="text"
@@ -435,7 +469,45 @@ export default function Tokens() {
             showIcon
             style={{ marginBottom: 16 }}
           />
-          <Input.TextArea value={displayToken} rows={3} readOnly />
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#1e1e1e',
+              border: '1px solid #333',
+              borderRadius: 1,
+              px: 1.5,
+              py: 0.75,
+              gap: 1,
+            }}
+          >
+            <code
+              style={{
+                flex: 1,
+                wordBreak: 'break-all',
+                fontFamily: '"Google Sans Mono", monospace',
+                fontSize: 13,
+                color: '#e1e1e1',
+                background: 'transparent',
+              }}
+            >
+              {tokenVisible ? displayToken : maskString(displayToken)}
+            </code>
+            <Button
+              type="text"
+              size="small"
+              style={{ color: '#aaa', flexShrink: 0 }}
+              icon={tokenVisible ? <VisibilityOff style={{ fontSize: 16 }} /> : <Visibility style={{ fontSize: 16 }} />}
+              onClick={() => setTokenVisible((v) => !v)}
+            />
+            <Button
+              type="text"
+              size="small"
+              style={{ color: '#aaa', flexShrink: 0 }}
+              icon={<ContentCopy style={{ fontSize: 16 }} />}
+              onClick={() => handleCopy(displayToken)}
+            />
+          </Box>
         </div>
       </Modal>
     </Box>

@@ -12,6 +12,7 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
+  Divider
 } from "@mui/material";
 import {
   PhoneAndroid,
@@ -21,15 +22,16 @@ import {
 } from "@mui/icons-material";
 import KeyOutlined from "@ant-design/icons/KeyOutlined";
 import User from "@ant-design/icons/UserOutlined";
-import { clearScopes } from "../utils/scopes";
+import { clearScopes, hasScope } from "../utils/scopes";
+import { message } from "antd";
 
 const drawerWidth = 240;
 
 const menuItems = [
-  { text: "Tokens", path: "/tokens", icon: <KeyOutlined /> },
-  { text: "Devices", path: "/devices", icon: <PhoneAndroid /> },
-  { text: "Webhooks", path: "/webhooks", icon: <Webhook /> },
-  { text: "Credentials", path: "/credentials", icon: <User /> },
+  { text: "Tokens", path: "/tokens", icon: <KeyOutlined />, readScope: "tokens:read:*" },
+  { text: "Devices", path: "/devices", icon: <PhoneAndroid />, readScope: "devices:read:*" },
+  { text: "Webhooks", path: "/webhooks", icon: <Webhook />, readScope: "webhooks:read:*" },
+  { text: "Credentials", path: "/credentials", icon: <User />, readScope: "credentials:read:*" },
 ];
 
 export default function Layout() {
@@ -41,9 +43,14 @@ export default function Layout() {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/v1/admin/logout", { method: "POST", credentials: "include" });
+    } catch {
+    }
     clearScopes();
-    window.location.href = "/api/v1/admin/logout";
+    message.success("Logged out successfully");
+    setTimeout(() => navigate("/login"), 800);
   };
 
   const drawer = (
@@ -60,28 +67,45 @@ export default function Layout() {
           ShortMesh
         </Typography>
       </Toolbar>
+      <Divider sx={{ mx: 2, mb: 1 }} />
       <List sx={{ flex: 1, px: 1 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => navigate(item.path)}
-              sx={{
-                borderRadius: 2,
-                "&.Mui-selected": {
-                  backgroundColor: "primary.main",
-                  "&:hover": {
-                    backgroundColor: "primary.dark",
+        {menuItems.map((item) => {
+          const accessible = hasScope(item.readScope);
+          return (
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                selected={location.pathname === item.path}
+                onClick={() => {
+                  if (!accessible) {
+                    message.info(`You do not have access to ${item.text}. Contact admin.`);
+                    return;
+                  }
+                  navigate(item.path);
+                }}
+                sx={{
+                  borderRadius: 2,
+                  opacity: accessible ? 1 : 0.45,
+                  "&.Mui-selected": {
+                    backgroundColor: "background.default",
+                    "&:hover": { backgroundColor: "primary.default" },
                   },
-                },
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+                }}
+              >
+                <ListItemIcon sx={{ color: accessible ? "inherit" : "text.disabled" }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                variant="body2"
+                  primary={item.text}
+                  primaryTypographyProps={{ variant: "body2" }}
+                  sx={{ color: accessible ? "inherit" : "text.disabled" }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
+       <Divider sx={{ mx: 2, mt: 1 }} />
       <List sx={{ px: 1, pb: 2 }}>
         <ListItem disablePadding>
           <ListItemButton

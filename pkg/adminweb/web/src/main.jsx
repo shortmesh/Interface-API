@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import { ConfigProvider, theme as antdTheme } from 'antd'
+import { ConfigProvider, App as AntdApp, theme as antdTheme } from 'antd'
 import App from './App'
 import theme from './theme'
 import { antdTheme as customAntdTheme } from './antdTheme'
@@ -19,7 +19,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           }}
         >
           <CssBaseline />
-          <App />
+          <AntdApp>
+            <App />
+          </AntdApp>
         </ConfigProvider>
       </ThemeProvider>
     </BrowserRouter>

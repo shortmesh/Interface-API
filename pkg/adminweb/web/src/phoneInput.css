@@ -1,23 +1,22 @@
-/* Custom styles for react-phone-number-input to match MUI dark theme */
 .PhoneInput {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 16.5px 14px;
+  padding: 8px 14px;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.23);
-  background-color: transparent;
+  border: 1px solid rgba(154, 148, 148, 0.23);
+  background-color: #0f0f0f;
   transition: border-color 0.2s;
 }
 
 .PhoneInput:hover {
-  border-color: rgba(255, 255, 255, 0.87);
+  border-color: rgba(255, 255, 255, 0.624);
 }
 
 .PhoneInput:focus-within {
-  border-color: #4357AD;
+  border-color: #8ED462;
   border-width: 2px;
-  padding: 15.5px 13px;
+  padding: 10px 13px;
 }
 
 .PhoneInputCountry {
@@ -42,14 +41,19 @@
 }
 
 .PhoneInputCountrySelect {
-  background: transparent;
+  background-color: #000000 !important;
   border: none;
-  color: inherit;
+  color: rgba(255, 255, 255, 0.87);
   cursor: pointer;
   outline: none;
   font-size: 16px;
   padding: 4px;
   margin: 0;
+}
+
+.PhoneInputCountrySelect option {
+  background-color: #000000 !important;
+  color: rgba(255, 255, 255, 0.87);
 }
 
 .PhoneInputCountrySelect:hover {

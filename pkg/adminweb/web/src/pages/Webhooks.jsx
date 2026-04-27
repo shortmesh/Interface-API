@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from 'react-router-dom'
 import { Box, Typography, Button as MuiButton } from "@mui/material";
 import '../modalShake.css'
-import { Add, Edit, Delete } from "@mui/icons-material";
-import { Table, Modal, Input, Switch, Tag, Space, message, Spin, Button } from 'antd';
+import { Add, Edit, Delete, Close } from "@mui/icons-material";
+import { Table, Modal, Input, Switch, Tag, Space, message, Spin, Button, App } from 'antd';
 import { apiCall, safeJsonParse, formatDate } from "../utils/api";
+import { hasScope } from "../utils/scopes";
 
 export default function Webhooks() {
+  const { modal } = App.useApp();
+  const canWrite = hasScope("webhooks:write:*");
   const [webhooks, setWebhooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -18,8 +21,17 @@ export default function Webhooks() {
   const [editActive, setEditActive] = useState(true);
   const [matrixToken, setMatrixToken] = useState("");
   const [matrixTokenError, setMatrixTokenError] = useState("");
-  const [matrixTokenShake, setMatrixTokenShake] = useState(false);
+  const [matrixTokenShake, setMatrixTokenShake] = useState(false);  const [addWebhookShake, setAddWebhookShake] = useState(false)
+  const [editWebhookShake, setEditWebhookShake] = useState(false)
+  const [addWebhookError, setAddWebhookError] = useState("")
+  const [editWebhookError, setEditWebhookError] = useState("")
 
+  const closeByXRef = useRef(false)
+
+  const triggerShake = (setter) => {
+    setter(true)
+    setTimeout(() => setter(false), 500)
+  }
   useEffect(() => {
     loadWebhooks();
   }, []);
@@ -42,6 +54,10 @@ export default function Webhooks() {
       if (!response) return;
 
       if (!response.ok) {
+        if (response.status === 403) {
+          setMatrixTokenDialogOpen(true);
+          return;
+        }
         const error = await safeJsonParse(response);
         message.error(error.error || "Failed to load webhooks");
         setWebhooks([]);
@@ -49,6 +65,10 @@ export default function Webhooks() {
       }
 
       const data = await safeJsonParse(response);
+      if (data?.error === 'Invalid server response') {
+        setMatrixTokenDialogOpen(true);
+        return;
+      }
       setWebhooks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading webhooks:", error);
@@ -95,8 +115,8 @@ export default function Webhooks() {
 
   const handleAddWebhook = async () => {
     if (!webhookUrl.trim()) {
-      message.error("Please enter a webhook URL");
-      return;
+      setAddWebhookError("Please enter a webhook URL")
+      return
     }
 
     try {
@@ -104,29 +124,35 @@ export default function Webhooks() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: webhookUrl }),
-      });
+      })
 
-      if (!response) return;
+      if (!response) return
 
       if (response.ok) {
-        setAddDialogOpen(false);
-        setWebhookUrl("");
-        loadWebhooks();
-        message.success("Webhook added successfully");
+        setAddDialogOpen(false)
+        setWebhookUrl("")
+        setAddWebhookError("")
+        loadWebhooks()
+        message.success("Webhook added successfully")
       } else {
-        const error = await safeJsonParse(response);
-        message.error(error.error || "Failed to add webhook");
+        if (response.status === 403) {
+          setAddDialogOpen(false)
+          setMatrixTokenDialogOpen(true)
+          return
+        }
+        const error = await safeJsonParse(response)
+        setAddWebhookError(error.error || "Failed to add webhook")
       }
     } catch (error) {
-      console.error("Error adding webhook:", error);
-      message.error("Failed to add webhook");
+      console.error("Error adding webhook:", error)
+      setAddWebhookError("Failed to add webhook")
     }
-  };
+  }
 
   const handleUpdateWebhook = async () => {
     if (!editUrl.trim()) {
-      message.error("Please enter a webhook URL");
-      return;
+      setEditWebhookError("Please enter a webhook URL")
+      return
     }
 
     try {
@@ -137,27 +163,33 @@ export default function Webhooks() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: editUrl, active: editActive }),
         },
-      );
+      )
 
-      if (!response) return;
+      if (!response) return
 
       if (response.ok) {
-        setEditDialogOpen(false);
-        setEditWebhook(null);
-        loadWebhooks();
-        message.success("Webhook updated successfully");
+        setEditDialogOpen(false)
+        setEditWebhook(null)
+        setEditWebhookError("")
+        loadWebhooks()
+        message.success("Webhook updated successfully")
       } else {
-        const error = await safeJsonParse(response);
-        message.error(error.error || "Failed to update webhook");
+        if (response.status === 403) {
+          setEditDialogOpen(false)
+          setMatrixTokenDialogOpen(true)
+          return
+        }
+        const error = await safeJsonParse(response)
+        setEditWebhookError(error.error || "Failed to update webhook")
       }
     } catch (error) {
-      console.error("Error updating webhook:", error);
-      message.error("Failed to update webhook");
+      console.error("Error updating webhook:", error)
+      setEditWebhookError("Failed to update webhook")
     }
-  };
+  }
 
   const handleDeleteWebhook = async (id) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Webhook',
       content: 'Are you sure you want to delete this webhook?',
       okText: 'Delete',
@@ -175,6 +207,10 @@ export default function Webhooks() {
             loadWebhooks();
             message.success("Webhook deleted successfully");
           } else {
+            if (response.status === 403) {
+              setMatrixTokenDialogOpen(true);
+              return;
+            }
             const error = await safeJsonParse(response);
             message.error(error.error || "Failed to delete webhook");
           }
@@ -190,24 +226,26 @@ export default function Webhooks() {
     setEditWebhook(webhook);
     setEditUrl(webhook.url);
     setEditActive(webhook.active);
+    setEditWebhookError("");
     setEditDialogOpen(true);
   };
 
   const handleOpenAdd = async () => {
     const tokenStatusResponse = await apiCall(
       "/api/v1/admin/matrix-token-status",
-    );
-    if (!tokenStatusResponse) return;
-    const tokenStatus = await safeJsonParse(tokenStatusResponse);
+    )
+    if (!tokenStatusResponse) return
+    const tokenStatus = await safeJsonParse(tokenStatusResponse)
 
     if (!tokenStatus.has_matrix_token) {
-      setMatrixTokenDialogOpen(true);
-      return;
+      setMatrixTokenDialogOpen(true)
+      return
     }
 
-    setWebhookUrl("");
-    setAddDialogOpen(true);
-  };
+    setWebhookUrl("")
+    setAddWebhookError("")
+    setAddDialogOpen(true)
+  }
 
   const columns = [
     {
@@ -252,14 +290,23 @@ export default function Webhooks() {
           <Button
             type="text"
             icon={<Edit style={{ fontSize: 18 }} />}
-            onClick={() => handleOpenEdit(record)}
-            style={{ color: '#4357AD' }}
+            onClick={() =>
+              canWrite
+                ? handleOpenEdit(record)
+                : message.info("You do not have permission to edit webhooks. Contact admin.")
+            }
+            style={{ opacity: canWrite ? 1 : 0.45 }}
           />
           <Button
             type="text"
             icon={<Delete style={{ fontSize: 18 }} />}
-            onClick={() => handleDeleteWebhook(record.id)}
-            danger
+            onClick={() =>
+              canWrite
+                ? handleDeleteWebhook(record.id)
+                : message.info("You do not have permission to delete webhooks. Contact admin.")
+            }
+            danger={canWrite}
+            style={{ opacity: canWrite ? 1 : 0.45 }}
           />
         </Space>
       ),
@@ -267,6 +314,7 @@ export default function Webhooks() {
   ];
 
   return (
+    <Box>
     <Box>
       <Box
         sx={{
@@ -277,16 +325,26 @@ export default function Webhooks() {
         }}
       >
         <Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h6" gutterBottom>
             Webhooks
           </Typography>
           <Typography color="text.secondary" paragraph>
             Manage webhook URLs to receive message notifications.
           </Typography>
         </Box>
-        <MuiButton variant="contained" startIcon={<Add />} onClick={handleOpenAdd}>
+        <MuiButton
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() =>
+            canWrite
+              ? handleOpenAdd()
+              : message.info("You do not have permission to add webhooks. Contact admin.")
+          }
+          sx={{ opacity: canWrite ? 1 : 0.45 }}
+        >
           Add Webhook
         </MuiButton>
+      </Box>
       </Box>
 
       <Table
@@ -301,16 +359,25 @@ export default function Webhooks() {
       <Modal
         title="Add Webhook"
         open={addDialogOpen}
-        onOk={handleAddWebhook}
-        onCancel={() => setAddDialogOpen(false)}
-        okText="Add Webhook"
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setAddDialogOpen(false); } else { triggerShake(setAddWebhookShake); } }}
+        maskClosable={true}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={addWebhookShake ? 'modal-shake' : ''}
+        footer={[
+          <Button variant="text" key="cancel" onClick={() => setAddDialogOpen(false)}>Cancel</Button>,
+          <Button variant="text" key="add" type="primary" onClick={handleAddWebhook}>Add Webhook</Button>,
+        ]}
       >
         <div style={{ marginTop: 16 }}>
+          {addWebhookError && (
+            <div style={{ marginBottom: 8, color: '#ff4d4f', fontSize: 13 }}>{addWebhookError}</div>
+          )}
           <Input
             placeholder="https://example.com/webhook"
             value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
+            onChange={(e) => { setWebhookUrl(e.target.value); setAddWebhookError('') }}
             onPressEnter={handleAddWebhook}
+            status={addWebhookError ? 'error' : ''}
           />
           <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255, 255, 255, 0.6)' }}>
             Enter a valid URL to receive webhook notifications
@@ -321,16 +388,25 @@ export default function Webhooks() {
       <Modal
         title="Edit Webhook"
         open={editDialogOpen}
-        onOk={handleUpdateWebhook}
-        onCancel={() => setEditDialogOpen(false)}
-        okText="Save Changes"
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setEditDialogOpen(false); } else { triggerShake(setEditWebhookShake); } }}
+        maskClosable={true}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={editWebhookShake ? 'modal-shake' : ''}
+        footer={[
+          <Button key="cancel" onClick={() => setEditDialogOpen(false)}>Cancel</Button>,
+          <Button key="save" type="primary" onClick={handleUpdateWebhook}>Save Changes</Button>,
+        ]}
       >
         <div style={{ marginTop: 16 }}>
+          {editWebhookError && (
+            <div style={{ marginBottom: 8, color: '#ff4d4f', fontSize: 13 }}>{editWebhookError}</div>
+          )}
           <Input
             placeholder="Webhook URL"
             value={editUrl}
-            onChange={(e) => setEditUrl(e.target.value)}
+            onChange={(e) => { setEditUrl(e.target.value); setEditWebhookError('') }}
             onPressEnter={handleUpdateWebhook}
+            status={editWebhookError ? 'error' : ''}
           />
           <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span>Active:</span>
@@ -350,6 +426,7 @@ export default function Webhooks() {
           setTimeout(() => setMatrixTokenShake(false), 500)
         }}
         closable={false}
+        maskClosable={true}
         wrapClassName={matrixTokenShake ? 'modal-shake' : ''}
         footer={[
           <Button key="skip" type="text" onClick={() => setMatrixTokenDialogOpen(false)}>

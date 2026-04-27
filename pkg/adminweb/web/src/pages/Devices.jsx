@@ -23,8 +23,10 @@ import {
   ContentCopy,
   Delete,
   Send,
+  Close,
+  AttachFile,
 } from "@mui/icons-material";
-import { Table, Modal, Input, Tag, Space, message, Spin, Button } from "antd";
+import { Table, Modal, Input, Tag, Space, message, Spin, Button, App } from "antd";
 import { QRCodeSVG } from "qrcode.react";
 import {
   apiCall,
@@ -32,8 +34,11 @@ import {
   maskString,
   copyToClipboard,
 } from "../utils/api";
+import { hasScope } from "../utils/scopes";
 
 export default function Devices() {
+  const { modal } = App.useApp();
+  const canWrite = hasScope("devices:write:*");
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addDeviceDialogOpen, setAddDeviceDialogOpen] = useState(false);
@@ -50,7 +55,19 @@ export default function Devices() {
   const [revealedFields, setRevealedFields] = useState({});
   const [platformLoading, setPlatformLoading] = useState(false);
   const [matrixTokenShake, setMatrixTokenShake] = useState(false);
+  const [addDeviceShake, setAddDeviceShake] = useState(false);
+  const [sendMessageShake, setSendMessageShake] = useState(false);
+  const [addDeviceError, setAddDeviceError] = useState("");
+  const [sendMessageError, setSendMessageError] = useState("");
+  const [messageFiles, setMessageFiles] = useState([]);
+
+  const triggerShake = (setter) => {
+    setter(true);
+    setTimeout(() => setter(false), 500);
+  };
   const wsRef = useRef(null);
+  const closeByXRef = useRef(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadDevices();
@@ -77,7 +94,15 @@ export default function Devices() {
 
       const response = await apiCall("/api/v1/admin/devices");
       if (!response) return;
+      if (response.status === 403 || !response.ok) {
+        setMatrixTokenDialogOpen(true);
+        return;
+      }
       const data = await safeJsonParse(response);
+      if (data?.error === 'Invalid server response') {
+        setMatrixTokenDialogOpen(true);
+        return;
+      }
       setDevices(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading devices:", error);
@@ -134,8 +159,13 @@ export default function Devices() {
       if (!response) return;
 
       if (!response.ok) {
+        if (response.status === 403) {
+          setAddDeviceDialogOpen(false);
+          setMatrixTokenDialogOpen(true);
+          return;
+        }
         const error = await safeJsonParse(response);
-        message.error(error.error || "Failed to add device");
+        setAddDeviceError(error.error || "Failed to add device");
         return;
       }
 
@@ -158,7 +188,7 @@ export default function Devices() {
       }, 2000);
     } catch (error) {
       console.error("Error creating device:", error);
-      message.error("Failed to add device");
+      setAddDeviceError("Failed to add device");
     } finally {
       setPlatformLoading(false);
     }
@@ -219,6 +249,7 @@ export default function Devices() {
     setQrCodeData(null);
     setConnectionStatus("waiting");
     setPlatformLoading(false);
+    setAddDeviceError("");
 
     if (wsRef.current) {
       wsRef.current.close();
@@ -227,7 +258,7 @@ export default function Devices() {
   };
 
   const handleDeleteDevice = (deviceId, platform) => {
-    Modal.confirm({
+    modal.confirm({
       title: "Delete Device",
       content: "Are you sure you want to delete this device?",
       okText: "Delete",
@@ -247,6 +278,10 @@ export default function Devices() {
             loadDevices();
             message.success("Device deleted successfully");
           } else {
+            if (response.status === 403) {
+              setMatrixTokenDialogOpen(true);
+              return;
+            }
             const error = await safeJsonParse(response);
             message.error(error.error || "Failed to delete device");
           }
@@ -258,49 +293,89 @@ export default function Devices() {
     });
   };
 
+  const handleCloseSendMessage = () => {
+    setMessageFiles((prev) => {
+      prev.forEach((e) => { if (e.previewUrl) URL.revokeObjectURL(e.previewUrl); });
+      return [];
+    });
+    setSendMessageDialogOpen(false);
+  };
+
   const handleOpenSendMessage = (device) => {
     setSelectedDevice(device);
     setMessageContact("");
     setMessageText("");
+    setMessageFiles((prev) => {
+      prev.forEach((e) => { if (e.previewUrl) URL.revokeObjectURL(e.previewUrl); });
+      return [];
+    });
+    setSendMessageError("");
     setSendMessageDialogOpen(true);
+  };
+
+  const handleAddFiles = (fileList) => {
+    const entries = Array.from(fileList).map((file) => ({
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+    }));
+    setMessageFiles((prev) => [...prev, ...entries]);
+  };
+
+  const removeFile = (index) => {
+    setMessageFiles((prev) => {
+      const entry = prev[index];
+      if (entry?.previewUrl) URL.revokeObjectURL(entry.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSendMessage = async () => {
     if (!messageContact.trim()) {
-      message.error("Contact number is required");
+      setSendMessageError("Contact number is required");
       return;
     }
     if (!messageText.trim()) {
-      message.error("Message is required");
+      setSendMessageError("Message is required");
       return;
     }
 
     try {
-      const response = await apiCall(
-        `/api/v1/admin/devices/${selectedDevice.device_id}/message`,
-        {
+      const sendRequest = async (file) => {
+        if (file) {
+          const formData = new FormData();
+          formData.append("contact", messageContact);
+          formData.append("platform", selectedDevice.platform);
+          formData.append("text", messageText);
+          formData.append("file", file);
+          return apiCall(`/api/v1/admin/devices/${selectedDevice.device_id}/message`, { method: "POST", body: formData });
+        }
+        return apiCall(`/api/v1/admin/devices/${selectedDevice.device_id}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contact: messageContact,
-            platform: selectedDevice.platform,
-            text: messageText,
-          }),
-        },
-      );
+          body: JSON.stringify({ contact: messageContact, platform: selectedDevice.platform, text: messageText }),
+        });
+      };
 
-      if (!response) return;
-
-      if (response.ok) {
-        setSendMessageDialogOpen(false);
-        message.success("Message queued successfully");
-      } else {
-        const error = await safeJsonParse(response);
-        message.error(error.error || "Failed to send message");
+      const filesToSend = messageFiles.length > 0 ? messageFiles.map((e) => e.file) : [null];
+      for (const file of filesToSend) {
+        const response = await sendRequest(file);
+        if (!response) return;
+        if (!response.ok) {
+          if (response.status === 403) {
+            handleCloseSendMessage();
+            setMatrixTokenDialogOpen(true);
+            return;
+          }
+          const error = await safeJsonParse(response);
+          setSendMessageError(error.error || "Failed to send message");
+          return;
+        }
       }
+      handleCloseSendMessage();
+      message.success("Message queued successfully");
     } catch (error) {
       console.error("Error sending message:", error);
-      message.error("Failed to send message");
+      setSendMessageError("Failed to send message");
     }
   };
 
@@ -329,6 +404,7 @@ export default function Devices() {
       return;
     }
 
+    setAddDeviceError("");
     setAddDeviceDialogOpen(true);
   };
 
@@ -384,19 +460,26 @@ export default function Devices() {
         <Space size="small">
           <Tooltip title="Send message">
             <IconButton
-              sx={{ color: "#e1e1e1" }}
+              sx={{ color: "#e1e1e1", opacity: canWrite ? 1 : 0.45 }}
               size="small"
-              onClick={() => handleOpenSendMessage(device)}
+              onClick={() =>
+                canWrite
+                  ? handleOpenSendMessage(device)
+                  : message.info("You do not have permission to send messages. Contact admin.")
+              }
             >
               <Send />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">
             <IconButton
-              color="error"
+              color={canWrite ? "error" : "default"}
+              sx={{ opacity: canWrite ? 1 : 0.45 }}
               size="small"
               onClick={() =>
-                handleDeleteDevice(device.device_id, device.platform)
+                canWrite
+                  ? handleDeleteDevice(device.device_id, device.platform)
+                  : message.info("You do not have permission to delete devices. Contact admin.")
               }
             >
               <Delete />
@@ -418,7 +501,7 @@ export default function Devices() {
         }}
       >
         <Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h6" gutterBottom>
             Devices
           </Typography>
           <Typography color="text.secondary" paragraph>
@@ -428,7 +511,12 @@ export default function Devices() {
         <MuiButton
           variant="contained"
           startIcon={<Add />}
-          onClick={handleOpenAddDevice}
+          onClick={() =>
+            canWrite
+              ? handleOpenAddDevice()
+              : message.info("You do not have permission to add devices. Contact admin.")
+          }
+          sx={{ opacity: canWrite ? 1 : 0.45 }}
         >
           Add Device
         </MuiButton>
@@ -446,10 +534,10 @@ export default function Devices() {
       <Modal
         title="Add New Device"
         open={addDeviceDialogOpen}
-        onCancel={() => {
-          setAddDeviceDialogOpen(false);
-          resetAddDeviceDialog();
-        }}
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setAddDeviceDialogOpen(false); resetAddDeviceDialog(); } else { triggerShake(setAddDeviceShake); } }}
+        maskClosable={true}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={addDeviceShake ? 'modal-shake' : ''}
         footer={[
           <Button
             key="cancel"
@@ -520,6 +608,11 @@ export default function Devices() {
                 </Typography>
               </Box>
             )}
+            {addDeviceError && (
+              <Box sx={{ mt: 2 }}>
+                <Alert severity="error">{addDeviceError}</Alert>
+              </Box>
+            )}
           </Box>
         ) : (
           <Box sx={{ pt: 2, textAlign: "center" }}>
@@ -564,6 +657,7 @@ export default function Devices() {
           setTimeout(() => setMatrixTokenShake(false), 500);
         }}
         closable={false}
+        maskClosable={true}
         wrapClassName={matrixTokenShake ? "modal-shake" : ""}
         footer={[
           <Button
@@ -626,12 +720,15 @@ export default function Devices() {
       <Modal
         title="Send Message"
         open={sendMessageDialogOpen}
-        onCancel={() => setSendMessageDialogOpen(false)}
+        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; handleCloseSendMessage(); } else { triggerShake(setSendMessageShake); } }}
+        maskClosable={true}
+        closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
+        wrapClassName={sendMessageShake ? 'modal-shake' : ''}
         footer={[
           <Button
             key="cancel"
             type="text"
-            onClick={() => setSendMessageDialogOpen(false)}
+            onClick={handleCloseSendMessage}
           >
             Cancel
           </Button>,
@@ -640,13 +737,16 @@ export default function Devices() {
             type="text"
             icon={<Send style={{ fontSize: 16 }} />}
             onClick={handleSendMessage}
-            style={{ color: "#4357AD" }}
+            style={{ color: "#8ED462" }}
           >
             Send
           </Button>,
         ]}
       >
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 5 }}>
+          {sendMessageError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{sendMessageError}</Alert>
+          )}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Contact Number
           </Typography>
@@ -654,8 +754,9 @@ export default function Devices() {
             international
             defaultCountry="CM"
             value={messageContact}
-            onChange={setMessageContact}
+            onChange={(val) => { setMessageContact(val); setSendMessageError(""); }}
             placeholder="Enter phone number"
+            autoComplete="tel"
           />
         </Box>
         <Box sx={{ mt: 2 }}>
@@ -666,7 +767,69 @@ export default function Devices() {
             rows={4}
             placeholder="Enter your message"
             value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
+            onChange={(e) => { setMessageText(e.target.value); setSendMessageError(""); }}
+          />
+        </Box>
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Attachments <span style={{ fontSize: 11, opacity: 0.6 }}>(optional)</span>
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {messageFiles.map(({ file, previewUrl }, index) => (
+              <Box
+                key={index}
+                sx={{ position: 'relative', width: 80, height: 80, borderRadius: 1, border: '1px solid #333', overflow: 'hidden', background: '#1e1e1e', flexShrink: 0 }}
+              >
+                {previewUrl ? (
+                  <img src={previewUrl} alt={file.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', px: 0.5 }}>
+                    <AttachFile style={{ fontSize: 22, color: '#aaa' }} />
+                    <Typography sx={{ fontSize: 9, color: '#aaa', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', mt: 0.5 }}>
+                      {file.name}
+                    </Typography>
+                  </Box>
+                )}
+                {previewUrl && (
+                  <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.55)', px: 0.5, py: 0.25 }}>
+                    <Typography sx={{ fontSize: 9, color: '#fff', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {file.name}
+                    </Typography>
+                  </Box>
+                )}
+                <IconButton
+                  size="small"
+                  sx={{ position: 'absolute', top: 2, right: 2, p: 0, width: 18, height: 18, background: 'rgba(0,0,0,0.65)', '&:hover': { background: 'rgba(0,0,0,0.9)' } }}
+                  onClick={() => removeFile(index)}
+                >
+                  <Close style={{ fontSize: 12 }} />
+                </IconButton>
+              </Box>
+            ))}
+
+            {/* Add more / initial add tile */}
+            <Box
+              onClick={() => fileInputRef.current?.click()}
+              sx={{
+                width: 80, height: 80, borderRadius: 1,
+                border: '1px dashed #555', background: '#1e1e1e',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', flexShrink: 0, color: '#666',
+                '&:hover': { borderColor: '#888', color: '#aaa' },
+                transition: 'border-color 0.15s, color 0.15s',
+              }}
+            >
+              <Add style={{ fontSize: 28 }} />
+            </Box>
+          </Box>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            style={{ display: 'none' }}
+            onChange={(e) => { if (e.target.files?.length) handleAddFiles(e.target.files); e.target.value = ''; }}
           />
         </Box>
       </Modal>

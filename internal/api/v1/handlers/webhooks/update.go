@@ -41,6 +41,7 @@ func (h *WebhookHandler) Update(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
+		logger.Info(fmt.Sprintf("Webhook update failed: invalid ID - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid webhook ID",
 		})
@@ -48,6 +49,7 @@ func (h *WebhookHandler) Update(c echo.Context) error {
 
 	var req UpdateWebhookRequest
 	if err := c.Bind(&req); err != nil {
+		logger.Info(fmt.Sprintf("Webhook update failed: invalid request body - %v", err))
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body. Must be a JSON object.",
 		})
@@ -81,11 +83,13 @@ func (h *WebhookHandler) Update(c echo.Context) error {
 	webhook, err := models.UpdateWebhook(h.db.DB(), targetIdentityID, uint(id), req.URL, req.Active)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+			logger.Info(fmt.Sprintf("Webhook update failed: webhook ID %d not found", id))
 			return c.JSON(http.StatusNotFound, ErrorResponse{
 				Error: "Webhook not found",
 			})
 		}
 		if err == gorm.ErrDuplicatedKey || strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			logger.Info("Webhook update failed: URL already exists")
 			return c.JSON(http.StatusConflict, ErrorResponse{
 				Error: "Webhook URL already exists for this user",
 			})
@@ -94,6 +98,7 @@ func (h *WebhookHandler) Update(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
+	logger.Info("Webhook updated successfully")
 	return c.JSON(http.StatusOK, WebhookResponse{
 		ID:        webhook.ID,
 		URL:       webhook.URL,

@@ -7,6 +7,807 @@
         "version": "1.0"
     },
     "paths": {
+        "/api/v1/admin/credentials": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Get all credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "List credentials",
+                "responses": {
+                    "200": {
+                        "description": "List of credentials",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/credentials.CredentialResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Create a new API credential with client_id and auto-generated client_secret",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Create a credential",
+                "parameters": [
+                    {
+                        "description": "Credential details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Credential created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Credential already exists",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/credentials/{client_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Update credential properties (regenerate secret, activate/deactivate, or update description)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Update a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update options",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Permanently delete a credential by client_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Delete a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.DeleteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/login": {
+            "post": {
+                "description": "Authenticate admin user and create session",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Admin login",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Admin username",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Admin password",
+                        "name": "password",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/logout": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Clear admin session and redirect to login",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Admin logout",
+                "responses": {}
+            }
+        },
+        "/api/v1/admin/matrix-token": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Attach a matrix token to the current admin session for device/webhook operations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Set matrix token for admin session",
+                "parameters": [
+                    {
+                        "description": "Matrix token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.SetMatrixTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.SetMatrixTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/matrix-token-status": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Check if the current admin session has a matrix token attached",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Check matrix token status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.MatrixTokenStatusResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/adminsession.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/tokens": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "List all Matrix tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens",
+                    "admin"
+                ],
+                "summary": "List Matrix tokens",
+                "responses": {
+                    "200": {
+                        "description": "List of tokens",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.MatrixIdentity"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Create a Matrix identity and get a token for Matrix operations. Use use_host=true to reuse admin credentials, or false to create new credentials.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens",
+                    "admin"
+                ],
+                "summary": "Create a Matrix token",
+                "parameters": [
+                    {
+                        "description": "Token creation options",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Matrix token created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.CreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/tokens/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Delete a Matrix token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens",
+                    "admin"
+                ],
+                "summary": "Delete a Matrix token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.DeleteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Token not found",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/credentials": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Get all credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "List credentials",
+                "responses": {
+                    "200": {
+                        "description": "List of credentials",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/credentials.CredentialResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Create a new API credential with client_id and auto-generated client_secret",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Create a credential",
+                "parameters": [
+                    {
+                        "description": "Credential details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Credential created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.CreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Credential already exists",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/credentials/{client_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Update credential properties (regenerate secret, activate/deactivate, or update description)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Update a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update options",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.UpdateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Permanently delete a credential by client_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials",
+                    "admin"
+                ],
+                "summary": "Delete a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credential deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.DeleteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Credential not found",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/credentials.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/devices": {
             "get": {
                 "security": [
@@ -253,9 +1054,10 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Queue a message to be sent via the specified device",
+                "description": "Queue a message to be sent via the specified device. Either text or file must be provided (or both).",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -279,13 +1081,36 @@
                         "required": true
                     },
                     {
-                        "description": "Message to send",
+                        "description": "Message to send (JSON)",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/devices.SendMessageRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Contact (multipart)",
+                        "name": "contact",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Platform (multipart)",
+                        "name": "platform",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Message text (multipart, optional if file provided)",
+                        "name": "text",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "File to upload (multipart)",
+                        "name": "file",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -323,10 +1148,52 @@
             }
         },
         "/api/v1/tokens": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "List all Matrix tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tokens",
+                    "admin"
+                ],
+                "summary": "List Matrix tokens",
+                "responses": {
+                    "200": {
+                        "description": "List of tokens",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.MatrixIdentity"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tokens.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
                         "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Create a Matrix identity and get a token for Matrix operations. Use use_host=true to reuse admin credentials, or false to create new credentials.",
@@ -337,7 +1204,8 @@
                     "application/json"
                 ],
                 "tags": [
-                    "tokens"
+                    "tokens",
+                    "admin"
                 ],
                 "summary": "Create a Matrix token",
                 "parameters": [
@@ -377,6 +1245,9 @@
                 "security": [
                     {
                         "BasicAuth": []
+                    },
+                    {
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Delete a Matrix token",
@@ -387,7 +1258,8 @@
                     "application/json"
                 ],
                 "tags": [
-                    "tokens"
+                    "tokens",
+                    "admin"
                 ],
                 "summary": "Delete a Matrix token",
                 "parameters": [
@@ -662,6 +1534,166 @@
         }
     },
     "definitions": {
+        "adminsession.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid credentials"
+                }
+            }
+        },
+        "adminsession.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "tokens:write:create",
+                        "tokens:read:*"
+                    ]
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "adminsession.MatrixTokenStatusResponse": {
+            "type": "object",
+            "properties": {
+                "has_matrix_token": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "adminsession.SetMatrixTokenRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "mt_xxxxx"
+                }
+            }
+        },
+        "adminsession.SetMatrixTokenResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Matrix token attached to session"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "credentials.CreateRequest": {
+            "type": "object",
+            "required": [
+                "client_id"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.CreateResponse": {
+            "type": "object",
+            "properties": {
+                "client_secret": {
+                    "type": "string"
+                },
+                "credential": {
+                    "$ref": "#/definitions/credentials.CredentialResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.CredentialResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/models.CredentialRole"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.DeleteResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "credentials.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "regenerate_secret": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "credentials.UpdateResponse": {
+            "type": "object",
+            "properties": {
+                "client_secret": {
+                    "type": "string"
+                },
+                "credential": {
+                    "$ref": "#/definitions/credentials.CredentialResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "devices.CreateDeviceRequest": {
             "type": "object",
             "required": [
@@ -732,8 +1764,7 @@
             "type": "object",
             "required": [
                 "contact",
-                "platform",
-                "text"
+                "platform"
             ],
             "properties": {
                 "contact": {
@@ -741,7 +1772,6 @@
                     "example": "1234567890"
                 },
                 "platform": {
-                    "description": "Get the platform from ListDevices (GET /api/v1/devices) response",
                     "type": "string",
                     "example": "wa"
                 },
@@ -757,6 +1787,52 @@
                 "message": {
                     "type": "string",
                     "example": "Message queued successfully"
+                }
+            }
+        },
+        "models.CredentialRole": {
+            "type": "string",
+            "enum": [
+                "super_admin",
+                "user"
+            ],
+            "x-enum-varnames": [
+                "RoleSuperAdmin",
+                "RoleUser"
+            ]
+        },
+        "models.MatrixIdentity": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "last_used_at": {
+                    "type": "string"
+                },
+                "matrix_device_id": {
+                    "type": "string"
+                },
+                "matrix_username": {
+                    "type": "string"
+                },
+                "token_hash": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -866,6 +1942,12 @@
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "CookieAuth": {
+            "description": "Admin session cookie authentication",
+            "type": "apiKey",
+            "name": "shortmesh_admin_token",
+            "in": "cookie"
         }
     }
 }

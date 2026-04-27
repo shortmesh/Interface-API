@@ -23,15 +23,17 @@ import (
 //
 //	@Summary		Create a Matrix token
 //	@Description	Create a Matrix identity and get a token for Matrix operations. Use use_host=true to reuse admin credentials, or false to create new credentials.
-//	@Tags			tokens
+//	@Tags			tokens,admin
 //	@Accept			json
 //	@Produce		json
 //	@Security		BasicAuth
+//	@Security		CookieAuth
 //	@Param			request	body		CreateRequest	false	"Token creation options"
 //	@Success		201		{object}	CreateResponse	"Matrix token created successfully"
 //	@Failure		400		{object}	ErrorResponse	"Invalid request"
 //	@Failure		500		{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/tokens [post]
+//	@Router			/api/v1/admin/tokens [post]
 func (h *TokenHandler) Create(c echo.Context) error {
 	var req CreateRequest
 	if err := c.Bind(&req); err != nil {
@@ -39,6 +41,15 @@ func (h *TokenHandler) Create(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Invalid request body. Must be a JSON object.",
 		})
+	}
+
+	if req.UseHost {
+		credential, ok := c.Get("credential").(*models.Credential)
+		if ok && credential.Role != models.RoleSuperAdmin {
+			return c.JSON(http.StatusForbidden, ErrorResponse{
+				Error: "Only super_admin can use use_host=true",
+			})
+		}
 	}
 
 	var expiresAt *time.Time

@@ -121,7 +121,7 @@
           formData.append("password", password);
 
           try {
-            const response = await fetch("/admin/login", {
+            const response = await fetch("/api/v1/admin/login", {
               method: "POST",
               body: formData,
             });

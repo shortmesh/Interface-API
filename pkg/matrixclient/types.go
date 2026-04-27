@@ -51,10 +51,12 @@ type Device struct {
 type ListDevicesResponse []Device
 
 type SendMessageRequest struct {
-	Contact      string `json:"contact"`
-	PlatformName string `json:"platform_name"`
-	Text         string `json:"text"`
-	Username     string `json:"username"`
+	Contact       string `json:"contact"`
+	PlatformName  string `json:"platform_name"`
+	Text          string `json:"text"`
+	Username      string `json:"username"`
+	FileContent   string `json:"file_content,omitempty"`
+	FileExtension string `json:"file_extension,omitempty"`
 }
 
 type SendMessageResponse struct {

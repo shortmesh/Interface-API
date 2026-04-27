@@ -43,18 +43,6 @@ format:
 	@echo "Running go fmt..."
 	@go fmt ./... || echo "WARNING: go fmt encountered issues (continuing...)"
 	@echo ""
-	@echo "Running prettier on HTML, CSS, JS..."
-	@if command -v npx >/dev/null 2>&1; then \
-		echo "Formatting HTML files..."; \
-		find ./internal/admin/web -name "*.html" -type f -exec npx prettier --write {} \; 2>/dev/null || echo "WARNING: prettier HTML formatting encountered issues (continuing...)"; \
-		echo "Formatting CSS files..."; \
-		find ./internal/admin/web -name "*.css" -type f -exec npx prettier --write {} \; 2>/dev/null || echo "WARNING: prettier CSS formatting encountered issues (continuing...)"; \
-		echo "Formatting JS files..."; \
-		find ./internal/admin/web -name "*.js" -type f -exec npx prettier --write {} \; 2>/dev/null || echo "WARNING: prettier JS formatting encountered issues (continuing...)"; \
-	else \
-		echo "WARNING: npx not found. Install Node.js to use prettier"; \
-	fi
-	@echo ""
 	@echo "Running swag fmt..."
 	@which swag > /dev/null && swag fmt 2>/dev/null || echo "WARNING: swag fmt encountered issues (continuing...)"
 	@echo ""

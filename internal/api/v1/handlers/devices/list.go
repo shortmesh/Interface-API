@@ -35,6 +35,7 @@ func (h *DeviceHandler) List(c echo.Context) error {
 
 	matrixClient, err := matrixclient.New()
 	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to create Matrix client: %v", err))
 		return echo.ErrInternalServerError
 	}
 

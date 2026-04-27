@@ -16,16 +16,18 @@ import (
 //
 //	@Summary		Delete a Matrix token
 //	@Description	Delete a Matrix token
-//	@Tags			tokens
+//	@Tags			tokens,admin
 //	@Accept			json
 //	@Produce		json
 //	@Security		BasicAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string			true	"Token ID"
 //	@Success		200	{object}	DeleteResponse	"Token deleted successfully"
 //	@Failure		400	{object}	ErrorResponse	"Invalid request"
 //	@Failure		404	{object}	ErrorResponse	"Token not found"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/tokens/{id} [delete]
+//	@Router			/api/v1/admin/tokens/{id} [delete]
 func (h *TokenHandler) Delete(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {

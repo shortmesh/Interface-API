@@ -20,11 +20,13 @@ import (
 )
 
 type QueuedMessage struct {
-	DeviceID     string `json:"device_id"`
-	Contact      string `json:"contact"`
-	PlatformName string `json:"platform_name"`
-	Text         string `json:"text"`
-	Username     string `json:"username"`
+	DeviceID      string `json:"device_id"`
+	Contact       string `json:"contact"`
+	PlatformName  string `json:"platform_name"`
+	Text          string `json:"text"`
+	Username      string `json:"username"`
+	FileContent   string `json:"file_content,omitempty"`
+	FileExtension string `json:"file_extension,omitempty"`
 }
 
 type Worker struct {
@@ -224,10 +226,12 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 		}
 
 		req := &matrixclient.SendMessageRequest{
-			Contact:      msg.Contact,
-			PlatformName: msg.PlatformName,
-			Text:         msg.Text,
-			Username:     msg.Username,
+			Contact:       msg.Contact,
+			PlatformName:  msg.PlatformName,
+			Text:          msg.Text,
+			Username:      msg.Username,
+			FileContent:   msg.FileContent,
+			FileExtension: msg.FileExtension,
 		}
 
 		_, err := matrixClient.SendMessage(msg.DeviceID, req)

@@ -30,7 +30,7 @@ type queuedMessage struct {
 // SendMessage godoc
 //
 //	@Summary		Send a message via device
-//	@Description	Queue a message to be sent via the specified device
+//	@Description	Queue a message to be sent via the specified device. Either text or file must be provided (or both).
 //	@Tags			devices
 //	@Accept			json,mpfd
 //	@Produce		json
@@ -40,7 +40,7 @@ type queuedMessage struct {
 //	@Param			request		body		SendMessageRequest	false	"Message to send (JSON)"
 //	@Param			contact		formData	string				false	"Contact (multipart)"
 //	@Param			platform	formData	string				false	"Platform (multipart)"
-//	@Param			text		formData	string				false	"Message text (multipart)"
+//	@Param			text		formData	string				false	"Message text (multipart, optional if file provided)"
 //	@Param			file		formData	file				false	"File to upload (multipart)"
 //	@Success		200			{object}	SendMessageResponse	"Message queued successfully"
 //	@Failure		400			{object}	ErrorResponse		"Invalid request body or validation error"
@@ -131,10 +131,10 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		})
 	}
 
-	if strings.TrimSpace(req.Text) == "" {
-		logger.Info("Message send failed: missing text")
+	if strings.TrimSpace(req.Text) == "" && fileContent == "" {
+		logger.Info("Message send failed: missing text and file")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error: "Missing required field: text",
+			Error: "Either text or file must be provided",
 		})
 	}
 

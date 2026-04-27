@@ -63,10 +63,9 @@ type DeleteDeviceRequest struct {
 
 // SendMessageRequest represents the request body for sending a message
 type SendMessageRequest struct {
-	Contact string `json:"contact" example:"1234567890" validate:"required"`
-	// Get the platform from ListDevices (GET /api/v1/devices) response
-	Platform string `json:"platform" example:"wa" validate:"required"`
-	Text     string `json:"text" example:"Hello, World!" validate:"required"`
+	Contact  string `json:"contact" form:"contact" example:"1234567890" validate:"required"`
+	Platform string `json:"platform" form:"platform" example:"wa" validate:"required"`
+	Text     string `json:"text" form:"text" example:"Hello, World!"`
 }
 
 // SendMessageResponse represents the response after queuing a message

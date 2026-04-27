@@ -50,7 +50,6 @@ var roleScopes = map[CredentialRole]Scopes{
 	RoleSuperAdmin: {"*"},
 	RoleUser: {
 		"tokens:write:create",
-		"tokens:read:*",
 		"devices:*",
 		"webhooks:*",
 	},

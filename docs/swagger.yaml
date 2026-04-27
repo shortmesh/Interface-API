@@ -88,7 +88,7 @@ definitions:
     type: object
   credentials.UpdateRequest:
     properties:
-      deactivate:
+      active:
         type: boolean
       description:
         type: string
@@ -382,8 +382,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update credential properties (regenerate secret, deactivate, or
-        update description)
+      description: Update credential properties (regenerate secret, activate/deactivate,
+        or update description)
       parameters:
       - description: Client ID
         in: path
@@ -736,8 +736,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update credential properties (regenerate secret, deactivate, or
-        update description)
+      description: Update credential properties (regenerate secret, activate/deactivate,
+        or update description)
       parameters:
       - description: Client ID
         in: path
@@ -906,6 +906,7 @@ paths:
     post:
       consumes:
       - application/json
+      - multipart/form-data
       description: Queue a message to be sent via the specified device
       parameters:
       - description: 'Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)'
@@ -917,12 +918,27 @@ paths:
         name: device_id
         required: true
         type: string
-      - description: Message to send
+      - description: Message to send (JSON)
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/devices.SendMessageRequest'
+      - description: Contact (multipart)
+        in: formData
+        name: contact
+        type: string
+      - description: Platform (multipart)
+        in: formData
+        name: platform
+        type: string
+      - description: Message text (multipart)
+        in: formData
+        name: text
+        type: string
+      - description: File to upload (multipart)
+        in: formData
+        name: file
+        type: file
       produces:
       - application/json
       responses:

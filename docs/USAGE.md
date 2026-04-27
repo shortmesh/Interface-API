@@ -17,8 +17,8 @@ See [SECURITY.md](./SECURITY.md) for production configuration.
 
 ## Authentication
 
-- **Token Creation** - Basic Auth with `CLIENT_ID:CLIENT_SECRET`
-- **Device Operations** - Bearer Auth with Matrix token (`mt_xxxxx`)
+- **Token/Credential Management** - Basic Auth with `CLIENT_ID:CLIENT_SECRET`
+- **Device/Webhook Operations** - Bearer Auth with Matrix token (`mt_xxxxx`)
 
 ## Token Management
 
@@ -127,6 +127,8 @@ curl -X GET http://localhost:8080/api/v1/devices \
 
 ### Send Message
 
+#### Text Only (JSON)
+
 ```bash
 curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
   -H "Authorization: Bearer $TOKEN" \
@@ -137,6 +139,19 @@ curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
     "text": "Hello from API"
   }'
 ```
+
+#### Text + File (Multipart)
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "contact=1234567890" \
+  -F "platform=wa" \
+  -F "text=Check out this document" \
+  -F "file=@/path/to/document.pdf"
+```
+
+File must have an extension.
 
 ### Delete Device
 
@@ -149,6 +164,109 @@ curl -X DELETE http://localhost:8080/api/v1/devices \
     "platform": "wa"
   }'
 ```
+
+## Webhooks
+
+Receive incoming message notifications via HTTP POST.
+
+### Add Webhook
+
+```bash
+curl -X POST http://localhost:8080/api/v1/webhooks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://your-server.com/webhook"}'
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "url": "https://your-server.com/webhook",
+  "active": true,
+  "created_at": "2026-04-27T10:00:00Z",
+  "updated_at": "2026-04-27T10:00:00Z"
+}
+```
+
+### List Webhooks
+
+```bash
+curl -X GET http://localhost:8080/api/v1/webhooks \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Update Webhook
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/webhooks/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://new-url.com/webhook", "active": false}'
+```
+
+Fields are optional. Omit to keep current value.
+
+### Delete Webhook
+
+```bash
+curl -X DELETE http://localhost:8080/api/v1/webhooks/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Credentials (Admin Only)
+
+Manage API client credentials. Requires Basic Auth with admin credentials.
+
+### Create Credential
+
+```bash
+curl -X POST http://localhost:8080/api/v1/credentials \
+  -u "$CLIENT_ID:$CLIENT_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "my-app",
+    "description": "Production API client"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "message": "Credential created successfully",
+  "credential": {
+    "client_id": "my-app",
+    "role": "user",
+    "scopes": [],
+    "description": "Production API client",
+    "active": true,
+    "created_at": "2026-04-27T10:00:00Z",
+    "updated_at": "2026-04-27T10:00:00Z"
+  },
+  "client_secret": "xxxxxxxxxxxx"
+}
+```
+
+> [!IMPORTANT]
+> Save `client_secret` immediately. It's only shown once.
+
+### List Credentials
+
+```bash
+curl -X GET http://localhost:8080/api/v1/credentials \
+  -u "$CLIENT_ID:$CLIENT_SECRET"
+```
+
+### Delete Credential
+
+```bash
+curl -X DELETE http://localhost:8080/api/v1/credentials/my-app \
+  -u "$CLIENT_ID:$CLIENT_SECRET"
+```
+
+Cannot delete super admin credentials.
 
 ## API Reference
 

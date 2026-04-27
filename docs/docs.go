@@ -134,7 +134,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Update credential properties (regenerate secret, deactivate, or update description)",
+                "description": "Update credential properties (regenerate secret, activate/deactivate, or update description)",
                 "consumes": [
                     "application/json"
                 ],
@@ -692,7 +692,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Update credential properties (regenerate secret, deactivate, or update description)",
+                "description": "Update credential properties (regenerate secret, activate/deactivate, or update description)",
                 "consumes": [
                     "application/json"
                 ],
@@ -1064,7 +1064,8 @@ const docTemplate = `{
                 ],
                 "description": "Queue a message to be sent via the specified device",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1088,13 +1089,36 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Message to send",
+                        "description": "Message to send (JSON)",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/devices.SendMessageRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Contact (multipart)",
+                        "name": "contact",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Platform (multipart)",
+                        "name": "platform",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Message text (multipart)",
+                        "name": "text",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "File to upload (multipart)",
+                        "name": "file",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1653,7 +1677,7 @@ const docTemplate = `{
         "credentials.UpdateRequest": {
             "type": "object",
             "properties": {
-                "deactivate": {
+                "active": {
                     "type": "boolean"
                 },
                 "description": {

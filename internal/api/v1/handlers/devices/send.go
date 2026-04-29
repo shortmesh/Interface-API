@@ -160,11 +160,13 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 	}
 
 	addresses := strings.SplitSeq(req.Contact, ",")
+	validCount := 0
 	for address := range addresses {
 		address = strings.TrimSpace(address)
 		if address == "" {
 			continue
 		}
+		validCount++
 
 		message := queuedMessage{
 			DeviceID:      deviceID,
@@ -180,6 +182,12 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 			logger.Error(fmt.Sprintf("RabbitMQ message publish failed for address %s: %v\n%s", address, err, debug.Stack()))
 			return echo.ErrInternalServerError
 		}
+	}
+
+	if validCount == 0 {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Missing required field: contact",
+		})
 	}
 
 	logger.Info("Message(s) queued successfully")

@@ -190,8 +190,9 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		})
 	}
 
-	logger.Info("Message(s) queued successfully")
+	logger.Info("Message queued successfully")
 	return c.JSON(http.StatusOK, SendMessageResponse{
-		Message: "Message(s) queued successfully",
+		Message:     "Message queued successfully",
+		QueuedCount: validCount,
 	})
 }

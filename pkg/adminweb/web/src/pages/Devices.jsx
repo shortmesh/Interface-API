@@ -338,9 +338,7 @@ export default function Devices() {
   const handleAddContact = () => {
     const trimmed = contactInput?.trim();
     if (!trimmed) return;
-    if (!contacts.includes(trimmed)) {
-      setContacts((prev) => [...prev, trimmed]);
-    }
+    setContacts((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
     setContactInput("");
   };
 

@@ -149,7 +149,7 @@ curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "contact": "1234567890, user@example.com, another_address",
+    "contact": "1234567890, 0987654321, another_address",
     "platform": "wa",
     "text": "Hello to multiple recipients"
   }'

@@ -644,7 +644,9 @@ export default function Devices() {
             </Typography>
             {qrCodeData ? (
               <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <QRCodeSVG value={qrCodeData} size={300} />
+                <Box sx={{ background: "#fff", p: 2, borderRadius: 2, display: "inline-flex" }}>
+                  <QRCodeSVG value={qrCodeData} size={280} />
+                </Box>
               </Box>
             ) : (
               <Box sx={{ py: 10 }}>

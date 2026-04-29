@@ -159,23 +159,31 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	message := queuedMessage{
-		DeviceID:      deviceID,
-		Contact:       req.Contact,
-		PlatformName:  req.Platform,
-		Text:          req.Text,
-		Username:      matrixUsername,
-		FileContent:   fileContent,
-		FileExtension: fileExtension,
+	addresses := strings.SplitSeq(req.Contact, ",")
+	for address := range addresses {
+		address = strings.TrimSpace(address)
+		if address == "" {
+			continue
+		}
+
+		message := queuedMessage{
+			DeviceID:      deviceID,
+			Contact:       address,
+			PlatformName:  req.Platform,
+			Text:          req.Text,
+			Username:      matrixUsername,
+			FileContent:   fileContent,
+			FileExtension: fileExtension,
+		}
+
+		if err := producer.Publish(exchangeName, routingKey, message, rabbitmq.DefaultPublishOptions()); err != nil {
+			logger.Error(fmt.Sprintf("RabbitMQ message publish failed for address %s: %v\n%s", address, err, debug.Stack()))
+			return echo.ErrInternalServerError
+		}
 	}
 
-	if err := producer.Publish(exchangeName, routingKey, message, rabbitmq.DefaultPublishOptions()); err != nil {
-		logger.Error(fmt.Sprintf("RabbitMQ message publish failed: %v\n%s", err, debug.Stack()))
-		return echo.ErrInternalServerError
-	}
-
-	logger.Info("Message queued successfully")
+	logger.Info("Message(s) queued successfully")
 	return c.JSON(http.StatusOK, SendMessageResponse{
-		Message: "Message queued successfully",
+		Message: "Message(s) queued successfully",
 	})
 }

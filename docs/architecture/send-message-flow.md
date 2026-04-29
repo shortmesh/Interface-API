@@ -14,12 +14,15 @@ sequenceDiagram
 
     Client->>API: Send message request
     API->>API: Validate request
+    API->>API: Split comma-separated addresses
     API->>DB: Retrieve user matrix profile
     DB-->>API: Matrix profile
     API->>API: Decrypt credentials
-    API->>RMQ: Publish message to exchange
-    RMQ-->>API: Acknowledgment
-    API-->>Client: Message queued
+    loop For each address
+        API->>RMQ: Publish message to exchange
+        RMQ-->>API: Acknowledgment
+    end
+    API-->>Client: Message(s) queued
     
     Note over Worker,RMQ: Worker subscribed to exchange
     

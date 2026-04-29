@@ -70,7 +70,7 @@ type SendMessageRequest struct {
 
 // SendMessageResponse represents the response after queuing a message
 type SendMessageResponse struct {
-	Message string `json:"message" example:"Message queued successfully"`
+	Message string `json:"message" example:"Message(s) queued successfully"`
 }
 
 // DeviceResponse represents the response after device operations

@@ -140,12 +140,38 @@ curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
   }'
 ```
 
+#### Multiple Recipients (Comma-Separated)
+
+Send the same message to multiple addresses by providing a comma-separated list:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contact": "1234567890, 0987654321, another_address",
+    "platform": "wa",
+    "text": "Hello to multiple recipients"
+  }'
+```
+
 #### Text + File (Multipart)
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
   -H "Authorization: Bearer $TOKEN" \
   -F "contact=1234567890" \
+  -F "platform=wa" \
+  -F "text=Check out this document" \
+  -F "file=@/path/to/document.pdf"
+```
+
+For multiple recipients with files, use comma-separated addresses:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "contact=1234567890, 0987654321" \
   -F "platform=wa" \
   -F "text=Check out this document" \
   -F "file=@/path/to/document.pdf"

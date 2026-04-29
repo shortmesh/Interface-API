@@ -20,6 +20,7 @@ import {
   DatePicker,
   Button,
   App,
+  Card,
 } from "antd";
 import dayjs from "dayjs";
 import {
@@ -291,7 +292,9 @@ export default function Tokens() {
             onClick={() =>
               canDelete
                 ? handleDeleteToken(record.id)
-                : message.info("You do not have permission to delete tokens. Contact admin.")
+                : message.info(
+                    "You do not have permission to delete tokens. Contact admin.",
+                  )
             }
             style={{ opacity: canDelete ? 1 : 0.45 }}
           />
@@ -331,7 +334,11 @@ export default function Tokens() {
           <MuiButton
             variant="contained"
             startIcon={<Add />}
-            onClick={() => message.info("You do not have permission to create tokens. Contact admin.")}
+            onClick={() =>
+              message.info(
+                "You do not have permission to create tokens. Contact admin.",
+              )
+            }
             sx={{ mb: 3, opacity: 0.45 }}
           >
             Create New Token
@@ -349,25 +356,67 @@ export default function Tokens() {
         />
       )}
 
-      <Table
-        columns={columns}
-        dataSource={tokens}
-        loading={loading}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-        locale={{ emptyText: hasScope("tokens:read:*") ? "No tokens found" : "You do not have access to view tokens. Contact admin." }}
-      />
+      {hasScope("tokens:read:*") ? (
+        <Table
+          columns={columns}
+          dataSource={tokens}
+          loading={loading}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{ emptyText: "No tokens found" }}
+        />
+      ) : (
+        <Card
+          style={{
+            textAlign: "center",
+            padding: "40px 24px",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Access Restricted
+          </Typography>
+          <Typography color="text.secondary">
+            You do not have access to view tokens. Contact your admin.
+          </Typography>
+        </Card>
+      )}
 
       <Modal
         title="Create New Token"
         open={createDialogOpen}
-        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setCreateDialogOpen(false); } else { triggerShake(setCreateShake); } }}
+        onCancel={() => {
+          if (closeByXRef.current) {
+            closeByXRef.current = false;
+            setCreateDialogOpen(false);
+          } else {
+            triggerShake(setCreateShake);
+          }
+        }}
         maskClosable={true}
-        closeIcon={<CloseOutlined onClick={() => { closeByXRef.current = true; }} />}
-        wrapClassName={createShake ? 'modal-shake' : ''}
+        closeIcon={
+          <CloseOutlined
+            onClick={() => {
+              closeByXRef.current = true;
+            }}
+          />
+        }
+        wrapClassName={createShake ? "modal-shake" : ""}
         footer={[
-          <Button key="cancel" onClick={() => setCreateDialogOpen(false)} disabled={creating}>Cancel</Button>,
-          <Button key="create" type="primary" onClick={handleCreateToken} loading={creating}>Create Token</Button>,
+          <Button
+            key="cancel"
+            onClick={() => setCreateDialogOpen(false)}
+            disabled={creating}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="create"
+            type="primary"
+            onClick={handleCreateToken}
+            loading={creating}
+          >
+            Create Token
+          </Button>,
         ]}
       >
         <div style={{ marginTop: 16 }}>
@@ -380,26 +429,26 @@ export default function Tokens() {
             />
           )}
           {hasScope("*") && (
-          <div style={{ marginBottom: 16 }}>
-            <Checkbox
-              checked={useHost}
-              onChange={(e) => setUseHost(e.target.checked)}
-            >
-              <div>
-                <div>Use admin credentials</div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "rgba(255, 255, 255, 0.6)",
-                    marginTop: 4,
-                  }}
-                >
-                  Reuse existing admin identity. Leave unchecked for first token
-                  or to create new credentials.
+            <div style={{ marginBottom: 16 }}>
+              <Checkbox
+                checked={useHost}
+                onChange={(e) => setUseHost(e.target.checked)}
+              >
+                <div>
+                  <div>Use admin credentials</div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "rgba(255, 255, 255, 0.6)",
+                      marginTop: 4,
+                    }}
+                  >
+                    Reuse existing admin identity. Leave unchecked for first
+                    token or to create new credentials.
+                  </div>
                 </div>
-              </div>
-            </Checkbox>
-          </div>
+              </Checkbox>
+            </div>
           )}
 
           <div style={{ marginBottom: 16 }}>
@@ -449,10 +498,23 @@ export default function Tokens() {
       <Modal
         title="Token Created"
         open={tokenDisplayDialogOpen}
-        onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; handleCloseTokenDisplay(); } else { triggerShake(setDisplayShake); } }}
+        onCancel={() => {
+          if (closeByXRef.current) {
+            closeByXRef.current = false;
+            handleCloseTokenDisplay();
+          } else {
+            triggerShake(setDisplayShake);
+          }
+        }}
         maskClosable={true}
-        closeIcon={<CloseOutlined onClick={() => { closeByXRef.current = true; }} />}
-        wrapClassName={displayShake ? 'modal-shake' : ''}
+        closeIcon={
+          <CloseOutlined
+            onClick={() => {
+              closeByXRef.current = true;
+            }}
+          />
+        }
+        wrapClassName={displayShake ? "modal-shake" : ""}
         footer={[
           <Button
             key="close"
@@ -473,10 +535,10 @@ export default function Tokens() {
           />
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              background: '#1e1e1e',
-              border: '1px solid #333',
+              display: "flex",
+              alignItems: "center",
+              background: "#1e1e1e",
+              border: "1px solid #333",
               borderRadius: 1,
               px: 1.5,
               py: 0.75,
@@ -486,11 +548,11 @@ export default function Tokens() {
             <code
               style={{
                 flex: 1,
-                wordBreak: 'break-all',
+                wordBreak: "break-all",
                 fontFamily: '"Google Sans Mono", monospace',
                 fontSize: 13,
-                color: '#e1e1e1',
-                background: 'transparent',
+                color: "#e1e1e1",
+                background: "transparent",
               }}
             >
               {tokenVisible ? displayToken : maskString(displayToken)}
@@ -498,14 +560,20 @@ export default function Tokens() {
             <Button
               type="text"
               size="small"
-              style={{ color: '#aaa', flexShrink: 0 }}
-              icon={tokenVisible ? <VisibilityOff style={{ fontSize: 16 }} /> : <Visibility style={{ fontSize: 16 }} />}
+              style={{ color: "#aaa", flexShrink: 0 }}
+              icon={
+                tokenVisible ? (
+                  <VisibilityOff style={{ fontSize: 16 }} />
+                ) : (
+                  <Visibility style={{ fontSize: 16 }} />
+                )
+              }
               onClick={() => setTokenVisible((v) => !v)}
             />
             <Button
               type="text"
               size="small"
-              style={{ color: '#aaa', flexShrink: 0 }}
+              style={{ color: "#aaa", flexShrink: 0 }}
               icon={<ContentCopy style={{ fontSize: 16 }} />}
               onClick={() => handleCopy(displayToken)}
             />

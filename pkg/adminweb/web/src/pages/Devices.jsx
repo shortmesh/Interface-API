@@ -15,6 +15,8 @@ import {
   IconButton,
   Tooltip,
   Alert,
+  Chip,
+  Fab,
 } from "@mui/material";
 import {
   Add,
@@ -50,7 +52,9 @@ export default function Devices() {
   const [matrixToken, setMatrixToken] = useState("");
   const [matrixTokenError, setMatrixTokenError] = useState("");
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [messageContact, setMessageContact] = useState("");
+  const [contacts, setContacts] = useState([]);
+  const [contactInput, setContactInput] = useState("");
+  const [contactMode, setContactMode] = useState("phone");
   const [messageText, setMessageText] = useState("");
   const [revealedFields, setRevealedFields] = useState({});
   const [platformLoading, setPlatformLoading] = useState(false);
@@ -303,7 +307,9 @@ export default function Devices() {
 
   const handleOpenSendMessage = (device) => {
     setSelectedDevice(device);
-    setMessageContact("");
+    setContacts([]);
+    setContactInput("");
+    setContactMode("phone");
     setMessageText("");
     setMessageFiles((prev) => {
       prev.forEach((e) => { if (e.previewUrl) URL.revokeObjectURL(e.previewUrl); });
@@ -329,9 +335,20 @@ export default function Devices() {
     });
   };
 
+  const handleAddContact = () => {
+    const trimmed = contactInput?.trim();
+    if (!trimmed) return;
+    setContacts((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
+    setContactInput("");
+  };
+
+  const handleRemoveContact = (contact) => {
+    setContacts((prev) => prev.filter((c) => c !== contact));
+  };
+
   const handleSendMessage = async () => {
-    if (!messageContact.trim()) {
-      setSendMessageError("Contact number is required");
+    if (contacts.length === 0) {
+      setSendMessageError("At least one contact is required");
       return;
     }
     if (!messageText.trim()) {
@@ -340,10 +357,11 @@ export default function Devices() {
     }
 
     try {
+      const contact = contacts.join(",");
       const sendRequest = async (file) => {
         if (file) {
           const formData = new FormData();
-          formData.append("contact", messageContact);
+          formData.append("contact", contact);
           formData.append("platform", selectedDevice.platform);
           formData.append("text", messageText);
           formData.append("file", file);
@@ -352,7 +370,7 @@ export default function Devices() {
         return apiCall(`/api/v1/admin/devices/${selectedDevice.device_id}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contact: messageContact, platform: selectedDevice.platform, text: messageText }),
+          body: JSON.stringify({ contact, platform: selectedDevice.platform, text: messageText }),
         });
       };
 
@@ -372,7 +390,7 @@ export default function Devices() {
         }
       }
       handleCloseSendMessage();
-      message.success("Message queued successfully");
+      message.success(contacts.length > 1 ? `Message queued for ${contacts.length} recipients` : "Message queued successfully");
     } catch (error) {
       console.error("Error sending message:", error);
       setSendMessageError("Failed to send message");
@@ -624,7 +642,9 @@ export default function Devices() {
             </Typography>
             {qrCodeData ? (
               <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <QRCodeSVG value={qrCodeData} size={300} />
+                <Box sx={{ background: "#fff", p: 2, borderRadius: 2, display: "inline-flex" }}>
+                  <QRCodeSVG value={qrCodeData} size={280} />
+                </Box>
               </Box>
             ) : (
               <Box sx={{ py: 10 }}>
@@ -748,16 +768,67 @@ export default function Devices() {
             <Alert severity="error" sx={{ mb: 2 }}>{sendMessageError}</Alert>
           )}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Contact Number
+            Contact(s)
           </Typography>
-          <PhoneInput
-            international
-            defaultCountry="CM"
-            value={messageContact}
-            onChange={(val) => { setMessageContact(val); setSendMessageError(""); }}
-            placeholder="Enter phone number"
-            autoComplete="tel"
-          />
+          <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+            <Button
+              size="small"
+              type={contactMode === "phone" ? "primary" : "default"}
+              onClick={() => { setContactMode("phone"); setContactInput(""); }}
+            >
+              Phone Number
+            </Button>
+            <Button
+              size="small"
+              type={contactMode === "text" ? "primary" : "default"}
+              onClick={() => { setContactMode("text"); setContactInput(""); }}
+            >
+              Name / Username
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {contactMode === "phone" ? (
+              <Box sx={{ flex: 1 }}>
+                <PhoneInput
+                  international
+                  defaultCountry="CM"
+                  value={contactInput}
+                  onChange={(val) => { setContactInput(val || ""); setSendMessageError(""); }}
+                  placeholder="Enter phone number"
+                />
+              </Box>
+            ) : (
+              <Input
+                style={{ flex: 1 }}
+                value={contactInput}
+                onChange={(e) => { setContactInput(e.target.value); setSendMessageError(""); }}
+                placeholder="Enter name or username"
+                onPressEnter={handleAddContact}
+                autoComplete="off"
+              />
+            )}
+            <Fab
+              size="small"
+              color="primary"
+              onClick={handleAddContact}
+              disabled={!contactInput?.trim()}
+              sx={{ flexShrink: 0, boxShadow: 2 }}
+            >
+              <Add />
+            </Fab>
+          </Box>
+          {contacts.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
+              {contacts.map((c) => (
+                <Chip
+                  key={c}
+                  label={c}
+                  size="small"
+                  onDelete={() => handleRemoveContact(c)}
+                />
+              ))}
+            </Box>
+          )}
         </Box>
         <Box sx={{ mt: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

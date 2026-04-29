@@ -42,7 +42,7 @@ type queuedMessage struct {
 //	@Param			platform	formData	string				false	"Platform (multipart)"
 //	@Param			text		formData	string				false	"Message text (multipart, optional if file provided)"
 //	@Param			file		formData	file				false	"File to upload (multipart)"
-//	@Success		200			{object}	SendMessageResponse	"Message queued successfully"
+//	@Success		200			{object}	SendMessageResponse	"Message(s) queued successfully"
 //	@Failure		400			{object}	ErrorResponse		"Invalid request body or validation error"
 //	@Failure		401			{object}	ErrorResponse		"Invalid or expired matrix token"
 //	@Failure		403			{object}	ErrorResponse		"Invalid or expired matrix token"
@@ -190,9 +190,8 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		})
 	}
 
-	logger.Info("Message queued successfully")
+	logger.Info("Message(s) queued successfully")
 	return c.JSON(http.StatusOK, SendMessageResponse{
-		Message:     "Message queued successfully",
-		QueuedCount: validCount,
+		Message: "Message(s) queued successfully",
 	})
 }

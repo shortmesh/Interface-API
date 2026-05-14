@@ -63,9 +63,13 @@ type DeleteDeviceRequest struct {
 
 // SendMessageRequest represents the request body for sending a message
 type SendMessageRequest struct {
-	Contact  string `json:"contact" form:"contact" example:"1234567890" validate:"required"`
-	Platform string `json:"platform" form:"platform" example:"wa" validate:"required"`
-	Text     string `json:"text" form:"text" example:"Hello, World!"`
+	Contact       string `json:"contact,omitempty" form:"contact" example:"1234567890"`
+	Platform      string `json:"platform" form:"platform" example:"wa" validate:"required"`
+	Text          string `json:"text" form:"text" example:"Hello, World!"`
+	FileContent   string `json:"file_content,omitempty" form:"file_content" example:"base64encode(file_content)"`
+	FileExtension string `json:"file_extension,omitempty" form:"file_extension" example:"pdf"`
+	GroupURL      string `json:"group_url,omitempty" form:"group_url" example:"https://chat.whatsapp.com/invite123"`
+	ReplyID       string `json:"reply_id,omitempty" form:"reply_id" example:"$eCLf_5pzs8ZBhEs5ZojVRS0K3SBLf73cHs2q_Je4kfQ"`
 }
 
 // SendMessageResponse represents the response after queuing a message

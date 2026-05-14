@@ -155,20 +155,31 @@ definitions:
       contact:
         example: "1234567890"
         type: string
+      file_content:
+        example: base64encode(file_content)
+        type: string
+      file_extension:
+        example: pdf
+        type: string
+      group_url:
+        example: https://chat.whatsapp.com/invite123
+        type: string
       platform:
         example: wa
+        type: string
+      reply_id:
+        example: $eCLf_5pzs8ZBhEs5ZojVRS0K3SBLf73cHs2q_Je4kfQ
         type: string
       text:
         example: Hello, World!
         type: string
     required:
-    - contact
     - platform
     type: object
   devices.SendMessageResponse:
     properties:
       message:
-        example: Message queued successfully
+        example: Message(s) queued successfully
         type: string
     type: object
   models.CredentialRole:
@@ -905,8 +916,12 @@ paths:
       consumes:
       - application/json
       - multipart/form-data
-      description: Queue a message to be sent via the specified device. Either text
-        or file must be provided (or both).
+      description: |-
+        Queue a message to be sent via the specified device. Either text or file must be provided (or both).
+        At least one of contact, group_url, or reply_id must be provided.
+        The 'contact' field accepts: phone number or group ID. Use 'group_url' if you don't have the group ID (it will be extracted automatically).
+        For JSON requests: use file_content (base64) and file_extension to send files.
+        For multipart requests: use the file field to upload files directly.
       parameters:
       - description: 'Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)'
         in: header
@@ -917,12 +932,14 @@ paths:
         name: device_id
         required: true
         type: string
-      - description: Message to send (JSON)
+      - description: Message to send (JSON). Use file_content/file_extension for files
+          in JSON.
         in: body
         name: request
         schema:
           $ref: '#/definitions/devices.SendMessageRequest'
-      - description: Contact (multipart)
+      - description: Phone number or group ID (multipart, optional if group_url or
+          reply_id provided)
         in: formData
         name: contact
         type: string
@@ -934,6 +951,14 @@ paths:
         in: formData
         name: text
         type: string
+      - description: Group URL - use if you don't have group ID (multipart, optional)
+        in: formData
+        name: group_url
+        type: string
+      - description: Reply to message ID (multipart, optional)
+        in: formData
+        name: reply_id
+        type: string
       - description: File to upload (multipart)
         in: formData
         name: file
@@ -942,7 +967,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Message queued successfully
+          description: Message(s) queued successfully
           schema:
             $ref: '#/definitions/devices.SendMessageResponse'
         "400":

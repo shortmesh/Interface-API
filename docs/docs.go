@@ -1062,7 +1062,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Queue a message to be sent via the specified device. Either text or file must be provided (or both).",
+                "description": "Queue a message to be sent via the specified device. Either text or file must be provided (or both).\nAt least one of contact, group_url, or reply_id must be provided.\nThe 'contact' field accepts: phone number or group ID. Use 'group_url' if you don't have the group ID (it will be extracted automatically).\nFor JSON requests: use file_content (base64) and file_extension to send files.\nFor multipart requests: use the file field to upload files directly.",
                 "consumes": [
                     "application/json",
                     "multipart/form-data"
@@ -1089,7 +1089,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Message to send (JSON)",
+                        "description": "Message to send (JSON). Use file_content/file_extension for files in JSON.",
                         "name": "request",
                         "in": "body",
                         "schema": {
@@ -1098,7 +1098,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Contact (multipart)",
+                        "description": "Phone number or group ID (multipart, optional if group_url or reply_id provided)",
                         "name": "contact",
                         "in": "formData"
                     },
@@ -1115,6 +1115,18 @@ const docTemplate = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "Group URL - use if you don't have group ID (multipart, optional)",
+                        "name": "group_url",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reply to message ID (multipart, optional)",
+                        "name": "reply_id",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "File to upload (multipart)",
                         "name": "file",
@@ -1123,7 +1135,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Message queued successfully",
+                        "description": "Message(s) queued successfully",
                         "schema": {
                             "$ref": "#/definitions/devices.SendMessageResponse"
                         }
@@ -1771,7 +1783,6 @@ const docTemplate = `{
         "devices.SendMessageRequest": {
             "type": "object",
             "required": [
-                "contact",
                 "platform"
             ],
             "properties": {
@@ -1779,9 +1790,25 @@ const docTemplate = `{
                     "type": "string",
                     "example": "1234567890"
                 },
+                "file_content": {
+                    "type": "string",
+                    "example": "base64encode(file_content)"
+                },
+                "file_extension": {
+                    "type": "string",
+                    "example": "pdf"
+                },
+                "group_url": {
+                    "type": "string",
+                    "example": "https://chat.whatsapp.com/invite123"
+                },
                 "platform": {
                     "type": "string",
                     "example": "wa"
+                },
+                "reply_id": {
+                    "type": "string",
+                    "example": "$eCLf_5pzs8ZBhEs5ZojVRS0K3SBLf73cHs2q_Je4kfQ"
                 },
                 "text": {
                     "type": "string",
@@ -1794,7 +1821,7 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "Message queued successfully"
+                    "example": "Message(s) queued successfully"
                 }
             }
         },

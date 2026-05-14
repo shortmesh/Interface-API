@@ -27,6 +27,8 @@ type QueuedMessage struct {
 	Username      string `json:"username"`
 	FileContent   string `json:"file_content,omitempty"`
 	FileExtension string `json:"file_extension,omitempty"`
+	GroupURL      string `json:"group_url,omitempty"`
+	ReplyID       string `json:"reply_id,omitempty"`
 }
 
 type Worker struct {
@@ -232,6 +234,8 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 			Username:      msg.Username,
 			FileContent:   msg.FileContent,
 			FileExtension: msg.FileExtension,
+			GroupURL:      msg.GroupURL,
+			ReplyID:       msg.ReplyID,
 		}
 
 		_, err := matrixClient.SendMessage(msg.DeviceID, req)

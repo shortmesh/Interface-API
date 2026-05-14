@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -25,22 +26,32 @@ type queuedMessage struct {
 	Username      string `json:"username"`
 	FileContent   string `json:"file_content,omitempty"`
 	FileExtension string `json:"file_extension,omitempty"`
+	GroupURL      string `json:"group_url,omitempty"`
+	ReplyID       string `json:"reply_id,omitempty"`
 }
 
 // SendMessage godoc
 //
+// SendMessage godoc
+//
 //	@Summary		Send a message via device
 //	@Description	Queue a message to be sent via the specified device. Either text or file must be provided (or both).
+//	@Description	At least one of contact, group_url, or reply_id must be provided.
+//	@Description	The 'contact' field accepts: phone number or group ID. Use 'group_url' if you don't have the group ID (it will be extracted automatically).
+//	@Description	For JSON requests: use file_content (base64) and file_extension to send files.
+//	@Description	For multipart requests: use the file field to upload files directly.
 //	@Tags			devices
 //	@Accept			json,mpfd
 //	@Produce		json
 //	@Param			Authorization	header	string	false	"Matrix token in format: Bearer mt_xxxxx (obtained from /tokens)"
 //	@Security		BearerAuth
 //	@Param			device_id	path		string				true	"Device ID"
-//	@Param			request		body		SendMessageRequest	false	"Message to send (JSON)"
-//	@Param			contact		formData	string				false	"Contact (multipart)"
+//	@Param			request		body		SendMessageRequest	false	"Message to send (JSON). Use file_content/file_extension for files in JSON."
+//	@Param			contact		formData	string				false	"Phone number or group ID (multipart, optional if group_url or reply_id provided)"
 //	@Param			platform	formData	string				false	"Platform (multipart)"
 //	@Param			text		formData	string				false	"Message text (multipart, optional if file provided)"
+//	@Param			group_url	formData	string				false	"Group URL - use if you don't have group ID (multipart, optional)"
+//	@Param			reply_id	formData	string				false	"Reply to message ID (multipart, optional)"
 //	@Param			file		formData	file				false	"File to upload (multipart)"
 //	@Success		200			{object}	SendMessageResponse	"Message(s) queued successfully"
 //	@Failure		400			{object}	ErrorResponse		"Invalid request body or validation error"
@@ -79,6 +90,8 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		req.Contact = c.FormValue("contact")
 		req.Platform = c.FormValue("platform")
 		req.Text = c.FormValue("text")
+		req.GroupURL = c.FormValue("group_url")
+		req.ReplyID = c.FormValue("reply_id")
 
 		file, err := c.FormFile("file")
 		if err == nil && file != nil {
@@ -117,10 +130,10 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		}
 	}
 
-	if strings.TrimSpace(req.Contact) == "" {
-		logger.Info("Message send failed: missing contact")
+	if strings.TrimSpace(req.Contact) == "" && strings.TrimSpace(req.GroupURL) == "" && strings.TrimSpace(req.ReplyID) == "" {
+		logger.Info("Message send failed: missing contact, group_url, and reply_id")
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error: "Missing required field: contact",
+			Error: "At least one of contact, group_url, or reply_id must be provided",
 		})
 	}
 
@@ -136,6 +149,15 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: "Either text or file must be provided",
 		})
+	}
+
+	if req.GroupURL != "" {
+		if _, err := url.ParseRequestURI(req.GroupURL); err != nil {
+			logger.Info(fmt.Sprintf("Message send failed: invalid group_url - %v", err))
+			return c.JSON(http.StatusBadRequest, ErrorResponse{
+				Error: "group_url must be a valid URL",
+			})
+		}
 	}
 
 	matrixUsername := matrixIdentity.MatrixUsername
@@ -159,15 +181,32 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	addresses := strings.SplitSeq(req.Contact, ",")
-	validCount := 0
-	for address := range addresses {
-		address = strings.TrimSpace(address)
-		if address == "" {
-			continue
-		}
-		validCount++
+	var addresses []string
+	var sendToType string
 
+	if req.Contact != "" {
+		for address := range strings.SplitSeq(req.Contact, ",") {
+			address = strings.TrimSpace(address)
+			if address != "" {
+				addresses = append(addresses, address)
+			}
+		}
+		sendToType = "contact"
+	} else if req.GroupURL != "" {
+		addresses = append(addresses, req.GroupURL)
+		sendToType = "group_url"
+	} else if req.ReplyID != "" {
+		addresses = append(addresses, req.ReplyID)
+		sendToType = "reply_id"
+	}
+
+	if len(addresses) == 0 {
+		return c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "At least one of contact, group_url, or reply_id must be provided",
+		})
+	}
+
+	for _, address := range addresses {
 		message := queuedMessage{
 			DeviceID:      deviceID,
 			Contact:       address,
@@ -176,18 +215,14 @@ func (h *DeviceHandler) SendMessage(c echo.Context) error {
 			Username:      matrixUsername,
 			FileContent:   fileContent,
 			FileExtension: fileExtension,
+			GroupURL:      req.GroupURL,
+			ReplyID:       req.ReplyID,
 		}
 
 		if err := producer.Publish(exchangeName, routingKey, message, rabbitmq.DefaultPublishOptions()); err != nil {
-			logger.Error(fmt.Sprintf("RabbitMQ message publish failed for address %s: %v\n%s", address, err, debug.Stack()))
+			logger.Error(fmt.Sprintf("RabbitMQ message publish failed for %s %s: %v\n%s", sendToType, address, err, debug.Stack()))
 			return echo.ErrInternalServerError
 		}
-	}
-
-	if validCount == 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Missing required field: contact",
-		})
 	}
 
 	logger.Info("Message(s) queued successfully")

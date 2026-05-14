@@ -39,6 +39,7 @@ export default function Tokens() {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [tokenDisplayDialogOpen, setTokenDisplayDialogOpen] = useState(false);
+  const [useHost, setUseHost] = useState(false);
   const [setExpiry, setSetExpiry] = useState(false);
   const [expiryDate, setExpiryDate] = useState(null);
   const [attachToSession, setAttachToSession] = useState(false);
@@ -81,6 +82,7 @@ export default function Tokens() {
     setCreateTokenError("");
     try {
       const body = {};
+      if (useHost) body.use_host = true;
       if (setExpiry && expiryDate) {
         body.expires_at = expiryDate.toISOString();
       }
@@ -156,6 +158,7 @@ export default function Tokens() {
   };
 
   const handleOpenCreateDialog = () => {
+    setUseHost(false);
     setSetExpiry(false);
     setExpiryDate(null);
     setAttachToSession(false);
@@ -426,6 +429,20 @@ export default function Tokens() {
               style={{ marginBottom: 16 }}
             />
           )}
+          <div style={{ marginBottom: 16 }}>
+            <Checkbox
+              checked={useHost}
+              onChange={(e) => setUseHost(e.target.checked)}
+            >
+              <div>
+                <div>Use admin credentials</div>
+                <div style={{ fontSize: 12, color: "rgba(255, 255, 255, 0.6)", marginTop: 4 }}>
+                  Reuse existing admin identity. Leave unchecked for first token or to create new credentials.
+                </div>
+              </div>
+            </Checkbox>
+          </div>
+
           <div style={{ marginBottom: 16 }}>
             <Checkbox
               checked={setExpiry}

@@ -22,6 +22,8 @@ See [SECURITY.md](./SECURITY.md) for production configuration.
 
 ## Token Management
 
+Tokens are Matrix authentication tokens that provide access to device and webhook operations. Each token is associated with the credential that created it.
+
 ### Create First Token (Admin)
 
 First token is auto-marked as admin and creates the host Matrix identity:
@@ -70,6 +72,27 @@ curl -X POST http://localhost:8080/api/v1/tokens \
 >
 > - `use_host: true`: Token can access admin's linked devices
 > - `use_host: false`: Token has its own empty device list, must link devices separately
+> - Tokens are automatically associated with the credential used to create them
+
+### List Tokens
+
+View all tokens associated with your credential:
+
+```bash
+curl -X GET http://localhost:8080/api/v1/tokens \
+  -u "$CLIENT_ID:$CLIENT_SECRET"
+```
+
+Super admin credentials can see all tokens they created plus legacy tokens (those without a credential_id).
+
+### Delete Token
+
+```bash
+curl -X DELETE http://localhost:8080/api/v1/tokens/{token_id} \
+  -u "$CLIENT_ID:$CLIENT_SECRET"
+```
+
+Replace `{token_id}` with the token ID from the List Tokens response.
 
 ## Device Management
 
@@ -127,6 +150,8 @@ curl -X GET http://localhost:8080/api/v1/devices \
 
 ### Send Message
 
+Send messages to individual contacts or groups. At least one of `contact` or `group_url` must be provided.
+
 #### Text Only (JSON)
 
 ```bash
@@ -155,6 +180,64 @@ curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
   }'
 ```
 
+#### Send to Group (using group_url)
+
+If you don't have the group ID, use the group invite URL. You can also provide multiple group URLs comma-separated:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "group_url": "https://chat.whatsapp.com/invite123",
+    "platform": "wa",
+    "text": "Hello group!"
+  }'
+```
+
+Multiple groups:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "group_url": "https://chat.whatsapp.com/invite123, https://chat.whatsapp.com/invite456",
+    "platform": "wa",
+    "text": "Hello to multiple groups!"
+  }'
+```
+
+#### Reply to a Message
+
+Use `reply_id` to reply to a specific message (works with both contacts and groups):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contact": "1234567890",
+    "platform": "wa",
+    "text": "This is a reply",
+    "reply_id": "$eCLf_5pzs8ZBhEs5ZojVRS0K3SBLf73cHs2q_Je4kfQ"
+  }'
+```
+
+Or reply in a group:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "group_url": "https://chat.whatsapp.com/invite123",
+    "platform": "wa",
+    "text": "This is a reply in group",
+    "reply_id": "$eCLf_5pzs8ZBhEs5ZojVRS0K3SBLf73cHs2q_Je4kfQ"
+  }'
+```
+
 #### Text + File (Multipart)
 
 ```bash
@@ -177,7 +260,24 @@ curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
   -F "file=@/path/to/document.pdf"
 ```
 
+Send file to a group:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/devices/237123456789/message \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "group_url=https://chat.whatsapp.com/invite123" \
+  -F "platform=wa" \
+  -F "text=Check out this document" \
+  -F "file=@/path/to/document.pdf"
+```
+
 File must have an extension.
+
+> [!NOTE]
+>
+> - If both `contact` and `group_url` are provided, `group_url` takes priority
+> - The `reply_id` can be obtained from webhook payloads for incoming messages
+> - Both `contact` and `group_url` support comma-separated values for multiple recipients
 
 ### Delete Device
 
@@ -243,7 +343,7 @@ curl -X DELETE http://localhost:8080/api/v1/webhooks/1 \
 
 ## Credentials (Admin Only)
 
-Manage API client credentials. Requires Basic Auth with admin credentials.
+Manage API client credentials. Requires Basic Auth with admin credentials. Each credential can create and manage its own tokens.
 
 ### Create Credential
 
@@ -285,6 +385,23 @@ curl -X GET http://localhost:8080/api/v1/credentials \
   -u "$CLIENT_ID:$CLIENT_SECRET"
 ```
 
+### Update Credential
+
+Update credential properties like description, active status, or scopes:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/credentials/my-app \
+  -u "$CLIENT_ID:$CLIENT_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Updated description",
+    "active": true,
+    "scopes": ["tokens:read:*", "tokens:write:create", "tokens:write:delete"]
+  }'
+```
+
+Fields are optional. Omit to keep current value.
+
 ### Delete Credential
 
 ```bash
@@ -293,6 +410,12 @@ curl -X DELETE http://localhost:8080/api/v1/credentials/my-app \
 ```
 
 Cannot delete super admin credentials.
+
+> [!NOTE]
+>
+> - Each credential can create and manage its own tokens via the `/api/v1/tokens` endpoints
+> - Tokens are automatically associated with the credential that created them
+> - Deleting a credential will affect all tokens created by that credential
 
 ## API Reference
 

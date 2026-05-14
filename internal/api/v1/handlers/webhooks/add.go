@@ -59,11 +59,11 @@ func (h *WebhookHandler) Add(c echo.Context) error {
 
 	targetIdentityID := matrixIdentity.ID
 
-	if !matrixIdentity.IsAdmin {
-		adminIdentity, err := models.FindAdminMatrixIdentity(h.db.DB())
-		if err == nil && adminIdentity.MatrixUsername == matrixIdentity.MatrixUsername {
-			targetIdentityID = adminIdentity.ID
-			logger.Debug(fmt.Sprintf("Mapping webhook to host identity ID: %d", adminIdentity.ID))
+	if !matrixIdentity.IsAdmin && matrixIdentity.CredentialID != nil {
+		hostIdentity, err := models.FindHostIdentityByCredential(h.db.DB(), *matrixIdentity.CredentialID)
+		if err == nil && hostIdentity.MatrixUsername == matrixIdentity.MatrixUsername {
+			targetIdentityID = hostIdentity.ID
+			logger.Debug(fmt.Sprintf("Mapping webhook to host identity ID: %d", hostIdentity.ID))
 		}
 	}
 

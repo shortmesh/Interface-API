@@ -15,7 +15,7 @@ import (
 // Update godoc
 //
 //	@Summary		Update a credential
-//	@Description	Update credential properties (regenerate secret, activate/deactivate, or update description)
+//	@Description	Update credential properties (regenerate secret, activate/deactivate, update description, or update scopes)
 //	@Tags			credentials,admin
 //	@Accept			json
 //	@Produce		json
@@ -97,6 +97,16 @@ func (h *CredentialHandler) Update(c echo.Context) error {
 
 	if req.Description != nil {
 		credential.Description = *req.Description
+	}
+
+	if req.Scopes != nil {
+		if err := models.ValidateScopesForRole(credential.Role, *req.Scopes); err != nil {
+			logger.Info(fmt.Sprintf("Credential update failed: invalid scopes - %v", err))
+			return c.JSON(http.StatusBadRequest, ErrorResponse{
+				Error: fmt.Sprintf("Invalid scopes: %v", err),
+			})
+		}
+		credential.Scopes = *req.Scopes
 	}
 
 	if err := h.db.DB().Save(credential).Error; err != nil {

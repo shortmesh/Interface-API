@@ -43,15 +43,6 @@ func (h *TokenHandler) Create(c echo.Context) error {
 		})
 	}
 
-	if req.UseHost {
-		credential, ok := c.Get("credential").(*models.Credential)
-		if ok && credential.Role != models.RoleSuperAdmin {
-			return c.JSON(http.StatusForbidden, ErrorResponse{
-				Error: "Only super_admin can use use_host=true",
-			})
-		}
-	}
-
 	var expiresAt *time.Time
 	if req.ExpiresAt != nil {
 		parsedTime, err := time.Parse(time.RFC3339, *req.ExpiresAt)
@@ -72,24 +63,32 @@ func (h *TokenHandler) Create(c echo.Context) error {
 
 	var matrixToken string
 	txErr := h.db.DB().Transaction(func(tx *gorm.DB) error {
+		credential, ok := c.Get("credential").(*models.Credential)
+		if !ok {
+			return &handlers.TxError{
+				StatusCode: http.StatusUnauthorized,
+				Message:    "No credential found in context",
+			}
+		}
+
 		var username, deviceID string
 		var err error
 
 		if req.UseHost {
-			adminIdentity, err := models.FindAdminMatrixIdentity(tx)
+			hostIdentity, err := models.FindHostIdentityByCredential(tx, credential.ID)
 			if err != nil {
 				if err == gorm.ErrRecordNotFound {
 					return &handlers.TxError{
 						StatusCode: http.StatusBadRequest,
-						Message:    "No admin identity found. Create first token with use_host=false",
+						Message:    "No host identity found for this credential. Create first token with use_host=false",
 					}
 				}
-				logger.Error(fmt.Sprintf("Failed to find admin identity: %v", err))
+				logger.Error(fmt.Sprintf("Failed to find host identity: %v", err))
 				return err
 			}
-			username = adminIdentity.MatrixUsername
-			deviceID = adminIdentity.MatrixDeviceID
-			logger.Info("Using host matrix credentials")
+			username = hostIdentity.MatrixUsername
+			deviceID = hostIdentity.MatrixDeviceID
+			logger.Info("Using host matrix credentials for this credential")
 		} else {
 			masClient, err := masclient.New()
 			if err != nil {
@@ -145,19 +144,19 @@ func (h *TokenHandler) Create(c echo.Context) error {
 		}
 
 		var count int64
-		if err = tx.Model(&models.MatrixIdentity{}).Count(&count).Error; err != nil {
+		if err = tx.Model(&models.MatrixIdentity{}).Where("credential_id = ?", credential.ID).Count(&count).Error; err != nil {
 			return err
 		}
 		isAdmin := count == 0
 
-		matrixToken, _, err = models.CreateMatrixIdentity(tx, username, deviceID, isAdmin, expiresAt)
+		matrixToken, _, err = models.CreateMatrixIdentity(tx, &credential.ID, username, deviceID, isAdmin, expiresAt)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failed to create matrix identity: %v", err))
 			return err
 		}
 
 		if isAdmin {
-			logger.Info("Created first token - marked as admin")
+			logger.Info("Created first token for this credential - marked as admin")
 		}
 
 		return nil

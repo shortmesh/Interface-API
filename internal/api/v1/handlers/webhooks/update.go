@@ -73,10 +73,10 @@ func (h *WebhookHandler) Update(c echo.Context) error {
 
 	targetIdentityID := matrixIdentity.ID
 
-	if !matrixIdentity.IsAdmin {
-		adminIdentity, err := models.FindAdminMatrixIdentity(h.db.DB())
-		if err == nil && adminIdentity.MatrixUsername == matrixIdentity.MatrixUsername {
-			targetIdentityID = adminIdentity.ID
+	if !matrixIdentity.IsAdmin && matrixIdentity.CredentialID != nil {
+		hostIdentity, err := models.FindHostIdentityByCredential(h.db.DB(), *matrixIdentity.CredentialID)
+		if err == nil && hostIdentity.MatrixUsername == matrixIdentity.MatrixUsername {
+			targetIdentityID = hostIdentity.ID
 		}
 	}
 

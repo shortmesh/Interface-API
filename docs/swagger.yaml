@@ -41,12 +41,8 @@ definitions:
     type: object
   credentials.CreateRequest:
     properties:
-      client_id:
-        type: string
       description:
         type: string
-    required:
-    - client_id
     type: object
   credentials.CreateResponse:
     properties:
@@ -94,6 +90,10 @@ definitions:
         type: string
       regenerate_secret:
         type: boolean
+      scopes:
+        items:
+          type: string
+        type: array
     type: object
   credentials.UpdateResponse:
     properties:
@@ -194,6 +194,8 @@ definitions:
     properties:
       created_at:
         type: string
+      credential_id:
+        type: integer
       expires_at:
         type: string
       id:
@@ -311,12 +313,11 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new API credential with client_id and auto-generated client_secret
+      description: Create a new API credential with auto-generated client_id and client_secret
       parameters:
       - description: Credential details
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/credentials.CreateRequest'
       produces:
@@ -332,10 +333,6 @@ paths:
             $ref: '#/definitions/credentials.ErrorResponse'
         "403":
           description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/credentials.ErrorResponse'
-        "409":
-          description: Credential already exists
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "500":
@@ -392,7 +389,7 @@ paths:
       consumes:
       - application/json
       description: Update credential properties (regenerate secret, activate/deactivate,
-        or update description)
+        update description, or update scopes)
       parameters:
       - description: Client ID
         in: path
@@ -544,7 +541,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: List all Matrix tokens
+      description: List Matrix tokens
       produces:
       - application/json
       responses:
@@ -665,12 +662,11 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new API credential with client_id and auto-generated client_secret
+      description: Create a new API credential with auto-generated client_id and client_secret
       parameters:
       - description: Credential details
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/credentials.CreateRequest'
       produces:
@@ -686,10 +682,6 @@ paths:
             $ref: '#/definitions/credentials.ErrorResponse'
         "403":
           description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/credentials.ErrorResponse'
-        "409":
-          description: Credential already exists
           schema:
             $ref: '#/definitions/credentials.ErrorResponse'
         "500":
@@ -746,7 +738,7 @@ paths:
       consumes:
       - application/json
       description: Update credential properties (regenerate secret, activate/deactivate,
-        or update description)
+        update description, or update scopes)
       parameters:
       - description: Client ID
         in: path
@@ -1029,7 +1021,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: List all Matrix tokens
+      description: List Matrix tokens
       produces:
       - application/json
       responses:

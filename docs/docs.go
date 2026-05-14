@@ -67,7 +67,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Create a new API credential with client_id and auto-generated client_secret",
+                "description": "Create a new API credential with auto-generated client_id and client_secret",
                 "consumes": [
                     "application/json"
                 ],
@@ -84,7 +84,6 @@ const docTemplate = `{
                         "description": "Credential details",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/credentials.CreateRequest"
                         }
@@ -109,12 +108,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
-                    "409": {
-                        "description": "Credential already exists",
-                        "schema": {
-                            "$ref": "#/definitions/credentials.ErrorResponse"
-                        }
-                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -134,7 +127,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Update credential properties (regenerate secret, activate/deactivate, or update description)",
+                "description": "Update credential properties (regenerate secret, activate/deactivate, update description, or update scopes)",
                 "consumes": [
                     "application/json"
                 ],
@@ -431,7 +424,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "List all Matrix tokens",
+                "description": "List Matrix tokens",
                 "consumes": [
                     "application/json"
                 ],
@@ -625,7 +618,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Create a new API credential with client_id and auto-generated client_secret",
+                "description": "Create a new API credential with auto-generated client_id and client_secret",
                 "consumes": [
                     "application/json"
                 ],
@@ -642,7 +635,6 @@ const docTemplate = `{
                         "description": "Credential details",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/credentials.CreateRequest"
                         }
@@ -667,12 +659,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/credentials.ErrorResponse"
                         }
                     },
-                    "409": {
-                        "description": "Credential already exists",
-                        "schema": {
-                            "$ref": "#/definitions/credentials.ErrorResponse"
-                        }
-                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -692,7 +678,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Update credential properties (regenerate secret, activate/deactivate, or update description)",
+                "description": "Update credential properties (regenerate secret, activate/deactivate, update description, or update scopes)",
                 "consumes": [
                     "application/json"
                 ],
@@ -1177,7 +1163,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "List all Matrix tokens",
+                "description": "List Matrix tokens",
                 "consumes": [
                     "application/json"
                 ],
@@ -1615,13 +1601,7 @@ const docTemplate = `{
         },
         "credentials.CreateRequest": {
             "type": "object",
-            "required": [
-                "client_id"
-            ],
             "properties": {
-                "client_id": {
-                    "type": "string"
-                },
                 "description": {
                     "type": "string"
                 }
@@ -1697,6 +1677,12 @@ const docTemplate = `{
                 },
                 "regenerate_secret": {
                     "type": "boolean"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -1841,6 +1827,9 @@ const docTemplate = `{
             "properties": {
                 "created_at": {
                     "type": "string"
+                },
+                "credential_id": {
+                    "type": "integer"
                 },
                 "expires_at": {
                     "type": "string"

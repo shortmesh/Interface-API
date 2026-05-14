@@ -64,6 +64,8 @@ export default function Devices() {
   const [addDeviceError, setAddDeviceError] = useState("");
   const [sendMessageError, setSendMessageError] = useState("");
   const [messageFiles, setMessageFiles] = useState([]);
+  const [groupURL, setGroupURL] = useState("");
+  const [replyID, setReplyID] = useState("");
 
   const triggerShake = (setter) => {
     setter(true);
@@ -98,8 +100,13 @@ export default function Devices() {
 
       const response = await apiCall("/api/v1/admin/devices");
       if (!response) return;
-      if (response.status === 403 || !response.ok) {
+      if (response.status === 403) {
         setMatrixTokenDialogOpen(true);
+        return;
+      }
+      if (!response.ok) {
+        const errData = await safeJsonParse(response);
+        message.error(errData?.error || "Failed to load devices");
         return;
       }
       const data = await safeJsonParse(response);
@@ -311,6 +318,8 @@ export default function Devices() {
     setContactInput("");
     setContactMode("phone");
     setMessageText("");
+    setGroupURL("");
+    setReplyID("");
     setMessageFiles((prev) => {
       prev.forEach((e) => { if (e.previewUrl) URL.revokeObjectURL(e.previewUrl); });
       return [];
@@ -347,8 +356,8 @@ export default function Devices() {
   };
 
   const handleSendMessage = async () => {
-    if (contacts.length === 0) {
-      setSendMessageError("At least one contact is required");
+    if (contacts.length === 0 && !groupURL.trim()) {
+      setSendMessageError("At least one contact or a group URL is required");
       return;
     }
     if (!messageText.trim()) {
@@ -361,16 +370,22 @@ export default function Devices() {
       const sendRequest = async (file) => {
         if (file) {
           const formData = new FormData();
-          formData.append("contact", contact);
+          if (contact) formData.append("contact", contact);
           formData.append("platform", selectedDevice.platform);
           formData.append("text", messageText);
           formData.append("file", file);
+          if (groupURL.trim()) formData.append("group_url", groupURL.trim());
+          if (replyID.trim()) formData.append("reply_id", replyID.trim());
           return apiCall(`/api/v1/admin/devices/${selectedDevice.device_id}/message`, { method: "POST", body: formData });
         }
+        const body = { platform: selectedDevice.platform, text: messageText };
+        if (contact) body.contact = contact;
+        if (groupURL.trim()) body.group_url = groupURL.trim();
+        if (replyID.trim()) body.reply_id = replyID.trim();
         return apiCall(`/api/v1/admin/devices/${selectedDevice.device_id}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contact, platform: selectedDevice.platform, text: messageText }),
+          body: JSON.stringify(body),
         });
       };
 
@@ -783,41 +798,57 @@ export default function Devices() {
               type={contactMode === "text" ? "primary" : "default"}
               onClick={() => { setContactMode("text"); setContactInput(""); }}
             >
-              Name / Username
+              Group ID
+            </Button>
+            <Button
+              size="small"
+              type={contactMode === "group_url" ? "primary" : "default"}
+              onClick={() => { setContactMode("group_url"); setContactInput(""); }}
+            >
+              Group URL
             </Button>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            {contactMode === "phone" ? (
-              <Box sx={{ flex: 1 }}>
-                <PhoneInput
-                  international
-                  defaultCountry="CM"
+          {contactMode === "group_url" ? (
+            <Input
+              placeholder="https://chat.whatsapp.com/invite123"
+              value={groupURL}
+              onChange={(e) => { setGroupURL(e.target.value); setSendMessageError(""); }}
+              autoComplete="off"
+            />
+          ) : (
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              {contactMode === "phone" ? (
+                <Box sx={{ flex: 1 }}>
+                  <PhoneInput
+                    international
+                    defaultCountry="CM"
+                    value={contactInput}
+                    onChange={(val) => { setContactInput(val || ""); setSendMessageError(""); }}
+                    placeholder="Enter phone number"
+                  />
+                </Box>
+              ) : (
+                <Input
+                  style={{ flex: 1 }}
                   value={contactInput}
-                  onChange={(val) => { setContactInput(val || ""); setSendMessageError(""); }}
-                  placeholder="Enter phone number"
+                  onChange={(e) => { setContactInput(e.target.value); setSendMessageError(""); }}
+                  placeholder="Enter group ID"
+                  onPressEnter={handleAddContact}
+                  autoComplete="off"
                 />
-              </Box>
-            ) : (
-              <Input
-                style={{ flex: 1 }}
-                value={contactInput}
-                onChange={(e) => { setContactInput(e.target.value); setSendMessageError(""); }}
-                placeholder="Enter name or username"
-                onPressEnter={handleAddContact}
-                autoComplete="off"
-              />
-            )}
-            <Fab
-              size="small"
-              color="primary"
-              onClick={handleAddContact}
-              disabled={!contactInput?.trim()}
-              sx={{ flexShrink: 0, boxShadow: 2 }}
-            >
-              <Add />
-            </Fab>
-          </Box>
-          {contacts.length > 0 && (
+              )}
+              <Fab
+                size="small"
+                color="primary"
+                onClick={handleAddContact}
+                disabled={!contactInput?.trim()}
+                sx={{ flexShrink: 0, boxShadow: 2 }}
+              >
+                <Add />
+              </Fab>
+            </Box>
+          )}
+          {contactMode !== "group_url" && contacts.length > 0 && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
               {contacts.map((c) => (
                 <Chip
@@ -839,6 +870,17 @@ export default function Devices() {
             placeholder="Enter your message"
             value={messageText}
             onChange={(e) => { setMessageText(e.target.value); setSendMessageError(""); }}
+          />
+        </Box>
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Reply to Message ID <span style={{ fontSize: 11, opacity: 0.6 }}>(optional)</span>
+          </Typography>
+          <Input
+            placeholder="$eCLf_5pzs8ZBhEs5ZojVRS0K3SBLf73cHs2q_Je4kfQ"
+            value={replyID}
+            onChange={(e) => { setReplyID(e.target.value); setSendMessageError(""); }}
+            autoComplete="off"
           />
         </Box>
         <Box sx={{ mt: 2 }}>
@@ -879,7 +921,6 @@ export default function Devices() {
               </Box>
             ))}
 
-            {/* Add more / initial add tile */}
             <Box
               onClick={() => fileInputRef.current?.click()}
               sx={{

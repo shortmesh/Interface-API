@@ -9,6 +9,7 @@ import {
   Tag,
   Space,
   Switch,
+  Checkbox,
   message,
   Button,
   Alert as AntAlert,
@@ -17,6 +18,46 @@ import {
 import { apiCall, safeJsonParse, formatDate, maskString, copyToClipboard } from '../utils/api'
 import { hasScope } from '../utils/scopes'
 
+const SCOPE_TREE = [
+  { resource: 'tokens', label: 'Tokens', groups: [
+    { allScope: 'tokens:read:*', label: 'Read', leafScopes: [] },
+    { allScope: 'tokens:write:*', label: 'Write', leafScopes: [
+      { scope: 'tokens:write:create', label: 'Create' },
+      { scope: 'tokens:write:update', label: 'Update' },
+      { scope: 'tokens:write:delete', label: 'Delete' },
+    ]},
+  ]},
+  { resource: 'devices', label: 'Devices', groups: [
+    { allScope: 'devices:read:*', label: 'Read', leafScopes: [] },
+    { allScope: 'devices:write:*', label: 'Write', leafScopes: [
+      { scope: 'devices:write:create', label: 'Create' },
+      { scope: 'devices:write:update', label: 'Update' },
+      { scope: 'devices:write:delete', label: 'Delete' },
+    ]},
+  ]},
+  { resource: 'webhooks', label: 'Webhooks', groups: [
+    { allScope: 'webhooks:read:*', label: 'Read', leafScopes: [] },
+    { allScope: 'webhooks:write:*', label: 'Write', leafScopes: [
+      { scope: 'webhooks:write:create', label: 'Create' },
+      { scope: 'webhooks:write:update', label: 'Update' },
+      { scope: 'webhooks:write:delete', label: 'Delete' },
+    ]},
+  ]},
+]
+
+function normalizeScopes(scopes) {
+  return scopes.filter((scope) => {
+    const parts = scope.split(':')
+    if (parts.length === 3 && !scope.endsWith(':*')) {
+      return !scopes.includes(`${parts[0]}:*`) && !scopes.includes(`${parts[0]}:${parts[1]}:*`)
+    }
+    if (parts.length === 3 && scope.endsWith(':*')) {
+      return !scopes.includes(`${parts[0]}:*`)
+    }
+    return true
+  })
+}
+
 export default function Credentials() {
   const { modal } = App.useApp()
   const canWrite = hasScope('credentials:write:*')
@@ -24,17 +65,18 @@ export default function Credentials() {
   const [loading, setLoading] = useState(true)
 
   const [createOpen, setCreateOpen] = useState(false)
-  const [newClientId, setNewClientId] = useState('')
   const [newDescription, setNewDescription] = useState('')
   const [creating, setCreating] = useState(false)
 
   const [secretModalOpen, setSecretModalOpen] = useState(false)
   const [revealedSecret, setRevealedSecret] = useState('')
+  const [revealedClientId, setRevealedClientId] = useState('')
   const [secretVisible, setSecretVisible] = useState(false)
 
   const [editOpen, setEditOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [editDescription, setEditDescription] = useState('')
+  const [editScopes, setEditScopes] = useState([])
   const [regenerateSecret, setRegenerateSecret] = useState(false)
   const [desiredActive, setDesiredActive] = useState(true)
   const [updating, setUpdating] = useState(false)
@@ -76,25 +118,21 @@ export default function Credentials() {
   }
 
   const handleCreate = async () => {
-    if (!newClientId.trim()) {
-      setCreateError('Client ID is required')
-      return
-    }
     setCreateError('')
     setCreating(true)
     try {
       const response = await apiCall('/api/v1/admin/credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: newClientId.trim(), description: newDescription.trim() }),
+        body: JSON.stringify({ description: newDescription.trim() }),
       })
       if (!response) return
       if (response.ok) {
         const data = await safeJsonParse(response)
         setCreateOpen(false)
-        setNewClientId('')
         setNewDescription('')
         setCreateError('')
+        setRevealedClientId(data.credential?.client_id || '')
         setRevealedSecret(data.client_secret)
         setSecretVisible(false)
         setSecretModalOpen(true)
@@ -114,6 +152,7 @@ export default function Credentials() {
   const handleOpenEdit = (record) => {
     setEditTarget(record)
     setEditDescription(record.description || '')
+    setEditScopes(Array.isArray(record.scopes) ? [...record.scopes] : [])
     setRegenerateSecret(false)
     setDesiredActive(record.active)
     setEditError('')
@@ -140,6 +179,12 @@ export default function Credentials() {
       if (desiredActive !== editTarget.active) {
         body.active = desiredActive
       }
+      const normalizedEdit = normalizeScopes(editScopes)
+      const sortedEdit = [...normalizedEdit].sort()
+      const sortedOrig = [...(editTarget.scopes || [])].sort()
+      if (JSON.stringify(sortedEdit) !== JSON.stringify(sortedOrig)) {
+        body.scopes = normalizedEdit
+      }
 
       const response = await apiCall(`/api/v1/admin/credentials/${editTarget.client_id}`, {
         method: 'PUT',
@@ -155,6 +200,7 @@ export default function Credentials() {
         loadCredentials()
         message.success('Credential updated successfully')
         if (data.client_secret) {
+          setRevealedClientId('')
           setRevealedSecret(data.client_secret)
           setSecretVisible(false)
           setSecretModalOpen(true)
@@ -312,7 +358,7 @@ export default function Credentials() {
           startIcon={<Add />}
           onClick={() =>
             canWrite
-              ? (setNewClientId(''), setNewDescription(''), setCreateError(''), setCreateOpen(true))
+              ? (setNewDescription(''), setCreateError(''), setCreateOpen(true))
               : message.info("You do not have permission to create credentials. Contact admin.")
           }
           sx={{ opacity: canWrite ? 1 : 0.45 }}
@@ -350,24 +396,14 @@ export default function Credentials() {
           )}
           <Box>
             <Typography variant="body2" gutterBottom>
-              Client ID <span style={{ color: 'red' }}>*</span>
-            </Typography>
-            <Input
-              placeholder="e.g. my-app"
-              value={newClientId}
-              onChange={(e) => { setNewClientId(e.target.value); setCreateError('') }}
-              onPressEnter={handleCreate}
-              autoFocus
-            />
-          </Box>
-          <Box>
-            <Typography variant="body2" gutterBottom>
               Description
             </Typography>
             <Input
               placeholder="Optional description"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
+              onPressEnter={handleCreate}
+              autoFocus
             />
           </Box>
         </Box>
@@ -440,6 +476,90 @@ export default function Credentials() {
               unCheckedChildren="Inactive"
             />
           </Box>
+          {editTarget?.role !== 'super_admin' && (
+            <Box>
+              <Typography variant="body2" gutterBottom>Scopes</Typography>
+              {SCOPE_TREE.map(({ resource, label, groups }) => {
+                const allScopeStr = `${resource}:*`
+                const isAllChecked = editScopes.includes(allScopeStr)
+                const allSubScopes = [
+                  ...groups.map((g) => g.allScope),
+                  ...groups.flatMap((g) => g.leafScopes.map((s) => s.scope)),
+                ]
+                return (
+                  <Box key={resource} sx={{ mb: 2 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600, display: 'block', mb: 0.5 }}
+                    >
+                      {label}
+                    </Typography>
+                    <Box sx={{ py: 0.3 }}>
+                      <Checkbox
+                        checked={isAllChecked}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setEditScopes((prev) => {
+                            const without = prev.filter((s) => !s.startsWith(resource + ':'))
+                            return checked ? [...without, allScopeStr, ...allSubScopes] : without
+                          })
+                        }}
+                      >
+                        <strong><code style={{ fontFamily: '"Google Sans Mono", monospace', fontSize: 12 }}>{allScopeStr}</code></strong>
+                        <Typography component="span" variant="body2" sx={{ ml: 0.75 }}>All</Typography>
+                      </Checkbox>
+                    </Box>
+                    {groups.map(({ allScope, label: groupLabel, leafScopes }) => {
+                      const isGroupImplied = isAllChecked
+                      const isGroupChecked = editScopes.includes(allScope)
+                      const allLeafScopes = leafScopes.map((s) => s.scope)
+                      return (
+                        <Box key={allScope} sx={{ pl: 2 }}>
+                          <Box sx={{ py: 0.25 }}>
+                            <Checkbox
+                              checked={isGroupChecked || isGroupImplied}
+                              disabled={isGroupImplied}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setEditScopes((prev) => {
+                                  const without = prev.filter((s) => s !== allScope && !allLeafScopes.includes(s))
+                                  return checked ? [...without, allScope, ...allLeafScopes] : without
+                                })
+                              }}
+                            >
+                              <code style={{ fontFamily: '"Google Sans Mono", monospace', fontSize: 11, opacity: isGroupImplied ? 0.5 : 1 }}>{allScope}</code>
+                              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.75 }}>— {groupLabel}: all</Typography>
+                            </Checkbox>
+                          </Box>
+                          {leafScopes.map(({ scope, label: leafLabel }) => {
+                            const isLeafImplied = isGroupChecked || isGroupImplied
+                            return (
+                              <Box key={scope} sx={{ pl: 2, py: 0.2 }}>
+                                <Checkbox
+                                  checked={isLeafImplied || editScopes.includes(scope)}
+                                  disabled={isLeafImplied}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked
+                                    setEditScopes((prev) =>
+                                      checked ? [...prev, scope] : prev.filter((s) => s !== scope)
+                                    )
+                                  }}
+                                >
+                                  <code style={{ fontFamily: '"Google Sans Mono", monospace', fontSize: 11, opacity: isLeafImplied ? 0.5 : 1 }}>{scope}</code>
+                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.75 }}>— {leafLabel}</Typography>
+                                </Checkbox>
+                              </Box>
+                            )
+                          })}
+                        </Box>
+                      )
+                    })}
+                  </Box>
+                )
+              })}
+            </Box>
+          )}
         </Box>
       </Modal>
 
@@ -468,7 +588,7 @@ export default function Credentials() {
       </Modal>
 
       <Modal
-        title="Client Secret"
+        title="Save your credentials"
         open={secretModalOpen}
         onCancel={() => { if (closeByXRef.current) { closeByXRef.current = false; setSecretModalOpen(false); } else { triggerShake(setSecretShake); } }}
         closeIcon={<Close onClick={() => { closeByXRef.current = true; }} />}
@@ -485,52 +605,92 @@ export default function Credentials() {
           <AntAlert
             type="warning"
             showIcon
-            message="Save this secret now — it will not be shown again."
+            message="Save these credentials now — they will not be shown again."
           />
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              background: '#1e1e1e',
-              border: '1px solid #333',
-              borderRadius: 1,
-              px: 1.5,
-              py: 0.75,
-              gap: 1,
-            }}
-          >
-            <code
-              style={{
-                flex: 1,
-                wordBreak: 'break-all',
-                fontFamily: '"Google Sans Mono", monospace',
-                fontSize: 13,
-                color: '#e1e1e1',
-                background: 'transparent',
+          {revealedClientId && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Client ID</Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#1e1e1e',
+                  border: '1px solid #333',
+                  borderRadius: 1,
+                  px: 1.5,
+                  py: 0.75,
+                  gap: 1,
+                }}
+              >
+                <code
+                  style={{
+                    flex: 1,
+                    wordBreak: 'break-all',
+                    fontFamily: '"Google Sans Mono", monospace',
+                    fontSize: 13,
+                    color: '#e1e1e1',
+                    background: 'transparent',
+                  }}
+                >
+                  {revealedClientId}
+                </code>
+                <Button
+                  type="text"
+                  size="small"
+                  style={{ color: '#aaa', flexShrink: 0 }}
+                  icon={<ContentCopy style={{ fontSize: 16 }} />}
+                  onClick={() => handleCopy(revealedClientId)}
+                />
+              </Box>
+            </Box>
+          )}
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Client Secret</Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                background: '#1e1e1e',
+                border: '1px solid #333',
+                borderRadius: 1,
+                px: 1.5,
+                py: 0.75,
+                gap: 1,
               }}
             >
-              {secretVisible ? revealedSecret : maskString(revealedSecret)}
-            </code>
-            <Button
-              type="text"
-              size="small"
-              style={{ color: '#aaa', flexShrink: 0 }}
-              icon={
-                secretVisible ? (
-                  <VisibilityOff style={{ fontSize: 16 }} />
-                ) : (
-                  <Visibility style={{ fontSize: 16 }} />
-                )
-              }
-              onClick={() => setSecretVisible((v) => !v)}
-            />
-            <Button
-              type="text"
-              size="small"
-              style={{ color: '#aaa', flexShrink: 0 }}
-              icon={<ContentCopy style={{ fontSize: 16 }} />}
-              onClick={() => handleCopy(revealedSecret)}
-            />
+              <code
+                style={{
+                  flex: 1,
+                  wordBreak: 'break-all',
+                  fontFamily: '"Google Sans Mono", monospace',
+                  fontSize: 13,
+                  color: '#e1e1e1',
+                  background: 'transparent',
+                }}
+              >
+                {secretVisible ? revealedSecret : maskString(revealedSecret)}
+              </code>
+              <Button
+                type="text"
+                size="small"
+                style={{ color: '#aaa', flexShrink: 0 }}
+                icon={
+                  secretVisible ? (
+                    <VisibilityOff style={{ fontSize: 16 }} />
+                  ) : (
+                    <Visibility style={{ fontSize: 16 }} />
+                  )
+                }
+                onClick={() => setSecretVisible((v) => !v)}
+              />
+              <Button
+                type="text"
+                size="small"
+                style={{ color: '#aaa', flexShrink: 0 }}
+                icon={<ContentCopy style={{ fontSize: 16 }} />}
+                onClick={() => handleCopy(revealedSecret)}
+              />
+            </Box>
           </Box>
         </Box>
       </Modal>

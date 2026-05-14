@@ -910,8 +910,10 @@ paths:
       - multipart/form-data
       description: |-
         Queue a message to be sent via the specified device. Either text or file must be provided (or both).
-        At least one of contact, group_url, or reply_id must be provided.
-        The 'contact' field accepts: phone number or group ID. Use 'group_url' if you don't have the group ID (it will be extracted automatically).
+        At least one of contact or group_url must be provided. If both are provided, group_url takes priority.
+        The 'contact' field accepts comma-separated phone numbers or group IDs.
+        The 'group_url' field accepts comma-separated group URLs.
+        The 'reply_id' field can be used with either contact or group_url to reply to a specific message.
         For JSON requests: use file_content (base64) and file_extension to send files.
         For multipart requests: use the file field to upload files directly.
       parameters:

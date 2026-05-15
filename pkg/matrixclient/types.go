@@ -57,6 +57,8 @@ type SendMessageRequest struct {
 	Username      string `json:"username"`
 	FileContent   string `json:"file_content,omitempty"`
 	FileExtension string `json:"file_extension,omitempty"`
+	GroupURL      string `json:"group_url,omitempty"`
+	ReplyID       string `json:"reply_id,omitempty"`
 }
 
 type SendMessageResponse struct {

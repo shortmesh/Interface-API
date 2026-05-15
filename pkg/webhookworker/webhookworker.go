@@ -35,6 +35,7 @@ type Media struct {
 }
 
 type IncomingMessage struct {
+	ID        string `json:"ID"`
 	IsContact bool   `json:"IsContact"`
 	Type      string `json:"Type"`
 	From      string `json:"From"`

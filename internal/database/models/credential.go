@@ -49,7 +49,7 @@ func (s *Scopes) Scan(value any) error {
 var roleScopes = map[CredentialRole]Scopes{
 	RoleSuperAdmin: {"*"},
 	RoleUser: {
-		"tokens:write:create",
+		"tokens:*",
 		"devices:*",
 		"webhooks:*",
 	},
@@ -95,12 +95,12 @@ func contains(scopes Scopes, scope string) bool {
 
 type Credential struct {
 	ID           uint           `json:"id"`
-	ClientID     string         `json:"client_id" gorm:"uniqueIndex;not null"`
-	ClientSecret []byte         `json:"-" gorm:"not null"`
-	Role         CredentialRole `json:"role" gorm:"not null"`
-	Scopes       Scopes         `json:"scopes" gorm:"type:text"`
+	ClientID     string         `json:"client_id"`
+	ClientSecret []byte         `json:"-"`
+	Role         CredentialRole `json:"role"`
+	Scopes       Scopes         `json:"scopes"`
 	Description  string         `json:"description"`
-	Active       bool           `json:"active" gorm:"default:true"`
+	Active       bool           `json:"active"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 }

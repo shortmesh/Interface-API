@@ -15,16 +15,15 @@ import (
 // Create godoc
 //
 //	@Summary		Create a credential
-//	@Description	Create a new API credential with client_id and auto-generated client_secret
+//	@Description	Create a new API credential with auto-generated client_id and client_secret
 //	@Tags			credentials,admin
 //	@Accept			json
 //	@Produce		json
 //	@Security		BasicAuth
 //	@Security		CookieAuth
-//	@Param			request	body		CreateRequest	true	"Credential details"
+//	@Param			request	body		CreateRequest	false	"Credential details"
 //	@Success		201		{object}	CreateResponse	"Credential created successfully"
 //	@Failure		400		{object}	ErrorResponse	"Invalid request"
-//	@Failure		409		{object}	ErrorResponse	"Credential already exists"
 //	@Failure		403		{object}	ErrorResponse	"Insufficient permissions"
 //	@Failure		500		{object}	ErrorResponse	"Internal server error"
 //	@Router			/api/v1/credentials [post]
@@ -38,24 +37,30 @@ func (h *CredentialHandler) Create(c echo.Context) error {
 		})
 	}
 
-	if req.ClientID == "" {
-		logger.Info("Credential creation failed: missing client_id")
-		return c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error: "missing required field: client_id",
-		})
-	}
+	const maxRetries = 5
+	var clientID string
+	var err error
 
-	_, err := models.FindCredentialByClientID(h.db.DB(), req.ClientID)
-	if err == nil {
-		logger.Info(fmt.Sprintf("Credential creation failed: client_id '%s' already exists", req.ClientID))
-		return c.JSON(http.StatusConflict, ErrorResponse{
-			Error: fmt.Sprintf("Credential with client_id '%s' already exists", req.ClientID),
-		})
-	}
+	for i := range maxRetries {
+		clientID, err = crypto.GenerateSecureToken(16)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to generate client ID: %v", err))
+			return echo.ErrInternalServerError
+		}
 
-	if err != gorm.ErrRecordNotFound {
-		logger.Error(fmt.Sprintf("Failed to check existing credential: %v", err))
-		return echo.ErrInternalServerError
+		_, err = models.FindCredentialByClientID(h.db.DB(), clientID)
+		if err == gorm.ErrRecordNotFound {
+			break
+		}
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to check existing credential: %v", err))
+			return echo.ErrInternalServerError
+		}
+
+		if i == maxRetries-1 {
+			logger.Error("Failed to generate unique client ID after max retries")
+			return echo.ErrInternalServerError
+		}
 	}
 
 	clientSecret, err := crypto.GenerateSecureToken(32)
@@ -72,7 +77,7 @@ func (h *CredentialHandler) Create(c echo.Context) error {
 
 	credential, err := models.UpsertCredential(
 		h.db.DB(),
-		req.ClientID,
+		clientID,
 		secretHash,
 		models.RoleUser,
 		req.Description,

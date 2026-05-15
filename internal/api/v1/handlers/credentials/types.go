@@ -14,7 +14,6 @@ func NewCredentialHandler(db database.Service) *CredentialHandler {
 }
 
 type CreateRequest struct {
-	ClientID    string `json:"client_id" validate:"required"`
 	Description string `json:"description"`
 }
 
@@ -39,9 +38,10 @@ type CredentialResponse struct {
 }
 
 type UpdateRequest struct {
-	RegenerateSecret *bool   `json:"regenerate_secret,omitempty"`
-	Active           *bool   `json:"active,omitempty"`
-	Description      *string `json:"description,omitempty"`
+	RegenerateSecret *bool          `json:"regenerate_secret,omitempty"`
+	Active           *bool          `json:"active,omitempty"`
+	Description      *string        `json:"description,omitempty"`
+	Scopes           *models.Scopes `json:"scopes,omitempty"`
 }
 
 type UpdateResponse struct {

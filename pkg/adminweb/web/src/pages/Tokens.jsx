@@ -81,7 +81,8 @@ export default function Tokens() {
     setCreating(true);
     setCreateTokenError("");
     try {
-      const body = { use_host: useHost };
+      const body = {};
+      if (useHost) body.use_host = true;
       if (setExpiry && expiryDate) {
         body.expires_at = expiryDate.toISOString();
       }
@@ -428,28 +429,19 @@ export default function Tokens() {
               style={{ marginBottom: 16 }}
             />
           )}
-          {hasScope("*") && (
-            <div style={{ marginBottom: 16 }}>
-              <Checkbox
-                checked={useHost}
-                onChange={(e) => setUseHost(e.target.checked)}
-              >
-                <div>
-                  <div>Use admin credentials</div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "rgba(255, 255, 255, 0.6)",
-                      marginTop: 4,
-                    }}
-                  >
-                    Reuse existing admin identity. Leave unchecked for first
-                    token or to create new credentials.
-                  </div>
+          <div style={{ marginBottom: 16 }}>
+            <Checkbox
+              checked={useHost}
+              onChange={(e) => setUseHost(e.target.checked)}
+            >
+              <div>
+                <div>Use admin credentials</div>
+                <div style={{ fontSize: 12, color: "rgba(255, 255, 255, 0.6)", marginTop: 4 }}>
+                  Reuse existing admin identity. Leave unchecked for first token or to create new credentials.
                 </div>
-              </Checkbox>
-            </div>
-          )}
+              </div>
+            </Checkbox>
+          </div>
 
           <div style={{ marginBottom: 16 }}>
             <Checkbox

@@ -12,6 +12,7 @@ import (
 
 type MatrixIdentity struct {
 	ID             uint       `json:"id"`
+	CredentialID   *uint      `json:"credential_id"`
 	MatrixUsername string     `json:"matrix_username"`
 	MatrixDeviceID string     `json:"matrix_device_id"`
 	TokenHash      []byte     `json:"token_hash"`
@@ -53,7 +54,7 @@ func FindMatrixIdentityByToken(db *gorm.DB, token string) (*MatrixIdentity, erro
 	return &identity, err
 }
 
-func CreateMatrixIdentity(db *gorm.DB, matrixUsername, matrixDeviceID string, isAdmin bool, expiresAt *time.Time) (string, *MatrixIdentity, error) {
+func CreateMatrixIdentity(db *gorm.DB, credentialID *uint, matrixUsername, matrixDeviceID string, isAdmin bool, expiresAt *time.Time) (string, *MatrixIdentity, error) {
 	tokenPrefix := os.Getenv("MATRIX_TOKEN_PREFIX")
 	if tokenPrefix == "" {
 		tokenPrefix = "mt_"
@@ -72,6 +73,7 @@ func CreateMatrixIdentity(db *gorm.DB, matrixUsername, matrixDeviceID string, is
 	}
 
 	identity := &MatrixIdentity{
+		CredentialID:   credentialID,
 		MatrixUsername: matrixUsername,
 		MatrixDeviceID: matrixDeviceID,
 		TokenHash:      hash,
@@ -91,8 +93,8 @@ func CreateMatrixIdentity(db *gorm.DB, matrixUsername, matrixDeviceID string, is
 	return tokenPrefix + token, identity, nil
 }
 
-func FindAdminMatrixIdentity(db *gorm.DB) (*MatrixIdentity, error) {
+func FindHostIdentityByCredential(db *gorm.DB, credentialID uint) (*MatrixIdentity, error) {
 	var identity MatrixIdentity
-	err := db.Where("is_admin = ?", true).First(&identity).Error
+	err := db.Where("credential_id = ? AND is_admin = ?", credentialID, true).First(&identity).Error
 	return &identity, err
 }

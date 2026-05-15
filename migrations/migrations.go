@@ -10,5 +10,6 @@ func GetAllMigrations() []migrator.Script {
 		versions.Migration20260212_000003{},
 		versions.Migration20260417_000001{},
 		versions.Migration20260423_000001{},
+		versions.Migration20260514_000001{},
 	}
 }

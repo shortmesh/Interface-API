@@ -64,7 +64,8 @@ export default function Devices() {
   const [addDeviceError, setAddDeviceError] = useState("");
   const [sendMessageError, setSendMessageError] = useState("");
   const [messageFiles, setMessageFiles] = useState([]);
-  const [groupURL, setGroupURL] = useState("");
+  const [groupURLInput, setGroupURLInput] = useState("");
+  const [groupURLs, setGroupURLs] = useState([]);
   const [replyID, setReplyID] = useState("");
 
   const triggerShake = (setter) => {
@@ -318,7 +319,8 @@ export default function Devices() {
     setContactInput("");
     setContactMode("phone");
     setMessageText("");
-    setGroupURL("");
+    setGroupURLInput("");
+    setGroupURLs([]);
     setReplyID("");
     setMessageFiles((prev) => {
       prev.forEach((e) => { if (e.previewUrl) URL.revokeObjectURL(e.previewUrl); });
@@ -351,12 +353,23 @@ export default function Devices() {
     setContactInput("");
   };
 
+  const handleAddGroupURL = () => {
+    const trimmed = groupURLInput?.trim();
+    if (!trimmed) return;
+    setGroupURLs((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
+    setGroupURLInput("");
+  };
+
+  const handleRemoveGroupURL = (url) => {
+    setGroupURLs((prev) => prev.filter((u) => u !== url));
+  };
+
   const handleRemoveContact = (contact) => {
     setContacts((prev) => prev.filter((c) => c !== contact));
   };
 
   const handleSendMessage = async () => {
-    if (contacts.length === 0 && !groupURL.trim()) {
+    if (contacts.length === 0 && groupURLs.length === 0) {
       setSendMessageError("At least one contact or a group URL is required");
       return;
     }
@@ -374,13 +387,13 @@ export default function Devices() {
           formData.append("platform", selectedDevice.platform);
           formData.append("text", messageText);
           formData.append("file", file);
-          if (groupURL.trim()) formData.append("group_url", groupURL.trim());
+          if (groupURLs.length > 0) formData.append("group_url", groupURLs.join(","));
           if (replyID.trim()) formData.append("reply_id", replyID.trim());
           return apiCall(`/api/v1/admin/devices/${selectedDevice.device_id}/message`, { method: "POST", body: formData });
         }
         const body = { platform: selectedDevice.platform, text: messageText };
         if (contact) body.contact = contact;
-        if (groupURL.trim()) body.group_url = groupURL.trim();
+        if (groupURLs.length > 0) body.group_url = groupURLs.join(",");
         if (replyID.trim()) body.reply_id = replyID.trim();
         return apiCall(`/api/v1/admin/devices/${selectedDevice.device_id}/message`, {
           method: "POST",
@@ -809,12 +822,39 @@ export default function Devices() {
             </Button>
           </Box>
           {contactMode === "group_url" ? (
-            <Input
-              placeholder="https://chat.whatsapp.com/invite123"
-              value={groupURL}
-              onChange={(e) => { setGroupURL(e.target.value); setSendMessageError(""); }}
-              autoComplete="off"
-            />
+            <>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Input
+                  style={{ flex: 1 }}
+                  placeholder="https://chat.whatsapp.com/invite123"
+                  value={groupURLInput}
+                  onChange={(e) => { setGroupURLInput(e.target.value); setSendMessageError(""); }}
+                  onPressEnter={handleAddGroupURL}
+                  autoComplete="off"
+                />
+                <Fab
+                  size="small"
+                  color="primary"
+                  onClick={handleAddGroupURL}
+                  disabled={!groupURLInput?.trim()}
+                  sx={{ flexShrink: 0, boxShadow: 2 }}
+                >
+                  <Add />
+                </Fab>
+              </Box>
+              {groupURLs.length > 0 && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
+                  {groupURLs.map((url) => (
+                    <Chip
+                      key={url}
+                      label={url}
+                      size="small"
+                      onDelete={() => handleRemoveGroupURL(url)}
+                    />
+                  ))}
+                </Box>
+              )}
+            </>
           ) : (
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               {contactMode === "phone" ? (

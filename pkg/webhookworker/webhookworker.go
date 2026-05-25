@@ -41,6 +41,7 @@ type IncomingMessage struct {
 	From      string `json:"From"`
 	To        string `json:"To"`
 	Message   string `json:"Message"`
+	DeviceID  string `json:"DeviceId"`
 	Media     Media  `json:"Media"`
 }
 

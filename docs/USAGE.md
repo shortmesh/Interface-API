@@ -322,11 +322,11 @@ When an incoming message is received, your webhook URL will receive a POST reque
 
 ```json
 {
-  "id": "$A-H85Whzd9wU3TnQFhUxio1iEg4Irj_7QJuklCMUeQE",
+  "id": "$A-XXXXXXXXXXXXXXXXXXXXXXX",
   "is_contact": false,
   "type": "m.text",
-  "from": "@whatsapp_237672849485:matrix.afkanerd.de",
-  "to": "@f8fcc41e8a7e4500:matrix.afkanerd.de",
+  "from": "@whatsapp_2376987654321:matrix.example.com",
+  "to": "@xxxxxxxxxxxx:matrix.example.com",
   "message": "Good morning",
   "device_id": "237123456789",
   "media": {

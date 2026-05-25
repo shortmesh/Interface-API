@@ -45,6 +45,52 @@ type IncomingMessage struct {
 	Media     Media  `json:"Media"`
 }
 
+type WebhookMediaInfo struct {
+	Size     float64 `json:"size"`
+	MimeType string  `json:"mime_type"`
+	Width    int     `json:"width"`
+	Height   int     `json:"height"`
+	BlurHash string  `json:"blur_hash"`
+}
+
+type WebhookMedia struct {
+	Content []byte           `json:"content"`
+	Info    WebhookMediaInfo `json:"info"`
+}
+
+type WebhookMessage struct {
+	ID        string       `json:"id"`
+	IsContact bool         `json:"is_contact"`
+	Type      string       `json:"type"`
+	From      string       `json:"from"`
+	To        string       `json:"to"`
+	Message   string       `json:"message"`
+	DeviceID  string       `json:"device_id"`
+	Media     WebhookMedia `json:"media"`
+}
+
+func (m *IncomingMessage) ToWebhookMessage() *WebhookMessage {
+	return &WebhookMessage{
+		ID:        m.ID,
+		IsContact: m.IsContact,
+		Type:      m.Type,
+		From:      m.From,
+		To:        m.To,
+		Message:   m.Message,
+		DeviceID:  m.DeviceID,
+		Media: WebhookMedia{
+			Content: m.Media.Content,
+			Info: WebhookMediaInfo{
+				Size:     m.Media.Info.Size,
+				MimeType: m.Media.Info.MimeType,
+				Width:    m.Media.Info.Width,
+				Height:   m.Media.Info.Height,
+				BlurHash: m.Media.Info.BlurHash,
+			},
+		},
+	}
+}
+
 type userConsumer struct {
 	matrixUsername string
 	cancel         context.CancelFunc
@@ -291,7 +337,8 @@ func (w *WebhookWorker) runUserConsumerLoop(matrixIdentityID uint, queueName str
 			return nil
 		}
 
-		jsonData, err := json.Marshal(msg)
+		webhookMsg := msg.ToWebhookMessage()
+		jsonData, err := json.Marshal(webhookMsg)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Webhook consumer: Failed to marshal message: %v", err))
 			delivery.Nack(false, false)

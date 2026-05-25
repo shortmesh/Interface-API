@@ -316,6 +316,50 @@ curl -X POST http://localhost:8080/api/v1/webhooks \
 }
 ```
 
+### Webhook Payload Structure
+
+When an incoming message is received, your webhook URL will receive a POST request with the following JSON structure:
+
+```json
+{
+  "id": "$A-H85Whzd9wU3TnQFhUxio1iEg4Irj_7QJuklCMUeQE",
+  "is_contact": false,
+  "type": "m.text",
+  "from": "@whatsapp_237672849485:matrix.afkanerd.de",
+  "to": "@f8fcc41e8a7e4500:matrix.afkanerd.de",
+  "message": "Good morning",
+  "device_id": "237123456789",
+  "media": {
+    "content": null,
+    "info": {
+      "size": 0,
+      "mime_type": "",
+      "width": 0,
+      "height": 0,
+      "blur_hash": ""
+    }
+  }
+}
+```
+
+**Field descriptions:**
+
+- `id`: Unique Matrix event ID for the message
+- `is_contact`: `true` if message is from a saved contact, `false` if from unknown sender
+- `type`: Matrix message type (e.g., "m.text", "m.image", "m.file", "m.video")
+- `from`: Sender's Matrix user ID or contact name
+- `to`: Recipient's Matrix user ID
+- `message`: Text content of the message (empty for media-only messages)
+- `device_id`: Device identifier that received the message
+- `media`: Media object containing binary data and metadata (null if no media)
+  - `content`: Base64 encoded or raw binary media data
+  - `info`: Media metadata
+    - `size`: File size in bytes
+    - `mime_type`: MIME type of the media
+    - `width`: Image/video width (0 if not applicable)
+    - `height`: Image/video height (0 if not applicable)
+    - `blur_hash`: BlurHash string for image preview (used by some clients)
+
 ### List Webhooks
 
 ```bash

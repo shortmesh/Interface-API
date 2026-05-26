@@ -241,7 +241,7 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 		_, err := matrixClient.SendMessage(msg.DeviceID, req)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Worker %d: Message delivery failed: %v", workerID, err))
-			delivery.Nack(false, false)
+			delivery.Nack(false, true)
 			return err
 		}
 

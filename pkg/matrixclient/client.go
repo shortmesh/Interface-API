@@ -41,7 +41,7 @@ func New() (*Client, error) {
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		httpClient: &http.Client{
-			Timeout: 120 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 	}, nil
 }

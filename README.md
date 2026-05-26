@@ -73,7 +73,7 @@ docker logs -f interface-api
 docker run --rm -v $(pwd)/data:/app/data -v $(pwd)/.env:/app/.env interface-api ./migrate -action=up
 ```
 
-**For database encryption**, add build arg and configure `.env`:
+For database encryption, add build arg and configure `.env`:
 
 ```bash
 docker build --build-arg ENABLE_DB_ENCRYPTION=true -t interface-api .

@@ -295,6 +295,9 @@ curl -X DELETE http://localhost:8080/api/v1/devices \
 
 Receive incoming message notifications via HTTP POST.
 
+> [!IMPORTANT]
+> Webhooks are tied to tokens. Every device stored under a token will publish incoming messages to that token's configured webhook. If multiple devices share the same token, all their incoming messages will be delivered to the same webhook URL.
+
 ### Add Webhook
 
 ```bash

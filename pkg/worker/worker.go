@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"runtime/debug"
 	"strconv"
@@ -32,25 +33,26 @@ type QueuedMessage struct {
 }
 
 const (
-	DefaultRetryDelay    = 5 * time.Second
-	RetryCountHeader     = "x-retry-count"
-	LongDelayRetryHeader = "x-long-delay-retry"
+	RetryCountHeader       = "x-retry-count"
+	MessageCreatedAtHeader = "x-message-created-at"
 )
 
 type Worker struct {
-	ctx              context.Context
-	cancel           context.CancelFunc
-	wg               sync.WaitGroup
-	workerCount      int
-	rabbitURL        string
-	exchangeName     string
-	queueName        string
-	delayQueueName   string
-	retryQueueName   string
-	failedQueueName  string
-	maxRetryAttempts int
-	failedRetryDelay time.Duration
-	sharedThrottler  *throttler.Throttler
+	ctx                      context.Context
+	cancel                   context.CancelFunc
+	wg                       sync.WaitGroup
+	workerCount              int
+	rabbitURL                string
+	exchangeName             string
+	queueName                string
+	delayQueueName           string
+	retryQueueName           string
+	initialRetryDelay        time.Duration
+	exponentialBackoffFactor float64
+	exponentialBackoffStart  int64
+	maxRetryDelay            time.Duration
+	messageMaxTTL            time.Duration
+	sharedThrottler          *throttler.Throttler
 }
 
 func New() *Worker {
@@ -90,41 +92,75 @@ func New() *Worker {
 		retryQueueName = "shortmesh-messages-retry-queue"
 	}
 
-	failedQueueName := os.Getenv("MESSAGE_FAILED_QUEUE_NAME")
-	if failedQueueName == "" {
-		failedQueueName = "shortmesh-messages-failed-queue"
-	}
-
-	maxRetryAttempts := 20
-	if attemptsStr := os.Getenv("MESSAGE_MAX_RETRY_ATTEMPTS"); attemptsStr != "" {
-		if attempts, err := strconv.Atoi(attemptsStr); err == nil && attempts > 0 {
-			maxRetryAttempts = attempts
+	initialRetryDelay := 5 * time.Second
+	if delayStr := os.Getenv("MESSAGE_INITIAL_RETRY_DELAY_SECONDS"); delayStr != "" {
+		if seconds, err := strconv.Atoi(delayStr); err == nil && seconds > 0 {
+			initialRetryDelay = time.Duration(seconds) * time.Second
 		}
 	}
 
-	failedRetryDelay := 24 * time.Hour
-	if delayStr := os.Getenv("MESSAGE_FAILED_RETRY_DELAY_HOURS"); delayStr != "" {
-		if hours, err := strconv.Atoi(delayStr); err == nil && hours > 0 {
-			failedRetryDelay = time.Duration(hours) * time.Hour
+	exponentialBackoffFactor := 2.0
+	if factorStr := os.Getenv("MESSAGE_EXPONENTIAL_BACKOFF_FACTOR"); factorStr != "" {
+		if factor, err := strconv.ParseFloat(factorStr, 64); err == nil && factor > 1.0 {
+			exponentialBackoffFactor = factor
+		}
+	}
+
+	exponentialBackoffStart := int64(5)
+	if startStr := os.Getenv("MESSAGE_EXPONENTIAL_BACKOFF_START"); startStr != "" {
+		if start, err := strconv.ParseInt(startStr, 10, 64); err == nil && start > 0 {
+			exponentialBackoffStart = start
+		}
+	}
+
+	maxRetryDelay := 5 * time.Minute
+	if delayStr := os.Getenv("MESSAGE_MAX_RETRY_DELAY_MINUTES"); delayStr != "" {
+		if minutes, err := strconv.Atoi(delayStr); err == nil && minutes > 0 {
+			maxRetryDelay = time.Duration(minutes) * time.Minute
+		}
+	}
+
+	messageMaxTTL := 24 * time.Hour
+	if ttlStr := os.Getenv("MESSAGE_MAX_TTL_HOURS"); ttlStr != "" {
+		if hours, err := strconv.Atoi(ttlStr); err == nil && hours > 0 {
+			messageMaxTTL = time.Duration(hours) * time.Hour
 		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Worker{
-		ctx:              ctx,
-		cancel:           cancel,
-		workerCount:      workerCount,
-		rabbitURL:        rabbitURL,
-		exchangeName:     exchangeName,
-		queueName:        queueName,
-		delayQueueName:   delayQueueName,
-		retryQueueName:   retryQueueName,
-		failedQueueName:  failedQueueName,
-		maxRetryAttempts: maxRetryAttempts,
-		failedRetryDelay: failedRetryDelay,
-		sharedThrottler:  throttler.New(),
+		ctx:                      ctx,
+		cancel:                   cancel,
+		workerCount:              workerCount,
+		rabbitURL:                rabbitURL,
+		exchangeName:             exchangeName,
+		queueName:                queueName,
+		delayQueueName:           delayQueueName,
+		retryQueueName:           retryQueueName,
+		initialRetryDelay:        initialRetryDelay,
+		exponentialBackoffFactor: exponentialBackoffFactor,
+		exponentialBackoffStart:  exponentialBackoffStart,
+		maxRetryDelay:            maxRetryDelay,
+		messageMaxTTL:            messageMaxTTL,
+		sharedThrottler:          throttler.New(),
 	}
+}
+
+func (w *Worker) calculateRetryDelay(retryCount int64) time.Duration {
+	if retryCount < w.exponentialBackoffStart {
+		return w.initialRetryDelay
+	}
+
+	exponent := retryCount - w.exponentialBackoffStart
+	delay := float64(w.initialRetryDelay) * math.Pow(w.exponentialBackoffFactor, float64(exponent))
+
+	result := time.Duration(delay)
+	if result > w.maxRetryDelay {
+		return w.maxRetryDelay
+	}
+
+	return result
 }
 
 func IsEnabled() bool {
@@ -244,17 +280,6 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 		return err
 	}
 
-	failedQueueArgs := amqp.Table{
-		"x-dead-letter-exchange":    w.exchangeName,
-		"x-dead-letter-routing-key": "message.*.*",
-	}
-	failedQueueConfig := rabbitmq.DefaultQueueConfig(w.failedQueueName)
-	failedQueueConfig.Args = failedQueueArgs
-
-	if err := consumer.DeclareQueue(failedQueueConfig); err != nil {
-		return err
-	}
-
 	deliveryHandler := func(delivery amqp.Delivery) error {
 		defer func() {
 			if r := recover(); r != nil {
@@ -271,15 +296,26 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 		}
 
 		retryCount := int64(0)
-		isLongDelayRetry := false
+		messageCreatedAt := time.Now()
 		if delivery.Headers != nil {
 			if count, ok := delivery.Headers[RetryCountHeader].(int64); ok {
 				retryCount = count
 			}
-			if longDelay, ok := delivery.Headers[LongDelayRetryHeader].(bool); ok {
-				isLongDelayRetry = longDelay
+			if createdAtStr, ok := delivery.Headers[MessageCreatedAtHeader].(string); ok {
+				if parsedTime, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
+					messageCreatedAt = parsedTime
+				}
 			}
 		}
+
+		messageAge := time.Since(messageCreatedAt)
+		if messageAge > w.messageMaxTTL {
+			logger.Warn(fmt.Sprintf("Worker %d: Message exceeded max TTL (%v), discarding", workerID, w.messageMaxTTL))
+			delivery.Ack(false)
+			return nil
+		}
+
+		remainingTTL := w.messageMaxTTL - messageAge
 
 		if !w.sharedThrottler.Allow(msg.PlatformName, msg.Username) {
 			waitTime := w.sharedThrottler.WaitTime(msg.PlatformName, msg.Username)
@@ -288,8 +324,8 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 			publishOpts := rabbitmq.DefaultPublishOptions()
 			publishOpts.Expiration = fmt.Sprintf("%d", waitTime.Milliseconds())
 			publishOpts.Headers = amqp.Table{
-				RetryCountHeader:     retryCount,
-				LongDelayRetryHeader: isLongDelayRetry,
+				RetryCountHeader:       retryCount,
+				MessageCreatedAtHeader: messageCreatedAt.Format(time.RFC3339),
 			}
 
 			if err := producer.Publish("", w.delayQueueName, msg, publishOpts); err != nil {
@@ -317,52 +353,22 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 		if err != nil {
 			logger.Error(fmt.Sprintf("Worker %d: Message delivery failed (attempt %d): %v", workerID, retryCount+1, err))
 
-			if isLongDelayRetry {
-				logger.Info(fmt.Sprintf("Worker %d: Long delay retry failed, returning to failed queue for %v", workerID, w.failedRetryDelay))
-				publishOpts := rabbitmq.DefaultPublishOptions()
-				publishOpts.Expiration = fmt.Sprintf("%d", w.failedRetryDelay.Milliseconds())
-				publishOpts.Headers = amqp.Table{
-					RetryCountHeader:     int64(0),
-					LongDelayRetryHeader: true,
-				}
-
-				if err := producer.Publish("", w.failedQueueName, msg, publishOpts); err != nil {
-					logger.Error(fmt.Sprintf("Worker %d: Failed queue publish error: %v", workerID, err))
-					delivery.Nack(false, true)
-					return err
-				}
-
-				delivery.Ack(false)
-				return nil
-			}
-
 			retryCount++
+			retryDelay := w.calculateRetryDelay(retryCount)
 
-			if retryCount >= int64(w.maxRetryAttempts) {
-				logger.Warn(fmt.Sprintf("Worker %d: Message exceeded %d attempts, moving to failed queue for %v retry", workerID, w.maxRetryAttempts, w.failedRetryDelay))
-
-				publishOpts := rabbitmq.DefaultPublishOptions()
-				publishOpts.Expiration = fmt.Sprintf("%d", w.failedRetryDelay.Milliseconds())
-				publishOpts.Headers = amqp.Table{
-					RetryCountHeader:     int64(0),
-					LongDelayRetryHeader: true,
-				}
-
-				if err := producer.Publish("", w.failedQueueName, msg, publishOpts); err != nil {
-					logger.Error(fmt.Sprintf("Worker %d: Failed queue publish error: %v", workerID, err))
-					delivery.Nack(false, true)
-					return err
-				}
-
+			if retryDelay > remainingTTL {
+				logger.Warn(fmt.Sprintf("Worker %d: Retry delay (%v) exceeds remaining TTL (%v), discarding message", workerID, retryDelay, remainingTTL))
 				delivery.Ack(false)
 				return nil
 			}
+
+			logger.Info(fmt.Sprintf("Worker %d: Scheduling retry #%d with delay %v", workerID, retryCount, retryDelay))
 
 			publishOpts := rabbitmq.DefaultPublishOptions()
-			publishOpts.Expiration = fmt.Sprintf("%d", DefaultRetryDelay.Milliseconds())
+			publishOpts.Expiration = fmt.Sprintf("%d", retryDelay.Milliseconds())
 			publishOpts.Headers = amqp.Table{
-				RetryCountHeader:     retryCount,
-				LongDelayRetryHeader: false,
+				RetryCountHeader:       retryCount,
+				MessageCreatedAtHeader: messageCreatedAt.Format(time.RFC3339),
 			}
 
 			if err := producer.Publish("", w.retryQueueName, msg, publishOpts); err != nil {

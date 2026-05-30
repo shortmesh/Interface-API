@@ -208,24 +208,25 @@ func (w *WebhookWorker) syncConsumers() {
 		return
 	}
 
-	usernameMap := make(map[string]uint)
+	usernameIdentities := make(map[string][]uint)
 	for _, identity := range identities {
-		if _, exists := usernameMap[identity.MatrixUsername]; !exists {
-			usernameMap[identity.MatrixUsername] = identity.ID
-		}
+		usernameIdentities[identity.MatrixUsername] = append(
+			usernameIdentities[identity.MatrixUsername],
+			identity.ID,
+		)
 	}
 
 	w.userConsumersMutex.Lock()
 
 	for username, consumer := range w.userConsumers {
-		if _, exists := usernameMap[username]; !exists {
+		if _, exists := usernameIdentities[username]; !exists {
 			logger.Info("Stopping consumer for removed user")
 			consumer.cancel()
 			delete(w.userConsumers, username)
 		}
 	}
 
-	for username, identityID := range usernameMap {
+	for username, identityIDs := range usernameIdentities {
 		if _, exists := w.userConsumers[username]; !exists {
 			logger.Info("Starting consumer for new user")
 			ctx, cancel := context.WithCancel(w.ctx)
@@ -237,10 +238,10 @@ func (w *WebhookWorker) syncConsumers() {
 			}
 
 			w.wg.Add(1)
-			go func(queue string, identityID uint, userCtx context.Context) {
+			go func(queue string, identityIDs []uint, userCtx context.Context) {
 				defer w.wg.Done()
-				w.runUserConsumer(queue, identityID, userCtx)
-			}(queueName, identityID, ctx)
+				w.runUserConsumer(queue, identityIDs, userCtx)
+			}(queueName, identityIDs, ctx)
 		}
 	}
 
@@ -253,7 +254,7 @@ func (w *WebhookWorker) getActiveMatrixIdentities() ([]models.MatrixIdentity, er
 	return identities, err
 }
 
-func (w *WebhookWorker) runUserConsumer(queueName string, matrixIdentityID uint, ctx context.Context) {
+func (w *WebhookWorker) runUserConsumer(queueName string, matrixIdentityIDs []uint, ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error(fmt.Sprintf("Webhook consumer panic: %v\n%s", r, debug.Stack()))
@@ -274,7 +275,7 @@ func (w *WebhookWorker) runUserConsumer(queueName string, matrixIdentityID uint,
 		logger.Info("Webhook consumer: Connecting to queue")
 		logger.Debug(fmt.Sprintf("Webhook consumer connecting to queue: %s", queueName))
 		connectionStart := time.Now()
-		err := w.runUserConsumerLoop(matrixIdentityID, queueName, ctx)
+		err := w.runUserConsumerLoop(matrixIdentityIDs, queueName, ctx)
 		connectionDuration := time.Since(connectionStart)
 
 		if err == nil {
@@ -299,7 +300,7 @@ func (w *WebhookWorker) runUserConsumer(queueName string, matrixIdentityID uint,
 	}
 }
 
-func (w *WebhookWorker) runUserConsumerLoop(matrixIdentityID uint, queueName string, parentCtx context.Context) error {
+func (w *WebhookWorker) runUserConsumerLoop(matrixIdentityIDs []uint, queueName string, parentCtx context.Context) error {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
@@ -324,14 +325,25 @@ func (w *WebhookWorker) runUserConsumerLoop(matrixIdentityID uint, queueName str
 			return err
 		}
 
-		webhooks, err := models.FindActiveWebhooksByIdentity(w.db.DB(), matrixIdentityID)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Webhook consumer: Failed to fetch webhooks: %v", err))
-			delivery.Nack(false, true)
-			return err
+		var allWebhooks []models.Webhook
+		seenURLs := make(map[string]bool)
+
+		for _, identityID := range matrixIdentityIDs {
+			webhooks, err := models.FindActiveWebhooksByIdentity(w.db.DB(), identityID)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Webhook consumer: Failed to fetch webhooks for identity %d: %v", identityID, err))
+				continue
+			}
+
+			for _, webhook := range webhooks {
+				if !seenURLs[webhook.URL] {
+					allWebhooks = append(allWebhooks, webhook)
+					seenURLs[webhook.URL] = true
+				}
+			}
 		}
 
-		if len(webhooks) == 0 {
+		if len(allWebhooks) == 0 {
 			logger.Debug("Webhook consumer: No active webhooks, skipping message")
 			delivery.Ack(false)
 			return nil
@@ -346,7 +358,7 @@ func (w *WebhookWorker) runUserConsumerLoop(matrixIdentityID uint, queueName str
 		}
 
 		var wg sync.WaitGroup
-		for _, webhook := range webhooks {
+		for _, webhook := range allWebhooks {
 			wg.Add(1)
 			go func(url string) {
 				defer wg.Done()
@@ -355,7 +367,7 @@ func (w *WebhookWorker) runUserConsumerLoop(matrixIdentityID uint, queueName str
 		}
 		wg.Wait()
 
-		logger.Info(fmt.Sprintf("Webhook consumer: Message delivered to %d webhook(s)", len(webhooks)))
+		logger.Info(fmt.Sprintf("Webhook consumer: Message delivered to %d webhook(s)", len(allWebhooks)))
 		delivery.Ack(false)
 		return nil
 	}
@@ -385,7 +397,7 @@ func (w *WebhookWorker) runUserConsumerLoop(matrixIdentityID uint, queueName str
 	}
 }
 
-func (w *WebhookWorker) postToWebhook(url string, data []byte) {
+func (w *WebhookWorker) postToWebhook(url string, data []byte) (statusCode int, shouldRetry bool) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -394,7 +406,7 @@ func (w *WebhookWorker) postToWebhook(url string, data []byte) {
 	if err != nil {
 		logger.Error(fmt.Sprintf("Webhook consumer: Failed to create HTTP request: %v", err))
 		logger.Debug(fmt.Sprintf("Webhook request creation failed for URL: %s", url))
-		return
+		return 0, true
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -404,15 +416,23 @@ func (w *WebhookWorker) postToWebhook(url string, data []byte) {
 	if err != nil {
 		logger.Error(fmt.Sprintf("Webhook consumer: HTTP POST failed: %v", err))
 		logger.Debug(fmt.Sprintf("Webhook POST failed to: %s", url))
-		return
+		return 0, true
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		logger.Info(fmt.Sprintf("Webhook consumer: Successfully delivered (status: %d)", resp.StatusCode))
-		logger.Debug(fmt.Sprintf("Webhook delivered to %s (status: %d)", url, resp.StatusCode))
+	statusCode = resp.StatusCode
+	shouldRetry = statusCode >= 500
+
+	if statusCode >= 200 && statusCode < 300 {
+		logger.Info(fmt.Sprintf("Webhook consumer: Successfully delivered (status: %d)", statusCode))
+		logger.Debug(fmt.Sprintf("Webhook delivered to %s (status: %d)", url, statusCode))
+	} else if statusCode >= 500 {
+		logger.Warn(fmt.Sprintf("Webhook consumer: Server error, will retry (status: %d)", statusCode))
+		logger.Debug(fmt.Sprintf("Webhook %s returned 5xx status: %d", url, statusCode))
 	} else {
-		logger.Warn(fmt.Sprintf("Webhook consumer: Non-2xx response (status: %d)", resp.StatusCode))
-		logger.Debug(fmt.Sprintf("Webhook %s returned status: %d", url, resp.StatusCode))
+		logger.Warn(fmt.Sprintf("Webhook consumer: Client error, will not retry (status: %d)", statusCode))
+		logger.Debug(fmt.Sprintf("Webhook %s returned non-retryable status: %d", url, statusCode))
 	}
+
+	return statusCode, shouldRetry
 }

@@ -37,6 +37,13 @@ const (
 	MessageCreatedAtHeader = "x-message-created-at"
 )
 
+var retryableStatusCodes = map[int]bool{
+	500: true, // Internal Server Error
+	502: true, // Bad Gateway
+	503: true, // Service Unavailable
+	504: true, // Gateway Timeout
+}
+
 type Worker struct {
 	ctx                      context.Context
 	cancel                   context.CancelFunc
@@ -349,9 +356,15 @@ func (w *Worker) runWorkerLoop(workerID int, matrixClient *matrixclient.Client) 
 			ReplyID:       msg.ReplyID,
 		}
 
-		_, err := matrixClient.SendMessage(msg.DeviceID, req)
+		_, statusCode, err := matrixClient.SendMessage(msg.DeviceID, req)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Worker %d: Message delivery failed (attempt %d): %v", workerID, retryCount+1, err))
+
+			if statusCode > 0 && !retryableStatusCodes[statusCode] {
+				logger.Warn(fmt.Sprintf("Worker %d: Non-retryable status code %d, discarding message", workerID, statusCode))
+				delivery.Ack(false)
+				return nil
+			}
 
 			retryCount++
 			retryDelay := w.calculateRetryDelay(retryCount)

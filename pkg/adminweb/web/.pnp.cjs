@@ -2338,10 +2338,10 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["baseline-browser-mapping", [\
-      ["npm:2.10.21", {\
-        "packageLocation": "../../../../../.yarn/berry/cache/baseline-browser-mapping-npm-2.10.21-a935d0dd92-10c0.zip/node_modules/baseline-browser-mapping/",\
+      ["npm:2.11.22", {\
+        "packageLocation": "../../../../../.yarn/berry/cache/baseline-browser-mapping-npm-2.11.22-b8e02e7b3f-10c0.zip/node_modules/baseline-browser-mapping/",\
         "packageDependencies": [\
-          ["baseline-browser-mapping", "npm:2.10.21"]\
+          ["baseline-browser-mapping", "npm:2.11.22"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -2361,7 +2361,7 @@ const RAW_RUNTIME_STATE =
       ["npm:4.28.2", {\
         "packageLocation": "../../../../../.yarn/berry/cache/browserslist-npm-4.28.2-8923c4854e-10c0.zip/node_modules/browserslist/",\
         "packageDependencies": [\
-          ["baseline-browser-mapping", "npm:2.10.21"],\
+          ["baseline-browser-mapping", "npm:2.11.22"],\
           ["browserslist", "npm:4.28.2"],\
           ["caniuse-lite", "npm:1.0.30001790"],\
           ["electron-to-chromium", "npm:1.5.344"],\

@@ -48,7 +48,7 @@ const RAW_RUNTIME_STATE =
           ["react-phone-number-input", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:3.4.16"],\
           ["react-router-dom", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.30.3"],\
           ["shortmesh-admin", "workspace:."],\
-          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.2"]\
+          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.4"]\
         ],\
         "linkType": "SOFT"\
       }]\
@@ -2024,7 +2024,7 @@ const RAW_RUNTIME_STATE =
           ["@types/vite", null],\
           ["@vitejs/plugin-react", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:4.7.0"],\
           ["react-refresh", "npm:0.17.0"],\
-          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.2"]\
+          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.4"]\
         ],\
         "packagePeers": [\
           "@types/vite",\
@@ -6076,7 +6076,7 @@ const RAW_RUNTIME_STATE =
           ["react-phone-number-input", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:3.4.16"],\
           ["react-router-dom", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.30.3"],\
           ["shortmesh-admin", "workspace:."],\
-          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.2"]\
+          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.4"]\
         ],\
         "linkType": "SOFT"\
       }]\
@@ -6484,15 +6484,15 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["vite", [\
-      ["npm:6.4.2", {\
-        "packageLocation": "../../../../../.yarn/berry/cache/vite-npm-6.4.2-26c5a0800c-10c0.zip/node_modules/vite/",\
+      ["npm:6.4.4", {\
+        "packageLocation": "../../../../../.yarn/berry/cache/vite-npm-6.4.4-e1c66b95e4-10c0.zip/node_modules/vite/",\
         "packageDependencies": [\
-          ["vite", "npm:6.4.2"]\
+          ["vite", "npm:6.4.4"]\
         ],\
         "linkType": "SOFT"\
       }],\
-      ["virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.2", {\
-        "packageLocation": "./.yarn/__virtual__/vite-virtual-dc76e41235/6/.yarn/berry/cache/vite-npm-6.4.2-26c5a0800c-10c0.zip/node_modules/vite/",\
+      ["virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.4", {\
+        "packageLocation": "./.yarn/__virtual__/vite-virtual-0c9d3fbfb1/6/.yarn/berry/cache/vite-npm-6.4.4-e1c66b95e4-10c0.zip/node_modules/vite/",\
         "packageDependencies": [\
           ["@types/jiti", null],\
           ["@types/less", null],\
@@ -6521,7 +6521,7 @@ const RAW_RUNTIME_STATE =
           ["terser", null],\
           ["tinyglobby", "npm:0.2.16"],\
           ["tsx", null],\
-          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.2"],\
+          ["vite", "virtual:0ba34007e1974bd48f70cfd8efe4987f4b0746da65832f956b9ca415964759abbf42c5a37361d8a6648fa4051753757022c51b2fee288dac1273c01b6b02472f#npm:6.4.4"],\
           ["yaml", null]\
         ],\
         "packagePeers": [\
